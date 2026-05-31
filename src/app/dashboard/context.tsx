@@ -165,6 +165,7 @@ interface DashboardContextProps {
   setResizingAppId: (id: string | null) => void;
   tempDuration: number | null;
   setTempDuration: (duration: number | null) => void;
+  startResizing: (appId: string, clientY: number, initialDuration: number) => void;
 
   // Action methods
   saveSettings: (e: React.FormEvent) => Promise<void>;
@@ -348,6 +349,14 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const initialYRef = useRef<number>(0);
   const initialDurationRef = useRef<number>(60);
   const tempDurationRef = useRef<number | null>(null);
+
+  const startResizing = (appId: string, clientY: number, initialDuration: number) => {
+    setResizingAppId(appId);
+    initialYRef.current = clientY;
+    initialDurationRef.current = initialDuration;
+    setTempDuration(initialDuration);
+    tempDurationRef.current = initialDuration;
+  };
 
   // Auth session check
   useEffect(() => {
@@ -931,6 +940,7 @@ Vielen Dank fuer Ihr Vertrauen!
       dragOverSlot, setDragOverSlot,
       resizingAppId, setResizingAppId,
       tempDuration, setTempDuration,
+      startResizing,
       contextMenu, setContextMenu,
       saveSettings,
       handleCreateClient,

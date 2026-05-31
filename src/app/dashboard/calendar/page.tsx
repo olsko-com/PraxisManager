@@ -27,6 +27,7 @@ export default function CalendarPage() {
     setResizingAppId,
     tempDuration,
     setTempDuration,
+    startResizing,
     setSelectedAppointment,
     setSheetMode,
     setIsSheetOpen,
@@ -235,13 +236,11 @@ export default function CalendarPage() {
     e.preventDefault();
     e.stopPropagation();
 
-    // Since initialYRef/tempDurationRef/initialDurationRef are handled inside DashboardContext effects,
-    // we simply trigger the state updates for resizing.
-    setResizingAppId(app.id);
     const start = new Date(app.startTime);
     const end = new Date(app.endTime);
     const dur = Math.round((end.getTime() - start.getTime()) / 60000);
-    setTempDuration(dur);
+    
+    startResizing(app.id, e.clientY, dur);
   };
 
   return (
