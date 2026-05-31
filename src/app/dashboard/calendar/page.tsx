@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { 
-  ChevronLeft, ChevronRight, Clock, Plus, FileText, Calendar as CalendarIcon
+  ChevronLeft, ChevronRight, Clock, Plus, FileText, Calendar as CalendarIcon, PanelRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDashboard } from '../context';
@@ -321,15 +321,14 @@ export default function CalendarPage() {
 
           <button
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-center gap-1.5 text-xs font-bold ${
+            className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-center ${
               isSidebarOpen 
                 ? 'bg-[#003527] border-[#003527] text-white shadow-none' 
                 : 'bg-white border-[#bfc9c3]/50 text-[#003527] hover:bg-zinc-50 shadow-none'
             }`}
             title={isSidebarOpen ? "Termine ausblenden" : "Termine einblenden"}
           >
-            <Clock className="w-4 h-4" />
-            <span className="hidden sm:inline">Termine</span>
+            <PanelRight className="w-4 h-4" />
           </button>
         </div>
       </div>
@@ -841,20 +840,20 @@ export default function CalendarPage() {
             transition={{ type: 'spring', damping: 26, stiffness: 220 }}
             className="fixed right-0 top-0 bottom-0 w-80 bg-white border-l border-[#bfc9c3]/30 flex flex-col z-40 pt-8 shadow-none"
           >
-            <div className="px-6 pb-4 border-b border-[#bfc9c3]/20 flex items-center justify-between select-none bg-white flex-shrink-0">
-              <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-zinc-400" />
-                <h4 className="font-bold text-[#003527] text-xs uppercase tracking-wider">
-                  Anstehende Termine
-                </h4>
-              </div>
-              <button
-                onClick={() => setIsSidebarOpen(false)}
-                className="p-1 rounded-lg text-zinc-400 hover:text-[#003527] hover:bg-[#003527]/5 transition-colors cursor-pointer"
-                title="Sidebar schließen"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
+            {/* Toggle Tab on the left border of the open sidebar */}
+            <button
+              onClick={() => setIsSidebarOpen(false)}
+              className="absolute -left-2.5 top-1/2 -translate-y-1/2 w-5 h-12 bg-white hover:bg-zinc-50 border border-[#bfc9c3]/40 rounded-lg flex items-center justify-center text-[#003527]/70 hover:text-[#003527] transition-all cursor-pointer z-50 shadow-sm"
+              title="Termin-Sidebar ausblenden"
+            >
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+
+            <div className="px-6 pb-4 border-b border-[#bfc9c3]/20 flex items-center gap-2 select-none bg-white flex-shrink-0">
+              <Clock className="w-4 h-4 text-zinc-400" />
+              <h4 className="font-bold text-[#003527] text-xs uppercase tracking-wider">
+                Anstehende Termine
+              </h4>
             </div>
 
             <div className="flex-grow overflow-y-auto py-5 space-y-6">
@@ -939,6 +938,17 @@ export default function CalendarPage() {
           </motion.aside>
         )}
       </AnimatePresence>
+
+      {/* Floating Toggle Handle on screen edge when sidebar is closed */}
+      {!isSidebarOpen && (
+        <button
+          onClick={() => setIsSidebarOpen(true)}
+          className="fixed right-0 top-1/2 -translate-y-1/2 w-5 h-12 bg-white hover:bg-zinc-50 border border-r-0 border-[#bfc9c3]/40 rounded-l-lg flex items-center justify-center text-[#003527]/70 hover:text-[#003527] transition-all cursor-pointer z-40 shadow-sm"
+          title="Termin-Sidebar einblenden"
+        >
+          <ChevronLeft className="w-3.5 h-3.5" />
+        </button>
+      )}
     </div>
   );
 }
