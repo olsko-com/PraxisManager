@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { 
-  ChevronLeft, ChevronRight, Clock, Plus, FileText, Calendar as CalendarIcon, PanelRight
+  ChevronLeft, ChevronRight, Clock, Plus, FileText, Calendar as CalendarIcon, PanelRight, Search
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDashboard } from '../context';
@@ -41,6 +41,16 @@ export default function CalendarPage() {
   } = useDashboard();
 
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(true);
+  const [eventSearch, setEventSearch] = React.useState('');
+
+  const handleNewAppointmentClick = () => {
+    setSheetMode('new');
+    setNewAppDate(currentCalendarDate.toISOString().slice(0, 10));
+    setNewAppHour(9);
+    if (clients.length > 0) setNewAppClientId(clients[0].id);
+    if (services.length > 0) setNewAppServiceId(services[0].id);
+    setIsSheetOpen(true);
+  };
 
   // Helper Functions (Local Utilities)
   const formatTime = (dateStr: string) => {
@@ -62,7 +72,16 @@ export default function CalendarPage() {
     const tomorrowEvents: Appointment[] = [];
     const upcomingEvents: Appointment[] = [];
     
-    const sorted = [...appointments].sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+    const filtered = appointments.filter(app => {
+      if (!eventSearch) return true;
+      const searchLower = eventSearch.toLowerCase();
+      return (
+        app.clientName.toLowerCase().includes(searchLower) ||
+        app.serviceName.toLowerCase().includes(searchLower)
+      );
+    });
+
+    const sorted = [...filtered].sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
     
     sorted.forEach(app => {
       const appDateStr = new Date(app.startTime).toISOString().slice(0, 10);
@@ -844,7 +863,35 @@ export default function CalendarPage() {
             transition={{ type: 'spring', damping: 26, stiffness: 220 }}
             className="fixed right-0 top-0 bottom-0 w-80 bg-white border-l border-[#bfc9c3]/30 flex flex-col z-40 shadow-none"
           >
-            <div className="flex-grow overflow-y-auto py-8 space-y-6 hide-scrollbar">
+            {/* Sidebar Header (Matches Patients List layout style) */}
+            <div className="p-6 pt-8 space-y-4 border-b border-[#bfc9c3]/20 flex-shrink-0 bg-white">
+              <div className="flex justify-between items-center select-none">
+                {(() => {
+                  const { todayEvents, tomorrowEvents, upcomingEvents } = getUpcomingEvents();
+                  const count = todayEvents.length + tomorrowEvents.length + upcomingEvents.length;
+                  return <h3 className="text-sm font-bold text-[#003527]">Anstehende Termine ({count})</h3>;
+                })()}
+                <button
+                  onClick={handleNewAppointmentClick}
+                  className="p-1.5 rounded-lg text-zinc-400 hover:text-[#003527] hover:bg-[#003527]/5 transition-all cursor-pointer animate-fade-in"
+                  title="Termin anlegen"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-zinc-400" />
+                <input
+                  type="text"
+                  placeholder="Termin suchen..."
+                  value={eventSearch}
+                  onChange={(e) => setEventSearch(e.target.value)}
+                  className="w-full bg-[#f3f4f3] focus:bg-white border border-[#bfc9c3]/30 focus:border-[#003527]/60 focus:ring-1 focus:ring-[#003527]/60 rounded-xl pl-9 pr-4 py-2.5 font-semibold text-xs text-[#003527] outline-none transition-all placeholder-zinc-400"
+                />
+              </div>
+            </div>
+
+            <div className="flex-grow overflow-y-auto py-5 space-y-6 hide-scrollbar">
               {(() => {
                 const { todayEvents, tomorrowEvents, upcomingEvents } = getUpcomingEvents();
                 
