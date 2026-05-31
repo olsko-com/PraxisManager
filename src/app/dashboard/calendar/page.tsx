@@ -343,10 +343,10 @@ export default function CalendarPage() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="bg-white border border-[#bfc9c3]/40 rounded-2xl py-6 px-0 shadow-none overflow-x-auto"
+            className="bg-white border border-[#bfc9c3]/40 rounded-2xl pt-0 pb-6 px-0 shadow-none overflow-x-auto"
           >
             {/* Header Row */}
-            <div className="min-w-[600px] grid grid-cols-[80px_1fr] border-b border-[#bfc9c3]/20 pb-3 mb-4">
+            <div className="min-w-[600px] grid grid-cols-[80px_1fr] border-b border-[#bfc9c3]/20 bg-zinc-50/60 rounded-t-2xl py-3 mb-0">
               <div className="w-[80px]" />
               <div className="text-left pl-3 flex flex-col gap-0.5 select-none">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
@@ -540,10 +540,10 @@ export default function CalendarPage() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="bg-white border border-[#bfc9c3]/40 rounded-2xl py-6 px-0 shadow-none overflow-x-auto"
+            className="bg-white border border-[#bfc9c3]/40 rounded-2xl pt-0 pb-6 px-0 shadow-none overflow-x-auto"
           >
             {/* Week Header Row */}
-            <div className="min-w-[800px] grid grid-cols-[80px_repeat(5,1fr)] divide-x divide-zinc-200/50 border-b border-[#bfc9c3]/20 mb-4">
+            <div className="min-w-[800px] grid grid-cols-[80px_repeat(5,1fr)] divide-x divide-zinc-200/50 border-b border-[#bfc9c3]/20 bg-zinc-50/60 rounded-t-2xl mb-0">
               <div className="w-[80px]" />
               {getWeekDays(currentCalendarDate).map((dayDate) => {
                 const isToday = new Date().toDateString() === dayDate.toDateString();
