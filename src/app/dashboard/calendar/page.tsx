@@ -813,15 +813,15 @@ export default function CalendarPage() {
       </AnimatePresence>
     
       {/* Right Side: Upcoming Events Sidebar (100vh full-height panel) */}
-      <aside className="fixed right-0 top-0 bottom-0 w-80 bg-white border-l border-[#bfc9c3]/30 flex flex-col z-40 pt-8 pb-6 shadow-none">
-        <div className="px-6 pb-4 border-b border-[#bfc9c3]/20 flex items-center gap-2 select-none">
+      <aside className="fixed right-0 top-0 bottom-0 w-80 bg-[#f9f9f8] border-l border-[#bfc9c3]/30 flex flex-col z-40 pt-8 shadow-none">
+        <div className="px-6 pb-4 border-b border-[#bfc9c3]/20 flex items-center gap-2 select-none bg-white flex-shrink-0">
           <Clock className="w-4 h-4 text-zinc-400" />
           <h4 className="font-bold text-[#003527] text-xs uppercase tracking-wider">
             Anstehende Termine
           </h4>
         </div>
 
-        <div className="flex-grow overflow-y-auto px-6 py-4 space-y-5">
+        <div className="flex-grow overflow-y-auto py-5 space-y-6">
           {(() => {
             const { todayEvents, tomorrowEvents, upcomingEvents } = getUpcomingEvents();
             
@@ -833,7 +833,7 @@ export default function CalendarPage() {
                   setSheetMode('edit');
                   setIsSheetOpen(true);
                 }}
-                className="flex items-center gap-3 p-3 bg-zinc-50/50 hover:bg-blue-50/20 border border-zinc-100 hover:border-blue-100 rounded-xl transition-all cursor-pointer select-none animate-fade-in"
+                className="flex items-center gap-3.5 px-6 py-4 hover:bg-zinc-50 transition-colors cursor-pointer select-none text-left bg-white"
               >
                 <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
                   app.status === 'booked' 
@@ -844,7 +844,7 @@ export default function CalendarPage() {
                     ? 'bg-emerald-500' 
                     : 'bg-rose-500'
                 }`} />
-                <div className="min-w-0 flex-grow text-left">
+                <div className="min-w-0 flex-grow">
                   <h5 className="font-extrabold text-xs text-[#003527] leading-tight truncate">{app.serviceName}</h5>
                   <p className="text-[10px] font-bold text-zinc-400 mt-0.5 truncate">{app.clientName}</p>
                   <p className="text-[9px] font-bold text-zinc-500 mt-1 flex items-center gap-1">
@@ -866,12 +866,12 @@ export default function CalendarPage() {
             }
 
             return (
-              <div className="space-y-5">
+              <div className="space-y-6">
                 {/* Today */}
                 {todayEvents.length > 0 && (
                   <div>
-                    <h5 className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-widest mb-2 select-none">Heute</h5>
-                    <div className="space-y-2">
+                    <h5 className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-widest px-6 mb-2 select-none">Heute</h5>
+                    <div className="border-y border-[#bfc9c3]/20 divide-y divide-[#bfc9c3]/20">
                       {todayEvents.map(renderEventCard)}
                     </div>
                   </div>
@@ -880,8 +880,8 @@ export default function CalendarPage() {
                 {/* Tomorrow */}
                 {tomorrowEvents.length > 0 && (
                   <div>
-                    <h5 className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-widest mb-2 select-none">Morgen</h5>
-                    <div className="space-y-2">
+                    <h5 className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-widest px-6 mb-2 select-none">Morgen</h5>
+                    <div className="border-y border-[#bfc9c3]/20 divide-y divide-[#bfc9c3]/20">
                       {tomorrowEvents.map(renderEventCard)}
                     </div>
                   </div>
@@ -890,8 +890,8 @@ export default function CalendarPage() {
                 {/* Upcoming */}
                 {upcomingEvents.length > 0 && (
                   <div>
-                    <h5 className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-widest mb-2 select-none">Demnächst</h5>
-                    <div className="space-y-2">
+                    <h5 className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-widest px-6 mb-2 select-none">Demnächst</h5>
+                    <div className="border-y border-[#bfc9c3]/20 divide-y divide-[#bfc9c3]/20">
                       {upcomingEvents.map(renderEventCard)}
                     </div>
                   </div>
