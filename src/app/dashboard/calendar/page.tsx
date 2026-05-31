@@ -838,25 +838,9 @@ export default function CalendarPage() {
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: 320, opacity: 0.8 }}
             transition={{ type: 'spring', damping: 26, stiffness: 220 }}
-            className="fixed right-0 top-0 bottom-0 w-80 bg-white border-l border-[#bfc9c3]/30 flex flex-col z-40 pt-8 shadow-none"
+            className="fixed right-0 top-0 bottom-0 w-80 bg-white border-l border-[#bfc9c3]/30 flex flex-col z-40 shadow-none"
           >
-            {/* Toggle Tab on the left border of the open sidebar */}
-            <button
-              onClick={() => setIsSidebarOpen(false)}
-              className="absolute -left-2.5 top-1/2 -translate-y-1/2 w-5 h-12 bg-white hover:bg-zinc-50 border border-[#bfc9c3]/40 rounded-lg flex items-center justify-center text-[#003527]/70 hover:text-[#003527] transition-all cursor-pointer z-50 shadow-sm"
-              title="Termin-Sidebar ausblenden"
-            >
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-
-            <div className="px-6 pb-4 border-b border-[#bfc9c3]/20 flex items-center gap-2 select-none bg-white flex-shrink-0">
-              <Clock className="w-4 h-4 text-zinc-400" />
-              <h4 className="font-bold text-[#003527] text-xs uppercase tracking-wider">
-                Anstehende Termine
-              </h4>
-            </div>
-
-            <div className="flex-grow overflow-y-auto py-5 space-y-6">
+            <div className="flex-grow overflow-y-auto py-8 space-y-6">
               {(() => {
                 const { todayEvents, tomorrowEvents, upcomingEvents } = getUpcomingEvents();
                 
@@ -938,17 +922,6 @@ export default function CalendarPage() {
           </motion.aside>
         )}
       </AnimatePresence>
-
-      {/* Floating Toggle Handle on screen edge when sidebar is closed */}
-      {!isSidebarOpen && (
-        <button
-          onClick={() => setIsSidebarOpen(true)}
-          className="fixed right-0 top-1/2 -translate-y-1/2 w-5 h-12 bg-white hover:bg-zinc-50 border border-r-0 border-[#bfc9c3]/40 rounded-l-lg flex items-center justify-center text-[#003527]/70 hover:text-[#003527] transition-all cursor-pointer z-40 shadow-sm"
-          title="Termin-Sidebar einblenden"
-        >
-          <ChevronLeft className="w-3.5 h-3.5" />
-        </button>
-      )}
     </div>
   );
 }
