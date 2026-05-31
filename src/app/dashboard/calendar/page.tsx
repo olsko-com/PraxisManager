@@ -852,7 +852,7 @@ export default function CalendarPage() {
                       setSheetMode('edit');
                       setIsSheetOpen(true);
                     }}
-                    className="flex items-center gap-3.5 px-6 py-4 bg-zinc-50 hover:bg-zinc-100/60 transition-colors cursor-pointer select-none text-left"
+                    className="flex items-center gap-3 p-3 bg-zinc-50 hover:bg-zinc-100/70 border border-[#bfc9c3]/20 rounded-xl transition-all cursor-pointer select-none text-left"
                   >
                     <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
                       app.status === 'booked' 
@@ -889,8 +889,8 @@ export default function CalendarPage() {
                     {/* Today */}
                     {todayEvents.length > 0 && (
                       <div>
-                        <h5 className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-widest px-6 mb-2 select-none">Heute</h5>
-                        <div className="border-y border-[#bfc9c3]/20 divide-y divide-[#bfc9c3]/20">
+                        <h5 className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-widest px-4 mb-2 select-none">Heute</h5>
+                        <div className="space-y-2 px-4">
                           {todayEvents.map(renderEventCard)}
                         </div>
                       </div>
@@ -899,8 +899,8 @@ export default function CalendarPage() {
                     {/* Tomorrow */}
                     {tomorrowEvents.length > 0 && (
                       <div>
-                        <h5 className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-widest px-6 mb-2 select-none">Morgen</h5>
-                        <div className="border-y border-[#bfc9c3]/20 divide-y divide-[#bfc9c3]/20">
+                        <h5 className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-widest px-4 mb-2 select-none">Morgen</h5>
+                        <div className="space-y-2 px-4">
                           {tomorrowEvents.map(renderEventCard)}
                         </div>
                       </div>
@@ -909,8 +909,8 @@ export default function CalendarPage() {
                     {/* Upcoming */}
                     {upcomingEvents.length > 0 && (
                       <div>
-                        <h5 className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-widest px-6 mb-2 select-none">Demnächst</h5>
-                        <div className="border-y border-[#bfc9c3]/20 divide-y divide-[#bfc9c3]/20">
+                        <h5 className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-widest px-4 mb-2 select-none">Demnächst</h5>
+                        <div className="space-y-2 px-4">
                           {upcomingEvents.map(renderEventCard)}
                         </div>
                       </div>
