@@ -40,6 +40,8 @@ export default function CalendarPage() {
     setNewAppServiceId
   } = useDashboard();
 
+  const [isSidebarOpen, setIsSidebarOpen] = React.useState(true);
+
   // Helper Functions (Local Utilities)
   const formatTime = (dateStr: string) => {
     const d = new Date(dateStr);
@@ -267,7 +269,9 @@ export default function CalendarPage() {
   };
 
   return (
-    <div className="flex-grow overflow-y-auto pl-12 pr-[368px] py-8 flex flex-col space-y-6 h-screen">
+    <div className={`flex-grow overflow-y-auto pl-12 py-8 flex flex-col space-y-6 h-screen transition-all duration-300 ${
+      isSidebarOpen ? 'pr-[368px]' : 'pr-12'
+    }`}>
       {/* Calendar Controls */}
       <div className="flex flex-wrap justify-between items-center gap-4">
         <div className="flex items-center gap-2">
@@ -295,23 +299,38 @@ export default function CalendarPage() {
           <h3 className="text-sm font-bold text-[#043F2D] pl-2">{getCalendarTitleText()}</h3>
         </div>
 
-        {/* Segmented Picker */}
-        <div className="bg-zinc-200/50 p-1 rounded-2xl flex border border-zinc-200/20 select-none">
-          {(['day', 'week', 'month'] as const).map((view) => (
-            <button
-              key={view}
-              onClick={() => setCalendarView(view)}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                calendarView === view 
-                  ? 'bg-white text-[#003527] border border-[#bfc9c3]/30' 
-                  : 'text-zinc-500 hover:text-[#003527]'
-              }`}
-            >
-              {view === 'day' && 'Tag'}
-              {view === 'week' && 'Woche'}
-              {view === 'month' && 'Monat'}
-            </button>
-          ))}
+        {/* Segmented Picker & Toggle Sidebar */}
+        <div className="flex items-center gap-3">
+          <div className="bg-zinc-200/50 p-1 rounded-2xl flex border border-zinc-200/20 select-none">
+            {(['day', 'week', 'month'] as const).map((view) => (
+              <button
+                key={view}
+                onClick={() => setCalendarView(view)}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  calendarView === view 
+                    ? 'bg-white text-[#003527] border border-[#bfc9c3]/30' 
+                    : 'text-zinc-500 hover:text-[#003527]'
+                }`}
+              >
+                {view === 'day' && 'Tag'}
+                {view === 'week' && 'Woche'}
+                {view === 'month' && 'Monat'}
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-center gap-1.5 text-xs font-bold ${
+              isSidebarOpen 
+                ? 'bg-[#003527] border-[#003527] text-white shadow-none' 
+                : 'bg-white border-[#bfc9c3]/50 text-[#003527] hover:bg-zinc-50 shadow-none'
+            }`}
+            title={isSidebarOpen ? "Termine ausblenden" : "Termine einblenden"}
+          >
+            <Clock className="w-4 h-4" />
+            <span className="hidden sm:inline">Termine</span>
+          </button>
         </div>
       </div>
 
@@ -812,95 +831,114 @@ export default function CalendarPage() {
         )}
       </AnimatePresence>
     
-      {/* Right Side: Upcoming Events Sidebar (100vh full-height panel) */}
-      <aside className="fixed right-0 top-0 bottom-0 w-80 bg-white border-l border-[#bfc9c3]/30 flex flex-col z-40 pt-8 shadow-none">
-        <div className="px-6 pb-4 border-b border-[#bfc9c3]/20 flex items-center gap-2 select-none bg-white flex-shrink-0">
-          <Clock className="w-4 h-4 text-zinc-400" />
-          <h4 className="font-bold text-[#003527] text-xs uppercase tracking-wider">
-            Anstehende Termine
-          </h4>
-        </div>
-
-        <div className="flex-grow overflow-y-auto py-5 space-y-6">
-          {(() => {
-            const { todayEvents, tomorrowEvents, upcomingEvents } = getUpcomingEvents();
-            
-            const renderEventCard = (app: Appointment) => (
-              <div
-                key={app.id}
-                onClick={() => {
-                  setSelectedAppointment(app);
-                  setSheetMode('edit');
-                  setIsSheetOpen(true);
-                }}
-                className="flex items-center gap-3.5 px-6 py-4 hover:bg-zinc-50 transition-colors cursor-pointer select-none text-left bg-white"
+      {/* Right Side: Upcoming Events Sidebar (100vh full-height panel with Framer Motion slide in/out) */}
+      <AnimatePresence>
+        {isSidebarOpen && (
+          <motion.aside
+            initial={{ x: 320, opacity: 0.8 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: 320, opacity: 0.8 }}
+            transition={{ type: 'spring', damping: 26, stiffness: 220 }}
+            className="fixed right-0 top-0 bottom-0 w-80 bg-white border-l border-[#bfc9c3]/30 flex flex-col z-40 pt-8 shadow-none"
+          >
+            <div className="px-6 pb-4 border-b border-[#bfc9c3]/20 flex items-center justify-between select-none bg-white flex-shrink-0">
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-zinc-400" />
+                <h4 className="font-bold text-[#003527] text-xs uppercase tracking-wider">
+                  Anstehende Termine
+                </h4>
+              </div>
+              <button
+                onClick={() => setIsSidebarOpen(false)}
+                className="p-1 rounded-lg text-zinc-400 hover:text-[#003527] hover:bg-[#003527]/5 transition-colors cursor-pointer"
+                title="Sidebar schließen"
               >
-                <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                  app.status === 'booked' 
-                    ? 'bg-amber-500' 
-                    : app.status === 'confirmed' 
-                    ? 'bg-blue-500' 
-                    : app.status === 'noshow' 
-                    ? 'bg-emerald-500' 
-                    : 'bg-rose-500'
-                }`} />
-                <div className="min-w-0 flex-grow">
-                  <h5 className="font-extrabold text-xs text-[#003527] leading-tight truncate">{app.serviceName}</h5>
-                  <p className="text-[10px] font-bold text-zinc-400 mt-0.5 truncate">{app.clientName}</p>
-                  <p className="text-[9px] font-bold text-zinc-500 mt-1 flex items-center gap-1">
-                    <Clock className="w-2.5 h-2.5 text-zinc-400" />
-                    {formatTime(app.startTime)} - {formatTime(app.endTime)}
-                  </p>
-                </div>
-              </div>
-            );
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
 
-            const hasAnyEvents = todayEvents.length > 0 || tomorrowEvents.length > 0 || upcomingEvents.length > 0;
-
-            if (!hasAnyEvents) {
-              return (
-                <div className="text-xs text-zinc-400 font-semibold italic text-center py-8">
-                  Keine anstehenden Termine
-                </div>
-              );
-            }
-
-            return (
-              <div className="space-y-6">
-                {/* Today */}
-                {todayEvents.length > 0 && (
-                  <div>
-                    <h5 className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-widest px-6 mb-2 select-none">Heute</h5>
-                    <div className="border-y border-[#bfc9c3]/20 divide-y divide-[#bfc9c3]/20">
-                      {todayEvents.map(renderEventCard)}
+            <div className="flex-grow overflow-y-auto py-5 space-y-6">
+              {(() => {
+                const { todayEvents, tomorrowEvents, upcomingEvents } = getUpcomingEvents();
+                
+                const renderEventCard = (app: Appointment) => (
+                  <div
+                    key={app.id}
+                    onClick={() => {
+                      setSelectedAppointment(app);
+                      setSheetMode('edit');
+                      setIsSheetOpen(true);
+                    }}
+                    className="flex items-center gap-3.5 px-6 py-4 bg-zinc-50 hover:bg-zinc-100/60 transition-colors cursor-pointer select-none text-left"
+                  >
+                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                      app.status === 'booked' 
+                        ? 'bg-amber-500' 
+                        : app.status === 'confirmed' 
+                        ? 'bg-blue-500' 
+                        : app.status === 'noshow' 
+                        ? 'bg-emerald-500' 
+                        : 'bg-rose-500'
+                    }`} />
+                    <div className="min-w-0 flex-grow">
+                      <h5 className="font-extrabold text-xs text-[#003527] leading-tight truncate">{app.serviceName}</h5>
+                      <p className="text-[10px] font-bold text-zinc-400 mt-0.5 truncate">{app.clientName}</p>
+                      <p className="text-[9px] font-bold text-zinc-500 mt-1 flex items-center gap-1">
+                        <Clock className="w-2.5 h-2.5 text-zinc-400" />
+                        {formatTime(app.startTime)} - {formatTime(app.endTime)}
+                      </p>
                     </div>
                   </div>
-                )}
+                );
 
-                {/* Tomorrow */}
-                {tomorrowEvents.length > 0 && (
-                  <div>
-                    <h5 className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-widest px-6 mb-2 select-none">Morgen</h5>
-                    <div className="border-y border-[#bfc9c3]/20 divide-y divide-[#bfc9c3]/20">
-                      {tomorrowEvents.map(renderEventCard)}
-                    </div>
-                  </div>
-                )}
+                const hasAnyEvents = todayEvents.length > 0 || tomorrowEvents.length > 0 || upcomingEvents.length > 0;
 
-                {/* Upcoming */}
-                {upcomingEvents.length > 0 && (
-                  <div>
-                    <h5 className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-widest px-6 mb-2 select-none">Demnächst</h5>
-                    <div className="border-y border-[#bfc9c3]/20 divide-y divide-[#bfc9c3]/20">
-                      {upcomingEvents.map(renderEventCard)}
+                if (!hasAnyEvents) {
+                  return (
+                    <div className="text-xs text-zinc-400 font-semibold italic text-center py-8">
+                      Keine anstehenden Termine
                     </div>
+                  );
+                }
+
+                return (
+                  <div className="space-y-6">
+                    {/* Today */}
+                    {todayEvents.length > 0 && (
+                      <div>
+                        <h5 className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-widest px-6 mb-2 select-none">Heute</h5>
+                        <div className="border-y border-[#bfc9c3]/20 divide-y divide-[#bfc9c3]/20">
+                          {todayEvents.map(renderEventCard)}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Tomorrow */}
+                    {tomorrowEvents.length > 0 && (
+                      <div>
+                        <h5 className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-widest px-6 mb-2 select-none">Morgen</h5>
+                        <div className="border-y border-[#bfc9c3]/20 divide-y divide-[#bfc9c3]/20">
+                          {tomorrowEvents.map(renderEventCard)}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Upcoming */}
+                    {upcomingEvents.length > 0 && (
+                      <div>
+                        <h5 className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-widest px-6 mb-2 select-none">Demnächst</h5>
+                        <div className="border-y border-[#bfc9c3]/20 divide-y divide-[#bfc9c3]/20">
+                          {upcomingEvents.map(renderEventCard)}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            );
-          })()}
-        </div>
-      </aside>
+                );
+              })()}
+            </div>
+          </motion.aside>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
