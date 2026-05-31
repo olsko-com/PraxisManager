@@ -346,7 +346,7 @@ export default function CalendarPage() {
             className="bg-white border border-[#bfc9c3]/40 rounded-2xl pt-0 pb-6 px-0 shadow-none overflow-x-auto"
           >
             {/* Header Row */}
-            <div className="min-w-[600px] grid grid-cols-[80px_1fr] border-b border-[#bfc9c3]/20 bg-zinc-50/60 rounded-t-2xl py-3 mb-0">
+            <div className="min-w-[600px] grid grid-cols-[80px_1fr] border-b border-[#bfc9c3]/20 bg-zinc-50/75 backdrop-blur-md rounded-t-2xl py-3 mb-0 sticky top-0 z-30">
               <div className="w-[80px]" />
               <div className="text-left pl-3 flex flex-col gap-0.5 select-none">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
@@ -364,7 +364,9 @@ export default function CalendarPage() {
                 {['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'].map((time, idx) => (
                   <div 
                     key={time} 
-                    className="absolute right-4 text-[10px] font-bold text-zinc-400 -translate-y-1/2"
+                    className={`absolute right-4 text-[10px] font-bold text-zinc-400 ${
+                      idx === 0 ? 'translate-y-1' : '-translate-y-1/2'
+                    }`}
                     style={{ top: `${idx * 88}px` }}
                   >
                     {time}
@@ -543,7 +545,7 @@ export default function CalendarPage() {
             className="bg-white border border-[#bfc9c3]/40 rounded-2xl pt-0 pb-6 px-0 shadow-none overflow-x-auto"
           >
             {/* Week Header Row */}
-            <div className="min-w-[800px] grid grid-cols-[80px_repeat(5,1fr)] divide-x divide-zinc-200/50 border-b border-[#bfc9c3]/20 bg-zinc-50/60 rounded-t-2xl mb-0">
+            <div className="min-w-[800px] grid grid-cols-[80px_repeat(5,1fr)] divide-x divide-zinc-200/50 border-b border-[#bfc9c3]/20 bg-zinc-50/75 backdrop-blur-md rounded-t-2xl mb-0 sticky top-0 z-30">
               <div className="w-[80px]" />
               {getWeekDays(currentCalendarDate).map((dayDate) => {
                 const isToday = new Date().toDateString() === dayDate.toDateString();
@@ -570,7 +572,9 @@ export default function CalendarPage() {
                 {['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'].map((time, idx) => (
                   <div 
                     key={time} 
-                    className="absolute right-4 text-[10px] font-bold text-zinc-400 -translate-y-1/2"
+                    className={`absolute right-4 text-[10px] font-bold text-zinc-400 ${
+                      idx === 0 ? 'translate-y-1' : '-translate-y-1/2'
+                    }`}
                     style={{ top: `${idx * 88}px` }}
                   >
                     {time}
