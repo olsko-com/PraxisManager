@@ -49,9 +49,31 @@ export default function CalendarPage() {
   const formatAppTimeRange = (startTimeStr: string, durationMin: number) => {
     const start = new Date(startTimeStr);
     const end = new Date(start.getTime() + durationMin * 60000);
-    const startStr = start.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-    const endStr = end.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-    return `${startStr} - ${endStr}`;
+    return `${start.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} - ${end.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`;
+  };
+
+  const getUpcomingEvents = () => {
+    const todayStr = '2026-06-01';
+    const tomorrowStr = '2026-06-02';
+    
+    const todayEvents: Appointment[] = [];
+    const tomorrowEvents: Appointment[] = [];
+    const upcomingEvents: Appointment[] = [];
+    
+    const sorted = [...appointments].sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+    
+    sorted.forEach(app => {
+      const appDateStr = new Date(app.startTime).toISOString().slice(0, 10);
+      if (appDateStr === todayStr) {
+        todayEvents.push(app);
+      } else if (appDateStr === tomorrowStr) {
+        tomorrowEvents.push(app);
+      } else if (appDateStr > tomorrowStr) {
+        upcomingEvents.push(app);
+      }
+    });
+    
+    return { todayEvents, tomorrowEvents, upcomingEvents: upcomingEvents.slice(0, 5) };
   };
 
   const getWeekDays = (date: Date) => {
@@ -293,8 +315,11 @@ export default function CalendarPage() {
         </div>
       </div>
 
-      {/* Calendar View Renders */}
-      <AnimatePresence mode="wait">
+      {/* Split Layout: Calendar Grid & Sidebar */}
+      <div className="flex gap-6 items-start flex-grow min-h-0">
+        {/* Left Side: Calendar View */}
+        <div className="flex-grow min-w-0">
+          <AnimatePresence mode="wait">
         
         {/* DAY VIEW */}
         {calendarView === 'day' && (
@@ -788,7 +813,96 @@ export default function CalendarPage() {
             })}
           </motion.div>
         )}
-      </AnimatePresence>
+          </AnimatePresence>
+        </div>
+
+        {/* Right Side: Upcoming Events Sidebar */}
+        <aside className="w-80 bg-white border border-[#bfc9c3]/40 rounded-2xl p-6 flex-shrink-0 flex flex-col max-h-[85vh] overflow-y-auto shadow-none">
+          <h4 className="font-bold text-[#003527] text-xs uppercase tracking-wider border-b border-[#bfc9c3]/20 pb-3 flex items-center gap-2 select-none">
+            <Clock className="w-4 h-4 text-zinc-400" /> Anstehende Termine
+          </h4>
+
+          <div className="flex-grow flex flex-col space-y-4">
+            {(() => {
+              const { todayEvents, tomorrowEvents, upcomingEvents } = getUpcomingEvents();
+              
+              const renderEventCard = (app: Appointment) => (
+                <div
+                  key={app.id}
+                  onClick={() => {
+                    setSelectedAppointment(app);
+                    setSheetMode('edit');
+                    setIsSheetOpen(true);
+                  }}
+                  className="flex items-center gap-3 p-3 bg-zinc-50/50 hover:bg-blue-50/20 border border-zinc-100 hover:border-blue-100 rounded-xl transition-all cursor-pointer select-none"
+                >
+                  <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                    app.status === 'booked' 
+                      ? 'bg-amber-500' 
+                      : app.status === 'confirmed' 
+                      ? 'bg-blue-500' 
+                      : app.status === 'noshow' 
+                      ? 'bg-emerald-500' 
+                      : 'bg-rose-500'
+                  }`} />
+                  <div className="min-w-0 flex-grow text-left">
+                    <h5 className="font-extrabold text-xs text-[#003527] leading-tight truncate">{app.serviceName}</h5>
+                    <p className="text-[10px] font-bold text-zinc-400 mt-0.5 truncate">{app.clientName}</p>
+                    <p className="text-[9px] font-bold text-zinc-500 mt-1 flex items-center gap-1">
+                      <Clock className="w-2.5 h-2.5 text-zinc-400" />
+                      {formatTime(app.startTime)} - {formatTime(app.endTime)}
+                    </p>
+                  </div>
+                </div>
+              );
+
+              const hasAnyEvents = todayEvents.length > 0 || tomorrowEvents.length > 0 || upcomingEvents.length > 0;
+
+              if (!hasAnyEvents) {
+                return (
+                  <div className="text-xs text-zinc-400 font-semibold italic text-center py-8">
+                    Keine anstehenden Termine
+                  </div>
+                );
+              }
+
+              return (
+                <div className="space-y-4 overflow-y-auto pr-1">
+                  {/* Today */}
+                  {todayEvents.length > 0 && (
+                    <div>
+                      <h5 className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-widest mb-2 select-none">Heute</h5>
+                      <div className="space-y-2">
+                        {todayEvents.map(renderEventCard)}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Tomorrow */}
+                  {tomorrowEvents.length > 0 && (
+                    <div>
+                      <h5 className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-widest mb-2 select-none">Morgen</h5>
+                      <div className="space-y-2">
+                        {tomorrowEvents.map(renderEventCard)}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Upcoming */}
+                  {upcomingEvents.length > 0 && (
+                    <div>
+                      <h5 className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-widest mb-2 select-none">Demnächst</h5>
+                      <div className="space-y-2">
+                        {upcomingEvents.map(renderEventCard)}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+          </div>
+        </aside>
+      </div>
     </div>
   );
 }
