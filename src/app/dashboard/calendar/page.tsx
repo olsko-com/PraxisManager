@@ -543,16 +543,16 @@ export default function CalendarPage() {
             className="bg-white border border-[#bfc9c3]/40 rounded-2xl py-6 px-0 shadow-none overflow-x-auto"
           >
             {/* Week Header Row */}
-            <div className="min-w-[800px] grid grid-cols-[80px_repeat(5,1fr)] divide-x divide-zinc-200/50 border-b border-[#bfc9c3]/20 pb-3 mb-4">
+            <div className="min-w-[800px] grid grid-cols-[80px_repeat(5,1fr)] divide-x divide-zinc-200/50 border-b border-[#bfc9c3]/20 mb-4">
               <div className="w-[80px]" />
               {getWeekDays(currentCalendarDate).map((dayDate) => {
                 const isToday = new Date().toDateString() === dayDate.toDateString();
                 return (
-                  <div key={dayDate.toISOString()} className="flex flex-col items-center gap-0.5 select-none">
+                  <div key={dayDate.toISOString()} className="flex items-center justify-center gap-1.5 py-2.5 select-none">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
                       {dayDate.toLocaleDateString('de-DE', { weekday: 'short' }).replace('.', '')}
                     </span>
-                    <span className={`text-sm font-semibold w-7 h-7 rounded-full flex items-center justify-center transition-colors ${
+                    <span className={`text-xs font-semibold w-6 h-6 rounded-full flex items-center justify-center transition-colors ${
                       isToday 
                         ? 'text-white bg-[#003527]' 
                         : 'text-[#043F2D] hover:bg-zinc-100'
