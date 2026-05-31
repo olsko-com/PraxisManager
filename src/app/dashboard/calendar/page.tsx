@@ -111,7 +111,8 @@ export default function CalendarPage() {
       : Math.round((end.getTime() - start.getTime()) / 60000);
 
     const topPx = (minutesSince09 / 60) * 88;
-    const heightPx = (dur / 60) * 88;
+    const visualDur = Math.max(45, dur);
+    const heightPx = (visualDur / 60) * 88;
 
     return {
       top: `${topPx + 6}px`,
@@ -467,7 +468,8 @@ export default function CalendarPage() {
                       const dur = Math.round((new Date(draggedApp.endTime).getTime() - new Date(draggedApp.startTime).getTime()) / 60000);
                       
                       const topPx = (dragOverSlot.hour - 9) * 88;
-                      const heightPx = (dur / 60) * 88;
+                      const visualDur = Math.max(45, dur);
+                      const heightPx = (visualDur / 60) * 88;
 
                       return (
                         <div
@@ -683,7 +685,8 @@ export default function CalendarPage() {
                           const dur = Math.round((new Date(draggedApp.endTime).getTime() - new Date(draggedApp.startTime).getTime()) / 60000);
                           
                           const topPx = ((dragOverSlot?.hour || 9) - 9) * 88;
-                          const heightPx = (dur / 60) * 88;
+                          const visualDur = Math.max(45, dur);
+                          const heightPx = (visualDur / 60) * 88;
 
                           return (
                             <div
