@@ -1088,43 +1088,47 @@ export default function CalendarPage() {
               initial={{ opacity: 0, y: 50, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 20, scale: 0.95 }}
-              className={`fixed bottom-6 z-50 flex flex-col bg-white/95 backdrop-blur-xl border border-[#bfc9c3]/30 w-full max-w-sm rounded-2xl shadow-[0_12px_45px_rgba(0,53,39,0.14)] p-5 select-none overflow-hidden m-4 transition-all duration-300 ${
+              className={`fixed bottom-6 z-50 flex flex-col bg-white/95 backdrop-blur-xl border border-[#bfc9c3]/30 w-full max-w-md rounded-2xl shadow-[0_12px_45px_rgba(0,53,39,0.14)] p-5 select-none overflow-hidden m-4 transition-all duration-300 ${
                 isSidebarOpen ? 'right-[344px]' : 'right-6'
               }`}
             >
-              {/* Header and Details */}
-              <div className="text-center mb-4">
-                <div className="mx-auto w-10 h-10 rounded-full bg-[#003527]/5 flex items-center justify-center text-[#003527] mb-2.5">
-                  <Mail className="w-5 h-5" />
+              <div className="flex items-start justify-between gap-4">
+                {/* Left Column: Icon & Info */}
+                <div className="flex items-start gap-3 min-w-0 flex-grow">
+                  <div className="w-10 h-10 rounded-full bg-[#003527]/5 flex items-center justify-center flex-shrink-0 text-[#003527] mt-0.5">
+                    <Mail className="w-5 h-5" />
+                  </div>
+                  <div className="min-w-0 flex-grow text-left">
+                    <h4 className="font-bold text-xs text-[#003527] leading-snug">
+                      Terminbestätigung per E-Mail an <span className="font-extrabold">{app.clientName}</span> senden?
+                    </h4>
+                    <div className="text-[10px] text-zinc-400 font-semibold bg-zinc-50 border border-zinc-100 rounded-lg p-1.5 mt-2 inline-block">
+                      Neuer Termin: {formattedDate} um {formattedTime} Uhr
+                    </div>
+                  </div>
                 </div>
-                <h4 className="font-bold text-xs text-[#003527] px-2 leading-snug">
-                  Terminbestätigung per E-Mail an <span className="font-extrabold">{app.clientName}</span> senden?
-                </h4>
-                <div className="text-[10px] text-zinc-400 font-semibold bg-zinc-50 border border-zinc-100 rounded-lg p-2 mt-2.5 inline-block">
-                  Neuer Termin: {formattedDate} um {formattedTime} Uhr
+
+                {/* Right Column: Stacked Action Buttons */}
+                <div className="flex flex-col gap-1.5 flex-shrink-0 w-28 mt-0.5">
+                  <button
+                    onClick={() => commitPendingMove(true)}
+                    className="w-full bg-[#003527] hover:bg-[#003527]/90 text-white text-[10px] font-bold rounded-lg py-1.5 transition-all cursor-pointer active:scale-95 text-center"
+                  >
+                    Senden
+                  </button>
+                  <button
+                    onClick={() => commitPendingMove(false)}
+                    className="w-full bg-[#f3f4f3] hover:bg-zinc-100 border border-[#bfc9c3]/30 text-[#003527] text-[10px] font-bold rounded-lg py-1.5 transition-all cursor-pointer active:scale-95 text-center"
+                  >
+                    Nicht senden
+                  </button>
+                  <button
+                    onClick={revertPendingMove}
+                    className="w-full text-zinc-400 hover:text-rose-600 text-[9px] font-bold py-1 transition-colors cursor-pointer text-center"
+                  >
+                    Widerrufen
+                  </button>
                 </div>
-              </div>
-              
-              {/* Buttons Stack (macOS style layout stacked vertically) */}
-              <div className="flex flex-col gap-2">
-                <button
-                  onClick={() => commitPendingMove(true)}
-                  className="w-full bg-[#003527] hover:bg-[#003527]/90 text-white text-xs font-bold rounded-xl py-2.5 transition-all cursor-pointer active:scale-95"
-                >
-                  Senden
-                </button>
-                <button
-                  onClick={() => commitPendingMove(false)}
-                  className="w-full bg-[#f3f4f3] hover:bg-zinc-100 border border-[#bfc9c3]/30 text-[#003527] text-xs font-bold rounded-xl py-2.5 transition-all cursor-pointer active:scale-95"
-                >
-                  Nicht senden
-                </button>
-                <button
-                  onClick={revertPendingMove}
-                  className="w-full text-zinc-400 hover:text-[#003527] text-[10px] font-bold py-1.5 transition-colors cursor-pointer text-center"
-                >
-                  Widerrufen
-                </button>
               </div>
 
               {/* Progress Countdown Line */}
