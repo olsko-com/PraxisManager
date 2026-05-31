@@ -269,7 +269,7 @@ export default function CalendarPage() {
   };
 
   return (
-    <div className={`flex-grow overflow-y-auto pl-12 py-8 flex flex-col space-y-6 h-screen transition-all duration-300 ${
+    <div className={`flex-grow overflow-y-auto hide-scrollbar pl-12 py-8 flex flex-col space-y-6 h-screen transition-all duration-300 ${
       isSidebarOpen ? 'pr-[368px]' : 'pr-12'
     }`}>
       {/* Calendar Controls */}
@@ -343,7 +343,7 @@ export default function CalendarPage() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="bg-white border border-[#bfc9c3]/40 rounded-2xl pt-0 pb-6 px-0 shadow-none overflow-x-auto"
+            className="bg-white border border-[#bfc9c3]/40 rounded-2xl pt-0 pb-6 px-0 shadow-none overflow-x-auto hide-scrollbar"
           >
             {/* Header Row */}
             <div className="min-w-[600px] grid grid-cols-[80px_1fr] border-b border-[#bfc9c3]/20 bg-zinc-50/75 backdrop-blur-md rounded-t-2xl py-3 mb-0 sticky top-0 z-30">
@@ -542,7 +542,7 @@ export default function CalendarPage() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="bg-white border border-[#bfc9c3]/40 rounded-2xl pt-0 pb-6 px-0 shadow-none overflow-x-auto"
+            className="bg-white border border-[#bfc9c3]/40 rounded-2xl pt-0 pb-6 px-0 shadow-none overflow-x-auto hide-scrollbar"
           >
             {/* Week Header Row */}
             <div className="min-w-[800px] grid grid-cols-[80px_repeat(5,1fr)] divide-x divide-zinc-200/50 border-b border-[#bfc9c3]/20 bg-zinc-50/75 backdrop-blur-md rounded-t-2xl mb-0 sticky top-0 z-30">
@@ -844,7 +844,7 @@ export default function CalendarPage() {
             transition={{ type: 'spring', damping: 26, stiffness: 220 }}
             className="fixed right-0 top-0 bottom-0 w-80 bg-white border-l border-[#bfc9c3]/30 flex flex-col z-40 shadow-none"
           >
-            <div className="flex-grow overflow-y-auto py-8 space-y-6">
+            <div className="flex-grow overflow-y-auto py-8 space-y-6 hide-scrollbar">
               {(() => {
                 const { todayEvents, tomorrowEvents, upcomingEvents } = getUpcomingEvents();
                 
