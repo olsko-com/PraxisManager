@@ -420,7 +420,7 @@ export default function CalendarPage() {
                             setIsSheetOpen(true);
                           }}
                           style={getAppointmentStyle(app)}
-                          className={`absolute left-2 right-2 rounded-lg p-4 border select-none cursor-grab flex flex-col justify-between overflow-hidden pointer-events-auto group ${
+                          className={`absolute left-2 right-2 rounded-lg px-4 py-2 border select-none cursor-grab flex items-center justify-between overflow-hidden pointer-events-auto group ${
                             isDragging ? 'opacity-40 shadow-none' : 'hover:scale-[1.01]'
                           } ${
                             isResizing ? 'z-30 cursor-ns-resize ring-2 ring-[#003527]' : 'z-10'
@@ -436,54 +436,17 @@ export default function CalendarPage() {
                               : 'bg-rose-50/90 border-rose-200/60 text-rose-900'
                           } shadow-none`}
                         >
-                          <div>
-                            <div className="flex justify-between items-start">
-                              <h4 className="font-extrabold text-xs tracking-tight">{app.serviceName}</h4>
-                              <div className="flex items-center gap-1.5 flex-shrink-0">
-                                {appInvoice ? (
-                                  <span 
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      // Action menu routing
-                                      showToast('Rechnungsdetails geladen.', 'info');
-                                    }}
-                                    className={`p-1 rounded border flex items-center justify-center cursor-pointer ${
-                                      appInvoice.status === 'paid'
-                                        ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                                        : appInvoice.status === 'overdue'
-                                        ? 'bg-rose-50 border-rose-200 text-rose-800'
-                                        : 'bg-amber-50 border-amber-200 text-amber-800'
-                                    }`}
-                                    title={`Rechnung: ${appInvoice.invoiceNumber} (${appInvoice.status === 'paid' ? 'Bezahlt' : appInvoice.status === 'overdue' ? 'Überfällig' : 'Offen'})`}
-                                  >
-                                    <FileText className="w-2.5 h-2.5" />
-                                  </span>
-                                ) : (
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      openNewInvoiceSheetWithPrefill({
-                                        clientId: app.clientId,
-                                        amount: app.price,
-                                        appointmentId: app.id,
-                                        clientName: app.clientName,
-                                        date: app.startTime.slice(0, 10)
-                                      });
-                                    }}
-                                    className="opacity-20 hover:opacity-100 p-1 bg-white hover:bg-zinc-100 border border-[#bfc9c3]/40 rounded text-[#003527] transition-all cursor-pointer flex items-center justify-center shadow-none"
-                                    title="Rechnung erstellen"
-                                  >
-                                    <Plus className="w-2.5 h-2.5" />
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                            <p className="text-[10px] font-semibold mt-1 opacity-80 text-left">{app.clientName}</p>
+                          {/* Left: Service & Client inline */}
+                          <div className="flex items-center gap-2 min-w-0 flex-wrap">
+                            <h4 className="font-extrabold text-xs tracking-tight truncate">{app.serviceName}</h4>
+                            <span className="text-[10px] opacity-40 font-bold">•</span>
+                            <p className="text-[10px] font-bold opacity-80 truncate">{app.clientName}</p>
                           </div>
 
-                          <div className="flex justify-between items-center mt-2">
-                            <span className="text-[9px] font-extrabold flex items-center gap-1">
-                              <Clock className="w-2.5 h-2.5" />
+                          {/* Right: Time, Resize badge, Invoice actions */}
+                          <div className="flex items-center gap-4 flex-shrink-0">
+                            <span className="text-[9px] font-extrabold flex items-center gap-1 opacity-90">
+                              <Clock className="w-2.5 h-2.5 opacity-70" />
                               {formatAppTimeRange(app.startTime, dur)}
                             </span>
                             {isResizing && (
@@ -491,6 +454,43 @@ export default function CalendarPage() {
                                 {dur} Min.
                               </span>
                             )}
+                            <div className="flex items-center gap-1.5">
+                              {appInvoice ? (
+                                <span 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    showToast('Rechnungsdetails geladen.', 'info');
+                                  }}
+                                  className={`p-1 rounded border flex items-center justify-center cursor-pointer ${
+                                    appInvoice.status === 'paid'
+                                      ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                                      : appInvoice.status === 'overdue'
+                                      ? 'bg-rose-50 border-rose-200 text-rose-800'
+                                      : 'bg-amber-50 border-amber-200 text-amber-800'
+                                  }`}
+                                  title={`Rechnung: ${appInvoice.invoiceNumber} (${appInvoice.status === 'paid' ? 'Bezahlt' : appInvoice.status === 'overdue' ? 'Überfällig' : 'Offen'})`}
+                                >
+                                  <FileText className="w-2.5 h-2.5" />
+                                </span>
+                              ) : (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openNewInvoiceSheetWithPrefill({
+                                      clientId: app.clientId,
+                                      amount: app.price,
+                                      appointmentId: app.id,
+                                      clientName: app.clientName,
+                                      date: app.startTime.slice(0, 10)
+                                    });
+                                  }}
+                                  className="opacity-20 hover:opacity-100 p-1 bg-white hover:bg-zinc-100 border border-[#bfc9c3]/40 rounded text-[#003527] transition-all cursor-pointer flex items-center justify-center shadow-none"
+                                  title="Rechnung erstellen"
+                                >
+                                  <Plus className="w-2.5 h-2.5" />
+                                </button>
+                              )}
+                            </div>
                           </div>
 
                           <div 
