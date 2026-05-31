@@ -218,15 +218,17 @@ export default function InvoicesPage() {
 
   return (
     <div className="flex-grow overflow-y-auto px-12 py-8 space-y-6">
-      {/* Header and top action bar */}
-      <div className="flex justify-between items-center pb-0 flex-shrink-0">
-        <div className="text-left">
-          <h2 className="text-lg font-bold text-[#043F2D]">Abrechnung</h2>
+      {/* Header and Sub-Tab Navigation Group */}
+      <div className="space-y-3 flex-shrink-0">
+        {/* Header and top action bar */}
+        <div className="flex justify-between items-center pb-0">
+          <div className="text-left">
+            <h2 className="text-lg font-bold text-[#043F2D]">Abrechnung</h2>
+          </div>
         </div>
-      </div>
 
-      {/* Sub-Tab Navigation (Outside card, above containers) */}
-      <div className="flex justify-between items-end border-b border-[#bfc9c3]/20 pb-0 mb-6 select-none -mx-12 px-12 h-[46px]">
+        {/* Sub-Tab Navigation (Outside card, above containers) */}
+        <div className="flex justify-between items-end border-b border-[#bfc9c3]/20 pb-0 select-none -mx-12 px-12 h-[42px]">
         <div className="flex gap-4">
           <button
             onClick={() => setInvoiceSubTab('list')}
@@ -261,25 +263,8 @@ export default function InvoicesPage() {
             )}
           </button>
         </div>
-
-        {invoiceSubTab === 'analytics' && (
-          <div className="flex items-center p-0.5 bg-[#bfc9c3]/20 rounded-xl w-fit border border-[#bfc9c3]/30 mb-2">
-            {['30T', 'YTD', '1J', 'Max'].map((tf) => (
-              <button 
-                key={tf} 
-                onClick={() => setTimeframe(tf)}
-                className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all duration-200 cursor-pointer ${
-                  timeframe === tf
-                    ? 'bg-white shadow-none text-[#003527] border border-[#bfc9c3]/30'
-                    : 'text-[#003527]/60 hover:text-[#003527]'
-                }`}
-              >
-                {tf}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
+    </div>
 
       {/* Dropdown Backdrop */}
         {activeInvoiceActionMenuId && (
