@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { 
-  ChevronLeft, ChevronRight, Clock, Plus, FileText, Calendar as CalendarIcon, PanelRight, Search
+  ChevronLeft, ChevronRight, Clock, Plus, FileText, Calendar as CalendarIcon, PanelRight, Search, Mail
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDashboard } from '../context';
@@ -42,6 +42,11 @@ export default function CalendarPage() {
 
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(true);
   const [eventSearch, setEventSearch] = React.useState('');
+  const [pendingMove, setPendingMove] = React.useState<{
+    appId: string;
+    startTime: string;
+    endTime: string;
+  } | null>(null);
 
   const handleNewAppointmentClick = () => {
     setSheetMode('new');
@@ -50,6 +55,38 @@ export default function CalendarPage() {
     if (clients.length > 0) setNewAppClientId(clients[0].id);
     if (services.length > 0) setNewAppServiceId(services[0].id);
     setIsSheetOpen(true);
+  };
+
+  const commitPendingMove = (sendNotification: boolean) => {
+    if (!pendingMove) return;
+
+    const app = appointments.find(a => a.id === pendingMove.appId);
+    if (app) {
+      setAppointments((prev: Appointment[]) => prev.map(a => {
+        if (a.id === pendingMove.appId) {
+          return {
+            ...a,
+            startTime: pendingMove.startTime,
+            endTime: pendingMove.endTime
+          };
+        }
+        return a;
+      }));
+
+      if (sendNotification) {
+        const client = clients.find(c => c.id === app.clientId);
+        const clientEmail = client?.email ? ` (${client.email})` : '';
+        showToast(`Benachrichtigung an ${app.clientName}${clientEmail} wurde gesendet!`, 'success');
+      } else {
+        showToast('Termin verschoben.', 'success');
+      }
+    }
+
+    setPendingMove(null);
+  };
+
+  const cancelPendingMove = () => {
+    setPendingMove(null);
   };
 
   // Helper Functions (Local Utilities)
@@ -217,33 +254,38 @@ export default function CalendarPage() {
   const handleDrop = (targetDateStr: string, targetHour: number) => {
     if (!draggedAppId) return;
 
-    setAppointments((prev: Appointment[]) => prev.map(app => {
-      if (app.id === draggedAppId) {
-        const origStart = new Date(app.startTime);
-        const origEnd = new Date(app.endTime);
-        const duration = origEnd.getTime() - origStart.getTime();
+    const app = appointments.find(a => a.id === draggedAppId);
+    if (!app) {
+      setDraggedAppId(null);
+      setDragOverSlot(null);
+      return;
+    }
 
-        const newStart = new Date(targetDateStr);
-        newStart.setHours(targetHour, 0, 0, 0);
+    const origStart = new Date(app.startTime);
+    const origEnd = new Date(app.endTime);
+    const duration = origEnd.getTime() - origStart.getTime();
 
-        // Clamping to not run past 17:00
-        const durationMins = duration / 60000;
-        let finalStart = newStart;
-        if (targetHour * 60 + durationMins > 17 * 60) {
-          const shiftMinutes = (targetHour * 60 + durationMins) - 17 * 60;
-          finalStart = new Date(newStart.getTime() - shiftMinutes * 60000);
-        }
+    const newStart = new Date(targetDateStr);
+    newStart.setHours(targetHour, 0, 0, 0);
 
-        const newEnd = new Date(finalStart.getTime() + duration);
+    // Clamping to not run past 17:00
+    const durationMins = duration / 60000;
+    let finalStart = newStart;
+    if (targetHour * 60 + durationMins > 17 * 60) {
+      const shiftMinutes = (targetHour * 60 + durationMins) - 17 * 60;
+      finalStart = new Date(newStart.getTime() - shiftMinutes * 60000);
+    }
 
-        return {
-          ...app,
-          startTime: finalStart.toISOString(),
-          endTime: newEnd.toISOString()
-        };
-      }
-      return app;
-    }));
+    const newEnd = new Date(finalStart.getTime() + duration);
+
+    // Only prompt if the date/time has actually changed
+    if (finalStart.getTime() !== origStart.getTime()) {
+      setPendingMove({
+        appId: app.id,
+        startTime: finalStart.toISOString(),
+        endTime: newEnd.toISOString(),
+      });
+    }
 
     setDraggedAppId(null);
     setDragOverSlot(null);
@@ -253,24 +295,29 @@ export default function CalendarPage() {
     e.preventDefault();
     if (!draggedAppId) return;
 
-    setAppointments((prev: Appointment[]) => prev.map(app => {
-      if (app.id === draggedAppId) {
-        const origStart = new Date(app.startTime);
-        const origEnd = new Date(app.endTime);
-        const duration = origEnd.getTime() - origStart.getTime();
+    const app = appointments.find(a => a.id === draggedAppId);
+    if (!app) {
+      setDraggedAppId(null);
+      setDragOverSlot(null);
+      return;
+    }
 
-        const newStart = new Date(targetDate);
-        newStart.setHours(origStart.getHours(), origStart.getMinutes(), 0, 0);
-        const newEnd = new Date(newStart.getTime() + duration);
+    const origStart = new Date(app.startTime);
+    const origEnd = new Date(app.endTime);
+    const duration = origEnd.getTime() - origStart.getTime();
 
-        return {
-          ...app,
-          startTime: newStart.toISOString(),
-          endTime: newEnd.toISOString()
-        };
-      }
-      return app;
-    }));
+    const newStart = new Date(targetDate);
+    newStart.setHours(origStart.getHours(), origStart.getMinutes(), 0, 0);
+    const newEnd = new Date(newStart.getTime() + duration);
+
+    // Only prompt if the date/time has actually changed
+    if (newStart.getTime() !== origStart.getTime()) {
+      setPendingMove({
+        appId: app.id,
+        startTime: newStart.toISOString(),
+        endTime: newEnd.toISOString(),
+      });
+    }
 
     setDraggedAppId(null);
     setDragOverSlot(null);
@@ -972,6 +1019,81 @@ export default function CalendarPage() {
             </div>
           </motion.aside>
         )}
+      </AnimatePresence>
+
+      {/* Apple-Style Confirmation Dialog for Rescheduling */}
+      <AnimatePresence>
+        {pendingMove && (() => {
+          const app = appointments.find(a => a.id === pendingMove.appId);
+          if (!app) return null;
+          const client = clients.find(c => c.id === app.clientId);
+          
+          const newStart = new Date(pendingMove.startTime);
+          const formattedDate = newStart.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
+          const formattedTime = newStart.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+
+          return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center">
+              {/* Semi-transparent backdrop with frosted glass blur */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={cancelPendingMove}
+                className="absolute inset-0 bg-[#003527]/10 backdrop-blur-[4px]"
+              />
+              
+              {/* Apple-style alert panel */}
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+                className="relative bg-white/90 backdrop-blur-xl border border-[#bfc9c3]/30 w-full max-w-sm rounded-2xl shadow-[0_20px_50px_rgba(0,53,39,0.15)] p-6 text-center z-10 select-none overflow-hidden m-4"
+              >
+                {/* Visual Icon (Apple-like soft circle with email metaphor) */}
+                <div className="mx-auto w-12 h-12 rounded-full bg-[#003527]/5 flex items-center justify-center mb-4 text-[#003527]">
+                  <Mail className="w-5 h-5" />
+                </div>
+                
+                <h3 className="text-sm font-bold text-[#003527] mb-2 font-sans tracking-tight">
+                  Kunden benachrichtigen?
+                </h3>
+                
+                <div className="text-xs text-zinc-500 leading-relaxed px-2 mb-6 text-center">
+                  Möchten Sie eine E-Mail über die Terminänderung an <strong className="text-[#003527] font-semibold">{app.clientName}</strong>{client?.email ? ` (${client.email})` : ''} senden?
+                  <span className="block mt-2 text-[10px] text-zinc-400 bg-zinc-50 border border-zinc-100 rounded-lg p-2.5">
+                    Neuer Termin: <strong className="text-zinc-600 font-semibold">{formattedDate} um {formattedTime} Uhr</strong>
+                  </span>
+                </div>
+                
+                {/* Buttons Stack (Apple macOS style layout) */}
+                <div className="flex flex-col gap-2">
+                  <button
+                    onClick={() => commitPendingMove(true)}
+                    className="w-full bg-[#003527] hover:bg-[#003527]/90 text-white rounded-xl py-2.5 text-xs font-bold transition-all cursor-pointer active:scale-[0.99] flex items-center justify-center gap-1.5"
+                  >
+                    <span>Senden</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => commitPendingMove(false)}
+                    className="w-full bg-[#f3f4f3] hover:bg-zinc-100 border border-[#bfc9c3]/30 text-[#003527] rounded-xl py-2.5 text-xs font-bold transition-all cursor-pointer active:scale-[0.99]"
+                  >
+                    Nicht senden
+                  </button>
+                  
+                  <button
+                    onClick={cancelPendingMove}
+                    className="mt-1 text-[10px] text-zinc-400 hover:text-[#003527] font-bold cursor-pointer transition-colors duration-150"
+                  >
+                    Abbrechen
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          );
+        })()}
       </AnimatePresence>
     </div>
   );
