@@ -813,7 +813,7 @@ export default function CalendarPage() {
       </AnimatePresence>
     
       {/* Right Side: Upcoming Events Sidebar (100vh full-height panel) */}
-      <aside className="fixed right-0 top-0 bottom-0 w-80 bg-[#f9f9f8] border-l border-[#bfc9c3]/30 flex flex-col z-40 pt-8 shadow-none">
+      <aside className="fixed right-0 top-0 bottom-0 w-80 bg-white border-l border-[#bfc9c3]/30 flex flex-col z-40 pt-8 shadow-none">
         <div className="px-6 pb-4 border-b border-[#bfc9c3]/20 flex items-center gap-2 select-none bg-white flex-shrink-0">
           <Clock className="w-4 h-4 text-zinc-400" />
           <h4 className="font-bold text-[#003527] text-xs uppercase tracking-wider">
