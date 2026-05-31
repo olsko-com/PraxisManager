@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D QR-Code Aufsteller</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #fafafa;
+            /* Subtiler Spotlight-Hintergrund für perfekten Kontrast */
+            background-image: radial-gradient(circle at 50% 30%, #ffffff 0%, #e5e5ea 100%);
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        /* 3D Scene Container */
+        .scene {
+            perspective: 1200px;
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Der interaktive Aufsteller */
+        .stand-wrapper {
+            position: relative;
+            transform-style: preserve-3d;
+            /* Basis-Rotation, wird von JS leicht überschrieben */
+            transform: rotateY(-15deg) rotateX(5deg);
+            transition: transform 0.1s ease-out;
+            cursor: pointer;
+        }
+
+        /* Die neue, verbesserte Base-Struktur verhindert, dass das Papier unten herausschaut */
+
+        /* Die vordere Halterung (Lip) - Steht VOR dem Acryl */
+        .stand-lip {
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            /* 15px nach vorne geschoben, damit es das Glas verdeckt */
+            transform: translateX(-50%) translateZ(15px);
+            width: 240px;
+            height: 35px;
+            background: linear-gradient(to bottom, #3a3a3c, #1d1d1f);
+            border-radius: 8px;
+            box-shadow:
+                inset 0 1px 1px rgba(255, 255, 255, 0.2),
+                0 10px 20px rgba(0, 0, 0, 0.5);
+            z-index: 20;
+        }
+
+        /* Der flache Boden des Sockels */
+        .stand-base-floor {
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%) rotateX(90deg);
+            width: 250px;
+            height: 100px;
+            background: linear-gradient(135deg, #1d1d1f, #2c2c2e);
+            border-radius: 12px;
+            /* Boden-Schatten für Realismus */
+            box-shadow: 0 40px 60px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Die Dicke/Frontseite des Bodens */
+        .stand-base-floor::before {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            height: 12px;
+            background: #000000;
+            transform-origin: top;
+            transform: rotateX(-90deg);
+            border-radius: 0 0 12px 12px;
+        }
+
+        /* Acryl-Glasplatte - Steht ZWISCHEN der Lip und der Rückwand */
+        .acrylic {
+            position: relative;
+            width: 220px;
+            height: 340px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            border-top: 1px solid rgba(255, 255, 255, 0.9);
+            border-left: 1px solid rgba(255, 255, 255, 0.9);
+            border-radius: 16px;
+            transform: translateZ(5px);
+            /* Zentral platziert */
+            box-shadow:
+                inset 0 0 20px rgba(255, 255, 255, 0.4),
+                0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            /* Nach oben ausrichten */
+            padding-top: 15px;
+            /* Abstand oben */
+        }
+
+        /* Das eingelegte Papier / Menü */
+        .paper {
+            width: 190px;
+            height: 300px;
+            /* Kürzer als das Acryl, verschwindet unten sicher hinter der Kante */
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            padding: 1.5rem 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            transform: translateZ(-1px);
+            /* Sitzt virtuell HINTER der Frontscheibe des Acryls */
+        }
+
+        /* Animierter Glanz-Effekt auf dem Acryl */
+        .glare {
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(to bottom right,
+                    rgba(255, 255, 255, 0) 40%,
+                    rgba(255, 255, 255, 0.6) 50%,
+                    rgba(255, 255, 255, 0) 60%);
+            transform: translateY(-100%);
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .stand-wrapper:hover .glare {
+            transform: translateY(100%);
+        }
+
+        /* Floating Animation für den "Wow"-Faktor */
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0px) rotateY(var(--ry)) rotateX(var(--rx));
+            }
+
+            50% {
+                transform: translateY(-15px) rotateY(var(--ry)) rotateX(var(--rx));
+            }
+        }
+
+        .animate-float {
+            --ry: -15deg;
+            --rx: 5deg;
+            animation: float 6s ease-in-out infinite;
+        }
+    </style>
+</head>
+
+<body class="text-gray-900">
+
+    <div class="scene">
+        <div class="stand-wrapper animate-float" id="mockup">
+
+            <!-- Die Bodenplatte des Sockels -->
+            <div class="stand-base-floor"></div>
+
+            <!-- Das Acrylglas mit Inhalt -->
+            <div class="acrylic">
+                <!-- Das Papier -->
+                <div class="paper relative">
+                    <!-- Restaurant Branding -->
+                    <div class="w-10 h-10 bg-gray-900 rounded-full flex items-center justify-center mb-3">
+                        <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 15.546c-.523 0-1.046.151-1.5.454a2.704 2.704 0 01-3 0 2.704 2.704 0 00-3 0 2.704 2.704 0 01-3 0 2.704 2.704 0 00-3 0 2.704 2.704 0 01-3 0 2.701 2.701 0 00-1.5-.454M9 6v2m3-2v2m3-2v2M9 3h.01M12 3h.01M15 3h.01M21 21v-7a2 2 0 00-2-2H5a2 2 0 00-2 2v7h18zm-3-9v-2a2 2 0 00-2-2H8a2 2 0 00-2 2v2h12z">
+                            </path>
+                        </svg>
+                    </div>
+                    <h2 class="text-sm font-bold text-gray-900 tracking-tight">Café Noir</h2>
+                    <p class="text-[10px] text-gray-500 mb-4 uppercase tracking-widest">Speisekarte</p>
+
+                    <!-- Dynamischer QR Code Platzhalter (SVG) -->
+                    <div class="bg-white p-1 rounded-lg border border-gray-100 shadow-sm mb-4">
+                        <svg width="100" height="100" viewBox="0 0 100 100" fill="none"
+                            xmlns="http://www.w3.org/2000/svg">
+                            <rect width="100" height="100" fill="white" />
+                            <path fill-rule="evenodd" clip-rule="evenodd"
+                                d="M10 10H40V40H10V10ZM20 20V30H30V20H20ZM60 10H90V40H60V10ZM70 20V30H80V20H70ZM10 60H40V90H10V60ZM20 70V80H30V70H20ZM60 60H70V70H60V60ZM70 70H80V80H70V70ZM80 60H90V70H80V60ZM60 80H70V90H60V80ZM80 80H90V90H80V80ZM50 10H60V20H50V10ZM40 20H50V30H40V20ZM50 30H60V40H50V30ZM40 40H50V50H40V40ZM50 50H60V60H50V50ZM40 60H50V70H40V60ZM50 70H60V80H50V70ZM40 80H50V90H40V80Z"
+                                fill="#1d1d1f" />
+                        </svg>
+                    </div>
+
+                    <div class="flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-full">
+                        <svg class="w-3.5 h-3.5 text-blue-600 animate-pulse" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4">
+                            </path>
+                        </svg>
+                        <p class="text-[10px] font-medium text-gray-600">Hier scannen</p>
+                    </div>
+
+                    <p class="text-[8px] text-gray-300 mt-auto pb-1">powered by MenuAI</p>
+                </div>
+
+                <!-- Glanz-Effekt Element -->
+                <div class="glare"></div>
+            </div>
+
+            <!-- Die vordere Halterung (Lip) - blockiert visuell das Herausschauen des Papiers -->
+            <div class="stand-lip"></div>
+        </div>
+    </div>
+
+    <script>
+        const mockup = document.getElementById('mockup');
+        const scene = document.querySelector('.scene');
+
+        // Deaktiviere die Float-Animation beim Hovern für weiche Mausverfolgung
+        scene.addEventListener('mouseenter', () => {
+            mockup.classList.remove('animate-float');
+            mockup.style.transition = 'transform 0.1s ease-out';
+        });
+
+        scene.addEventListener('mousemove', (e) => {
+            const rect = scene.getBoundingClientRect();
+            // Berechne die relative Mausposition (von -1 bis 1)
+            const x = (e.clientX - rect.left) / rect.width - 0.5;
+            const y = (e.clientY - rect.top) / rect.height - 0.5;
+
+            // Limitierte Rotation für einen realistischen Look
+            const rotateX = y * -15 + 5;
+            const rotateY = x * 20 - 15;
+
+            mockup.style.transform = `rotateY(${rotateY}deg) rotateX(${rotateX}deg)`;
+        });
+
+        scene.addEventListener('mouseleave', () => {
+            // Zurück zur Ausgangsposition und Float-Animation reaktivieren
+            mockup.style.transition = 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
+            mockup.style.transform = 'rotateY(-15deg) rotateX(5deg)';
+
+            setTimeout(() => {
+                mockup.classList.add('animate-float');
+            }, 600);
+        });
+    </script>
+</body>
+
+</html>

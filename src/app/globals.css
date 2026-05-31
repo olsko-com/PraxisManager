@@ -1,0 +1,117 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f9f9f8; /* surface */
+  --foreground: #191c1c; /* on-surface */
+  
+  --primary: #003527; /* forest green */
+  --on-primary: #ffffff;
+  --surface-sage: #D1DCDB; /* sage green */
+  --text-rich: #043F2D; /* deep green text */
+  --surface-container-low: #f3f4f3;
+  --outline-variant: #bfc9c3;
+  
+  --font-serif: var(--font-serif);
+  --font-sans: var(--font-sans);
+}
+
+@theme {
+  --font-serif: var(--font-serif);
+  --font-sans: var(--font-sans);
+  
+  --color-primary: #003527;
+  --color-on-primary: #ffffff;
+  --color-surface-sage: #D1DCDB;
+  --color-text-rich: #043F2D;
+  --color-surface-container-low: #f3f4f3;
+  --color-outline-variant: #bfc9c3;
+  
+  --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-blob: blob 10s infinite;
+  --animate-fade-in-up: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  --animate-fade-in: fadeIn 0.4s ease-out forwards;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  overflow-x: hidden;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-sans), system-ui, sans-serif;
+  color: var(--text-rich);
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background-color: #f9f9f8;
+}
+::-webkit-scrollbar-thumb {
+  background-color: #d1dcdb;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: #bfc9c3;
+}
+
+/* Hide scrollbars utility */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+#root {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  text-align: left !important;
+  border-inline: none !important;
+  min-height: auto !important;
+  display: block !important;
+}
+
+/* Custom classes for layout */
+.text-gradient {
+  background-image: linear-gradient(to right, #003527, #1b503c);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Custom animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes blob {
+  0% { transform: translate(0px, 0px) scale(1); }
+  33% { transform: translate(30px, -30px) scale(1.08); }
+  66% { transform: translate(-20px, 20px) scale(0.95); }
+  100% { transform: translate(0px, 0px) scale(1); }
+}
