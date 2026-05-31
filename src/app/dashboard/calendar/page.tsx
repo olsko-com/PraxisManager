@@ -346,9 +346,9 @@ export default function CalendarPage() {
             className="bg-white border border-[#bfc9c3]/40 rounded-2xl py-6 px-0 shadow-none overflow-x-auto"
           >
             {/* Header Row */}
-            <div className="min-w-[600px] grid grid-cols-6 border-b border-[#bfc9c3]/20 pb-4 mb-6">
-              <div className="col-span-1" />
-              <div className="col-span-5 text-left pl-3 flex flex-col gap-1 select-none">
+            <div className="min-w-[600px] grid grid-cols-[80px_1fr] border-b border-[#bfc9c3]/20 pb-3 mb-4">
+              <div className="w-[80px]" />
+              <div className="text-left pl-3 flex flex-col gap-0.5 select-none">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
                   {currentCalendarDate.toLocaleDateString('de-DE', { weekday: 'long' })}
                 </span>
@@ -358,9 +358,9 @@ export default function CalendarPage() {
               </div>
             </div>
 
-            <div className="min-w-[600px] grid grid-cols-6 divide-x divide-zinc-200/50 relative">
+            <div className="min-w-[600px] grid grid-cols-[80px_1fr] divide-x divide-zinc-200/50 relative">
               {/* Timeline column */}
-              <div className="col-span-1 relative h-[704px] select-none pr-4">
+              <div className="relative h-[704px] select-none pr-4">
                 {['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'].map((time, idx) => (
                   <div 
                     key={time} 
@@ -373,7 +373,7 @@ export default function CalendarPage() {
               </div>
 
               {/* Content column */}
-              <div className="col-span-5 relative h-[704px] w-full pl-0">
+              <div className="relative h-[704px] w-full pl-0">
                 <div className="absolute inset-y-0 left-0 right-0 divide-y divide-zinc-100 flex flex-col pointer-events-none">
                   {Array.from({ length: 8 }).map((_, i) => (
                     <div key={i} className="h-[88px]" />
@@ -543,16 +543,16 @@ export default function CalendarPage() {
             className="bg-white border border-[#bfc9c3]/40 rounded-2xl py-6 px-0 shadow-none overflow-x-auto"
           >
             {/* Week Header Row */}
-            <div className="min-w-[800px] grid grid-cols-6 border-b border-[#bfc9c3]/20 pb-4 mb-6">
-              <div className="col-span-1" />
+            <div className="min-w-[800px] grid grid-cols-[80px_repeat(5,1fr)] divide-x divide-zinc-200/50 border-b border-[#bfc9c3]/20 pb-3 mb-4">
+              <div className="w-[80px]" />
               {getWeekDays(currentCalendarDate).map((dayDate) => {
                 const isToday = new Date().toDateString() === dayDate.toDateString();
                 return (
-                  <div key={dayDate.toISOString()} className="col-span-1 flex flex-col items-center gap-1 select-none">
+                  <div key={dayDate.toISOString()} className="flex flex-col items-center gap-0.5 select-none">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
                       {dayDate.toLocaleDateString('de-DE', { weekday: 'short' }).replace('.', '')}
                     </span>
-                    <span className={`text-base font-semibold w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
+                    <span className={`text-sm font-semibold w-7 h-7 rounded-full flex items-center justify-center transition-colors ${
                       isToday 
                         ? 'text-white bg-[#003527]' 
                         : 'text-[#043F2D] hover:bg-zinc-100'
@@ -564,9 +564,9 @@ export default function CalendarPage() {
               })}
             </div>
 
-            <div className="min-w-[800px] grid grid-cols-6 divide-x divide-zinc-200/50 relative">
+            <div className="min-w-[800px] grid grid-cols-[80px_repeat(5,1fr)] divide-x divide-zinc-200/50 relative">
               {/* Hours Column */}
-              <div className="col-span-1 relative h-[704px] select-none pr-4">
+              <div className="relative h-[704px] select-none pr-4">
                 {['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'].map((time, idx) => (
                   <div 
                     key={time} 
