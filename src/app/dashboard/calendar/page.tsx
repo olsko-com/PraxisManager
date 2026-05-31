@@ -44,8 +44,10 @@ export default function CalendarPage() {
   const [eventSearch, setEventSearch] = React.useState('');
   const [pendingMove, setPendingMove] = React.useState<{
     appId: string;
-    startTime: string;
-    endTime: string;
+    originalStartTime: string;
+    originalEndTime: string;
+    newStartTime: string;
+    newEndTime: string;
   } | null>(null);
 
   const handleNewAppointmentClick = () => {
@@ -61,33 +63,46 @@ export default function CalendarPage() {
     if (!pendingMove) return;
 
     const app = appointments.find(a => a.id === pendingMove.appId);
-    if (app) {
-      setAppointments((prev: Appointment[]) => prev.map(a => {
-        if (a.id === pendingMove.appId) {
-          return {
-            ...a,
-            startTime: pendingMove.startTime,
-            endTime: pendingMove.endTime
-          };
-        }
-        return a;
-      }));
-
-      if (sendNotification) {
-        const client = clients.find(c => c.id === app.clientId);
-        const clientEmail = client?.email ? ` (${client.email})` : '';
-        showToast(`Benachrichtigung an ${app.clientName}${clientEmail} wurde gesendet!`, 'success');
-      } else {
-        showToast('Termin verschoben.', 'success');
-      }
+    if (app && sendNotification) {
+      const client = clients.find(c => c.id === app.clientId);
+      const clientEmail = client?.email ? ` (${client.email})` : '';
+      showToast(`Benachrichtigung an ${app.clientName}${clientEmail} wurde gesendet!`, 'success');
     }
 
+    setPendingMove(null);
+  };
+
+  const revertPendingMove = () => {
+    if (!pendingMove) return;
+
+    setAppointments((prev: Appointment[]) => prev.map(a => {
+      if (a.id === pendingMove.appId) {
+        return {
+          ...a,
+          startTime: pendingMove.originalStartTime,
+          endTime: pendingMove.originalEndTime
+        };
+      }
+      return a;
+    }));
+
+    showToast('Terminänderung rückgängig gemacht.', 'info');
     setPendingMove(null);
   };
 
   const cancelPendingMove = () => {
     setPendingMove(null);
   };
+
+  React.useEffect(() => {
+    if (!pendingMove) return;
+
+    const timer = setTimeout(() => {
+      commitPendingMove(false);
+    }, 6000);
+
+    return () => clearTimeout(timer);
+  }, [pendingMove]);
 
   // Helper Functions (Local Utilities)
   const formatTime = (dateStr: string) => {
@@ -278,12 +293,30 @@ export default function CalendarPage() {
 
     const newEnd = new Date(finalStart.getTime() + duration);
 
-    // Only prompt if the date/time has actually changed
+    // Only update and prompt if the date/time has actually changed
     if (finalStart.getTime() !== origStart.getTime()) {
+      const newStartISO = finalStart.toISOString();
+      const newEndISO = newEnd.toISOString();
+
+      // 1. Immediately update appointment in the UI
+      setAppointments((prev: Appointment[]) => prev.map(a => {
+        if (a.id === app.id) {
+          return {
+            ...a,
+            startTime: newStartISO,
+            endTime: newEndISO
+          };
+        }
+        return a;
+      }));
+
+      // 2. Set pendingMove for the undo/email notification banner
       setPendingMove({
         appId: app.id,
-        startTime: finalStart.toISOString(),
-        endTime: newEnd.toISOString(),
+        originalStartTime: app.startTime,
+        originalEndTime: app.endTime,
+        newStartTime: newStartISO,
+        newEndTime: newEndISO
       });
     }
 
@@ -310,12 +343,30 @@ export default function CalendarPage() {
     newStart.setHours(origStart.getHours(), origStart.getMinutes(), 0, 0);
     const newEnd = new Date(newStart.getTime() + duration);
 
-    // Only prompt if the date/time has actually changed
+    // Only update and prompt if the date/time has actually changed
     if (newStart.getTime() !== origStart.getTime()) {
+      const newStartISO = newStart.toISOString();
+      const newEndISO = newEnd.toISOString();
+
+      // 1. Immediately update appointment in the UI
+      setAppointments((prev: Appointment[]) => prev.map(a => {
+        if (a.id === app.id) {
+          return {
+            ...a,
+            startTime: newStartISO,
+            endTime: newEndISO
+          };
+        }
+        return a;
+      }));
+
+      // 2. Set pendingMove for the undo/email notification banner
       setPendingMove({
         appId: app.id,
-        startTime: newStart.toISOString(),
-        endTime: newEnd.toISOString(),
+        originalStartTime: app.startTime,
+        originalEndTime: app.endTime,
+        newStartTime: newStartISO,
+        newEndTime: newEndISO
       });
     }
 
@@ -1021,77 +1072,64 @@ export default function CalendarPage() {
         )}
       </AnimatePresence>
 
-      {/* Apple-Style Confirmation Dialog for Rescheduling */}
+      {/* Apple-Style Toast Banner for Rescheduling Notification & Undo */}
       <AnimatePresence>
         {pendingMove && (() => {
           const app = appointments.find(a => a.id === pendingMove.appId);
           if (!app) return null;
           const client = clients.find(c => c.id === app.clientId);
-          
-          const newStart = new Date(pendingMove.startTime);
-          const formattedDate = newStart.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
-          const formattedTime = newStart.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
 
           return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center">
-              {/* Semi-transparent backdrop with frosted glass blur */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={cancelPendingMove}
-                className="absolute inset-0 bg-[#003527]/10 backdrop-blur-[4px]"
-              />
-              
-              {/* Apple-style alert panel */}
-              <motion.div
-                initial={{ scale: 0.95, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.95, opacity: 0 }}
-                transition={{ type: 'spring', damping: 25, stiffness: 350 }}
-                className="relative bg-white/90 backdrop-blur-xl border border-[#bfc9c3]/30 w-full max-w-sm rounded-2xl shadow-[0_20px_50px_rgba(0,53,39,0.15)] p-6 text-center z-10 select-none overflow-hidden m-4"
-              >
-                {/* Visual Icon (Apple-like soft circle with email metaphor) */}
-                <div className="mx-auto w-12 h-12 rounded-full bg-[#003527]/5 flex items-center justify-center mb-4 text-[#003527]">
-                  <Mail className="w-5 h-5" />
+            <motion.div
+              initial={{ opacity: 0, y: 50, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.95 }}
+              className={`fixed bottom-6 z-50 flex flex-col items-stretch bg-white/90 backdrop-blur-xl border border-[#bfc9c3]/30 w-full max-w-sm rounded-2xl shadow-[0_10px_40px_rgba(0,53,39,0.12)] p-4 select-none overflow-hidden m-4 transition-all duration-300 ${
+                isSidebarOpen ? 'right-[344px]' : 'right-6'
+              }`}
+            >
+              <div className="flex items-center justify-between gap-4">
+                {/* Visual Icon (Soft circle with email icon) */}
+                <div className="w-9 h-9 rounded-full bg-[#003527]/5 flex items-center justify-center flex-shrink-0 text-[#003527]">
+                  <Mail className="w-4 h-4" />
                 </div>
                 
-                <h3 className="text-sm font-bold text-[#003527] mb-2 font-sans tracking-tight">
-                  Kunden benachrichtigen?
-                </h3>
-                
-                <div className="text-xs text-zinc-500 leading-relaxed px-2 mb-6 text-center">
-                  Möchten Sie eine E-Mail über die Terminänderung an <strong className="text-[#003527] font-semibold">{app.clientName}</strong>{client?.email ? ` (${client.email})` : ''} senden?
-                  <span className="block mt-2 text-[10px] text-zinc-400 bg-zinc-50 border border-zinc-100 rounded-lg p-2.5">
-                    Neuer Termin: <strong className="text-zinc-600 font-semibold">{formattedDate} um {formattedTime} Uhr</strong>
-                  </span>
+                {/* Description Text */}
+                <div className="min-w-0 flex-grow text-left">
+                  <h4 className="font-bold text-xs text-[#003527] leading-tight">
+                    Termin verschoben
+                  </h4>
+                  <p className="text-[10px] text-zinc-500 truncate mt-0.5">
+                    Kunden {app.clientName} per E-Mail informieren?
+                  </p>
                 </div>
                 
-                {/* Buttons Stack (Apple macOS style layout) */}
-                <div className="flex flex-col gap-2">
+                {/* Actions Stack */}
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <button
+                    onClick={revertPendingMove}
+                    className="bg-zinc-100 hover:bg-zinc-200/80 text-zinc-600 text-[10px] font-bold rounded-lg px-2.5 py-1.5 transition-all cursor-pointer active:scale-95"
+                  >
+                    Widerrufen
+                  </button>
                   <button
                     onClick={() => commitPendingMove(true)}
-                    className="w-full bg-[#003527] hover:bg-[#003527]/90 text-white rounded-xl py-2.5 text-xs font-bold transition-all cursor-pointer active:scale-[0.99] flex items-center justify-center gap-1.5"
+                    className="bg-[#003527] hover:bg-[#003527]/90 text-white text-[10px] font-bold rounded-lg px-3 py-1.5 transition-all cursor-pointer active:scale-95"
                   >
-                    <span>Senden</span>
-                  </button>
-                  
-                  <button
-                    onClick={() => commitPendingMove(false)}
-                    className="w-full bg-[#f3f4f3] hover:bg-zinc-100 border border-[#bfc9c3]/30 text-[#003527] rounded-xl py-2.5 text-xs font-bold transition-all cursor-pointer active:scale-[0.99]"
-                  >
-                    Nicht senden
-                  </button>
-                  
-                  <button
-                    onClick={cancelPendingMove}
-                    className="mt-1 text-[10px] text-zinc-400 hover:text-[#003527] font-bold cursor-pointer transition-colors duration-150"
-                  >
-                    Abbrechen
+                    Senden
                   </button>
                 </div>
-              </motion.div>
-            </div>
+              </div>
+
+              {/* Progress Countdown Line */}
+              <motion.div
+                key={pendingMove.appId} // forces resetting progress bar when a new drop occurs
+                initial={{ width: '100%' }}
+                animate={{ width: 0 }}
+                transition={{ duration: 6, ease: 'linear' }}
+                className="absolute bottom-0 left-0 h-0.5 bg-[#003527]/30"
+              />
+            </motion.div>
           );
         })()}
       </AnimatePresence>
