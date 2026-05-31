@@ -267,7 +267,7 @@ export default function CalendarPage() {
   };
 
   return (
-    <div className="flex-grow overflow-y-auto px-12 py-8 flex flex-col space-y-6">
+    <div className="flex-grow overflow-y-auto pl-12 pr-[368px] py-8 flex flex-col space-y-6 h-screen">
       {/* Calendar Controls */}
       <div className="flex flex-wrap justify-between items-center gap-4">
         <div className="flex items-center gap-2">
@@ -315,11 +315,8 @@ export default function CalendarPage() {
         </div>
       </div>
 
-      {/* Split Layout: Calendar Grid & Sidebar */}
-      <div className="flex gap-6 items-start flex-grow min-h-0">
-        {/* Left Side: Calendar View */}
-        <div className="flex-grow min-w-0">
-          <AnimatePresence mode="wait">
+      {/* Calendar View Renders */}
+      <AnimatePresence mode="wait">
         
         {/* DAY VIEW */}
         {calendarView === 'day' && (
@@ -813,96 +810,97 @@ export default function CalendarPage() {
             })}
           </motion.div>
         )}
-          </AnimatePresence>
+      </AnimatePresence>
+    
+      {/* Right Side: Upcoming Events Sidebar (100vh full-height panel) */}
+      <aside className="fixed right-0 top-0 bottom-0 w-80 bg-white border-l border-[#bfc9c3]/30 flex flex-col z-40 pt-8 pb-6 shadow-none">
+        <div className="px-6 pb-4 border-b border-[#bfc9c3]/20 flex items-center gap-2 select-none">
+          <Clock className="w-4 h-4 text-zinc-400" />
+          <h4 className="font-bold text-[#003527] text-xs uppercase tracking-wider">
+            Anstehende Termine
+          </h4>
         </div>
 
-        {/* Right Side: Upcoming Events Sidebar */}
-        <aside className="w-80 bg-white border border-[#bfc9c3]/40 rounded-2xl p-6 flex-shrink-0 flex flex-col max-h-[85vh] overflow-y-auto shadow-none">
-          <h4 className="font-bold text-[#003527] text-xs uppercase tracking-wider border-b border-[#bfc9c3]/20 pb-3 flex items-center gap-2 select-none">
-            <Clock className="w-4 h-4 text-zinc-400" /> Anstehende Termine
-          </h4>
-
-          <div className="flex-grow flex flex-col space-y-4">
-            {(() => {
-              const { todayEvents, tomorrowEvents, upcomingEvents } = getUpcomingEvents();
-              
-              const renderEventCard = (app: Appointment) => (
-                <div
-                  key={app.id}
-                  onClick={() => {
-                    setSelectedAppointment(app);
-                    setSheetMode('edit');
-                    setIsSheetOpen(true);
-                  }}
-                  className="flex items-center gap-3 p-3 bg-zinc-50/50 hover:bg-blue-50/20 border border-zinc-100 hover:border-blue-100 rounded-xl transition-all cursor-pointer select-none"
-                >
-                  <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                    app.status === 'booked' 
-                      ? 'bg-amber-500' 
-                      : app.status === 'confirmed' 
-                      ? 'bg-blue-500' 
-                      : app.status === 'noshow' 
-                      ? 'bg-emerald-500' 
-                      : 'bg-rose-500'
-                  }`} />
-                  <div className="min-w-0 flex-grow text-left">
-                    <h5 className="font-extrabold text-xs text-[#003527] leading-tight truncate">{app.serviceName}</h5>
-                    <p className="text-[10px] font-bold text-zinc-400 mt-0.5 truncate">{app.clientName}</p>
-                    <p className="text-[9px] font-bold text-zinc-500 mt-1 flex items-center gap-1">
-                      <Clock className="w-2.5 h-2.5 text-zinc-400" />
-                      {formatTime(app.startTime)} - {formatTime(app.endTime)}
-                    </p>
-                  </div>
+        <div className="flex-grow overflow-y-auto px-6 py-4 space-y-5">
+          {(() => {
+            const { todayEvents, tomorrowEvents, upcomingEvents } = getUpcomingEvents();
+            
+            const renderEventCard = (app: Appointment) => (
+              <div
+                key={app.id}
+                onClick={() => {
+                  setSelectedAppointment(app);
+                  setSheetMode('edit');
+                  setIsSheetOpen(true);
+                }}
+                className="flex items-center gap-3 p-3 bg-zinc-50/50 hover:bg-blue-50/20 border border-zinc-100 hover:border-blue-100 rounded-xl transition-all cursor-pointer select-none animate-fade-in"
+              >
+                <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                  app.status === 'booked' 
+                    ? 'bg-amber-500' 
+                    : app.status === 'confirmed' 
+                    ? 'bg-blue-500' 
+                    : app.status === 'noshow' 
+                    ? 'bg-emerald-500' 
+                    : 'bg-rose-500'
+                }`} />
+                <div className="min-w-0 flex-grow text-left">
+                  <h5 className="font-extrabold text-xs text-[#003527] leading-tight truncate">{app.serviceName}</h5>
+                  <p className="text-[10px] font-bold text-zinc-400 mt-0.5 truncate">{app.clientName}</p>
+                  <p className="text-[9px] font-bold text-zinc-500 mt-1 flex items-center gap-1">
+                    <Clock className="w-2.5 h-2.5 text-zinc-400" />
+                    {formatTime(app.startTime)} - {formatTime(app.endTime)}
+                  </p>
                 </div>
-              );
+              </div>
+            );
 
-              const hasAnyEvents = todayEvents.length > 0 || tomorrowEvents.length > 0 || upcomingEvents.length > 0;
+            const hasAnyEvents = todayEvents.length > 0 || tomorrowEvents.length > 0 || upcomingEvents.length > 0;
 
-              if (!hasAnyEvents) {
-                return (
-                  <div className="text-xs text-zinc-400 font-semibold italic text-center py-8">
-                    Keine anstehenden Termine
-                  </div>
-                );
-              }
-
+            if (!hasAnyEvents) {
               return (
-                <div className="space-y-4 overflow-y-auto pr-1">
-                  {/* Today */}
-                  {todayEvents.length > 0 && (
-                    <div>
-                      <h5 className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-widest mb-2 select-none">Heute</h5>
-                      <div className="space-y-2">
-                        {todayEvents.map(renderEventCard)}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Tomorrow */}
-                  {tomorrowEvents.length > 0 && (
-                    <div>
-                      <h5 className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-widest mb-2 select-none">Morgen</h5>
-                      <div className="space-y-2">
-                        {tomorrowEvents.map(renderEventCard)}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Upcoming */}
-                  {upcomingEvents.length > 0 && (
-                    <div>
-                      <h5 className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-widest mb-2 select-none">Demnächst</h5>
-                      <div className="space-y-2">
-                        {upcomingEvents.map(renderEventCard)}
-                      </div>
-                    </div>
-                  )}
+                <div className="text-xs text-zinc-400 font-semibold italic text-center py-8">
+                  Keine anstehenden Termine
                 </div>
               );
-            })()}
-          </div>
-        </aside>
-      </div>
+            }
+
+            return (
+              <div className="space-y-5">
+                {/* Today */}
+                {todayEvents.length > 0 && (
+                  <div>
+                    <h5 className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-widest mb-2 select-none">Heute</h5>
+                    <div className="space-y-2">
+                      {todayEvents.map(renderEventCard)}
+                    </div>
+                  </div>
+                )}
+
+                {/* Tomorrow */}
+                {tomorrowEvents.length > 0 && (
+                  <div>
+                    <h5 className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-widest mb-2 select-none">Morgen</h5>
+                    <div className="space-y-2">
+                      {tomorrowEvents.map(renderEventCard)}
+                    </div>
+                  </div>
+                )}
+
+                {/* Upcoming */}
+                {upcomingEvents.length > 0 && (
+                  <div>
+                    <h5 className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-widest mb-2 select-none">Demnächst</h5>
+                    <div className="space-y-2">
+                      {upcomingEvents.map(renderEventCard)}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+        </div>
+      </aside>
     </div>
   );
 }
