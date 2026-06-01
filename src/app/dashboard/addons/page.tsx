@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Globe, Clock, ClipboardList, CreditCard, Activity, 
   MessageSquare, Star, Calendar, Video, LayoutGrid, Check, Sparkles 
@@ -24,6 +24,10 @@ export default function AddonsPage() {
   const { showToast } = useDashboard();
   const [activeAddons, setActiveAddons] = useState<Record<string, boolean>>({});
   const [loadingAddonId, setLoadingAddonId] = useState<string | null>(null);
+  
+  // Navigation & Scroll states
+  const [activeCategory, setActiveCategory] = useState<string>('booking');
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Define addons metadata
   const addons: AddonItem[] = [
@@ -97,7 +101,7 @@ export default function AddonsPage() {
       id: 'google-reviews',
       category: 'Marketing & Kommunikation',
       title: 'Google Review Autopilot',
-      description: 'Fordere zufriedene Klienten automatisch 24h nach dem ersten Behandlungstermin per Mail auf, eine Google-Bewertung abzugeben.',
+      description: 'Fordere zufriedenstellende Klienten automatisch 24h nach dem ersten Behandlungstermin per Mail auf, eine Google-Bewertung abzugeben.',
       icon: Star,
       iconColor: 'text-rose-700',
       iconBg: 'bg-rose-50 border border-rose-200/40',
@@ -126,6 +130,21 @@ export default function AddonsPage() {
     }
   ];
 
+  // Category mapping
+  const categories = [
+    { id: 'booking', label: 'Buchung & Klientenfluss' },
+    { id: 'finance', label: 'Finanzen & Cashflow' },
+    { id: 'marketing', label: 'Marketing & Kommunikation' },
+    { id: 'ecosystem', label: 'Schnittstellen & Ecosystem' }
+  ];
+
+  const catIdMap: Record<string, string> = {
+    'Buchung & Klientenfluss': 'booking',
+    'Finanzen & Cashflow': 'finance',
+    'Marketing & Kommunikation': 'marketing',
+    'Schnittstellen & Ecosystem': 'ecosystem'
+  };
+
   // Load state from localStorage on mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -142,6 +161,60 @@ export default function AddonsPage() {
       setActiveAddons(activeStates);
     }
   }, []);
+
+  // Monitor Scroll Position to Highlight active tab title
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const scrollPos = container.scrollTop;
+      const isAtBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 20;
+      
+      if (isAtBottom) {
+        setActiveCategory('ecosystem');
+        return;
+      }
+
+      let currentCat = 'booking';
+      
+      const bookingEl = document.getElementById('booking');
+      const financeEl = document.getElementById('finance');
+      const marketingEl = document.getElementById('marketing');
+      const ecosystemEl = document.getElementById('ecosystem');
+      
+      const buffer = 120; // top offset
+      
+      if (ecosystemEl && scrollPos >= (ecosystemEl.offsetTop - buffer)) {
+        currentCat = 'ecosystem';
+      } else if (marketingEl && scrollPos >= (marketingEl.offsetTop - buffer)) {
+        currentCat = 'marketing';
+      } else if (financeEl && scrollPos >= (financeEl.offsetTop - buffer)) {
+        currentCat = 'finance';
+      } else if (bookingEl && scrollPos >= (bookingEl.offsetTop - buffer)) {
+        currentCat = 'booking';
+      }
+      
+      setActiveCategory(currentCat);
+    };
+
+    container.addEventListener('scroll', handleScroll);
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Smooth scroll to target category
+  const scrollToCategory = (id: string) => {
+    const element = document.getElementById(id);
+    const container = containerRef.current;
+    if (element && container) {
+      const elementTop = element.offsetTop;
+      container.scrollTo({
+        top: elementTop - 30, // 30px buffer below header
+        behavior: 'smooth'
+      });
+      setActiveCategory(id);
+    }
+  };
 
   const handleToggleAddon = (id: string, title: string) => {
     setLoadingAddonId(id);
@@ -160,21 +233,23 @@ export default function AddonsPage() {
       window.dispatchEvent(new Event('addons-updated'));
 
       if (nextState) {
-        showToast(`„${title}“ wurde erfolgreich aktiviert.`, 'success');
+        showToast(`„${title}“ wurde aktiviert.`, 'success');
       } else {
         showToast(`„${title}“ wurde deaktiviert.`, 'info');
       }
     }, 400);
   };
 
-  // Group addons by category
-  const categories = Array.from(new Set(addons.map(a => a.category)));
+  const groupedCategories = Array.from(new Set(addons.map(a => a.category)));
 
   return (
-    <div className="flex-grow overflow-y-auto px-12 py-8 space-y-6 text-left font-sans select-none">
+    <div 
+      ref={containerRef}
+      className="flex-grow overflow-y-auto px-12 py-8 space-y-6 text-left font-sans select-none relative scroll-smooth hide-scrollbar"
+    >
       
-      {/* Header */}
-      <div className="space-y-1 flex-shrink-0 border-b border-[#bfc9c3]/20 pb-6 mb-2">
+      {/* Sticky Header Group */}
+      <div className="space-y-3 flex-shrink-0 bg-[#f9f9f8]/95 backdrop-blur-md sticky top-0 -mx-12 px-12 pt-1 pb-4 z-30">
         <div className="flex justify-between items-center">
           <div className="text-left">
             <h2 className="text-lg font-bold text-[#043F2D] flex items-center gap-2">
@@ -186,14 +261,41 @@ export default function AddonsPage() {
             </p>
           </div>
         </div>
+
+        {/* Tab Navigation (Anchor Scroll, matches Abrechnung header tabs design exactly) */}
+        <div className="flex justify-between items-end border-b border-[#bfc9c3]/20 pb-0 select-none h-[42px]">
+          <div className="flex gap-6">
+            {categories.map(cat => (
+              <button
+                key={cat.id}
+                onClick={() => scrollToCategory(cat.id)}
+                className={`pb-3 text-xs font-bold transition-all relative cursor-pointer ${
+                  activeCategory === cat.id 
+                    ? 'text-[#003527]' 
+                    : 'text-zinc-400 hover:text-[#003527]'
+                }`}
+              >
+                {cat.label}
+                {activeCategory === cat.id && (
+                  <motion.div 
+                    layoutId="addonsTabLine" 
+                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#003527]" 
+                  />
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
-      {/* Bento Categories */}
-      <div className="space-y-10 max-w-6xl">
-        {categories.map((catName) => {
+      {/* Bento Grid Content */}
+      <div className="space-y-12 max-w-6xl pt-2 pb-24">
+        {groupedCategories.map((catName) => {
           const catAddons = addons.filter(a => a.category === catName);
+          const catId = catIdMap[catName];
+
           return (
-            <div key={catName} className="space-y-4">
+            <div key={catName} id={catId} className="space-y-4 scroll-mt-28">
               {/* Category Divider Title */}
               <div className="flex items-center gap-3">
                 <span className="text-[10px] font-extrabold tracking-widest text-[#003527]/70 uppercase">
@@ -218,7 +320,7 @@ export default function AddonsPage() {
                           : 'border-[#bfc9c3]/30 hover:border-[#bfc9c3]/60'
                       }`}
                     >
-                      {/* Top Header Row of the Card */}
+                      {/* Top Header Row */}
                       <div className="flex justify-between items-start mb-4">
                         <div className={`p-2 rounded-xl ${addon.iconBg}`}>
                           <Icon className={`w-4 h-4 ${addon.iconColor}`} />
@@ -230,11 +332,7 @@ export default function AddonsPage() {
                               <Sparkles className="w-2 h-2 text-amber-600" /> Pro
                             </span>
                           )}
-                          <span className={`text-[9px] font-bold px-2 py-0.5 rounded-md ${
-                            addon.isPremium 
-                              ? 'bg-zinc-100 text-zinc-500' 
-                              : 'bg-zinc-100 text-zinc-500'
-                          }`}>
+                          <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-500">
                             {addon.priceTag}
                           </span>
                         </div>
@@ -272,13 +370,11 @@ export default function AddonsPage() {
                             transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                             className="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 flex items-center justify-center"
                           >
-                            {isLoading ? (
+                            {isLoading && (
                               <svg className="animate-spin h-2.5 w-2.5 text-zinc-400" fill="none" viewBox="0 0 24 24">
                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                               </svg>
-                            ) : (
-                              isActive && <Check className="w-2.5 h-2.5 text-[#003527] font-bold" />
                             )}
                           </motion.span>
                         </button>
