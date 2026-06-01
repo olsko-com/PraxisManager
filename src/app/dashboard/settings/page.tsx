@@ -1,15 +1,15 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   CheckCircle2, Check, Copy, Shield, User, CreditCard, Lock, 
-  Smartphone, History, Download, ExternalLink, Eye, EyeOff, Activity 
+  Smartphone, History, Download, ExternalLink, Eye, EyeOff, Activity, Scale 
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDashboard } from '../context';
 import { supabase } from '@/lib/supabase';
 
-type TabType = 'profile' | 'security' | 'billing';
+type TabType = 'profile' | 'security' | 'legal' | 'billing';
 
 export default function SettingsPage() {
   const {
@@ -47,6 +47,57 @@ export default function SettingsPage() {
   const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
   const [isSavingPassword, setIsSavingPassword] = useState(false);
   const [focusField, setFocusField] = useState<string | null>(null);
+
+  // Legal local states
+  const [impressumMode, setImpressumMode] = useState<'url' | 'text'>('url');
+  const [impressumUrl, setImpressumUrl] = useState('');
+  const [impressumText, setImpressumText] = useState('');
+  const [datenschutzMode, setDatenschutzMode] = useState<'url' | 'text'>('url');
+  const [datenschutzUrl, setDatenschutzUrl] = useState('');
+  const [datenschutzText, setDatenschutzText] = useState('');
+  const [isSavingLegal, setIsSavingLegal] = useState(false);
+  const [legalSuccess, setLegalSuccess] = useState(false);
+
+  // Load settings on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const impMode = localStorage.getItem('legal_impressum_mode') as 'url' | 'text' || 'url';
+      const impUrl = localStorage.getItem('legal_impressum_url') || '';
+      const impText = localStorage.getItem('legal_impressum_text') || '';
+      
+      const dsMode = localStorage.getItem('legal_datenschutz_mode') as 'url' | 'text' || 'url';
+      const dsUrl = localStorage.getItem('legal_datenschutz_url') || '';
+      const dsText = localStorage.getItem('legal_datenschutz_text') || '';
+
+      setImpressumMode(impMode);
+      setImpressumUrl(impUrl);
+      setImpressumText(impText);
+      setDatenschutzMode(dsMode);
+      setDatenschutzUrl(dsUrl);
+      setDatenschutzText(dsText);
+    }
+  }, []);
+
+  // Save Legal Settings
+  const handleSaveLegal = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingLegal(true);
+    
+    localStorage.setItem('legal_impressum_mode', impressumMode);
+    localStorage.setItem('legal_impressum_url', impressumUrl);
+    localStorage.setItem('legal_impressum_text', impressumText);
+    
+    localStorage.setItem('legal_datenschutz_mode', datenschutzMode);
+    localStorage.setItem('legal_datenschutz_url', datenschutzUrl);
+    localStorage.setItem('legal_datenschutz_text', datenschutzText);
+
+    setTimeout(() => {
+      setIsSavingLegal(false);
+      setLegalSuccess(true);
+      showToast('Rechtliche Angaben erfolgreich gespeichert!', 'success');
+      setTimeout(() => setLegalSuccess(false), 3000);
+    }, 800);
+  };
 
   // Password strength check utility
   const checkPasswordStrength = (pw: string) => {
@@ -132,6 +183,7 @@ export default function SettingsPage() {
   // Tabs metadata
   const tabs = [
     { id: 'profile' as TabType, label: 'Profil', icon: User },
+    { id: 'legal' as TabType, label: 'Rechtliches', icon: Scale },
     { id: 'security' as TabType, label: 'Sicherheit', icon: Shield },
     { id: 'billing' as TabType, label: 'Abrechnung', icon: CreditCard },
   ];
@@ -371,7 +423,185 @@ export default function SettingsPage() {
             </motion.div>
           )}
 
-          {/* TAB 2: SICHERHEIT */}
+          {/* TAB 2: RECHTLICHES (NEW TAB) */}
+          {activeTab === 'legal' && (
+            <motion.div
+              key="legal"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              className="space-y-6"
+            >
+              <form onSubmit={handleSaveLegal} className="space-y-6">
+                
+                {/* Impressum */}
+                <div className="bg-white border border-[#bfc9c3]/40 rounded-2xl p-6 space-y-4">
+                  <div>
+                    <h3 className="text-sm font-bold text-[#043F2D]">Impressum</h3>
+                    <p className="text-[11px] text-zinc-400 font-semibold mt-0.5">
+                      Gib an, wie das Impressum auf deiner Online-Buchungsseite angezeigt werden soll.
+                    </p>
+                  </div>
+
+                  {/* Toggle Selector */}
+                  <div className="inline-flex bg-[#f3f4f3] p-1 rounded-xl border border-zinc-200/50">
+                    <button
+                      type="button"
+                      onClick={() => setImpressumMode('url')}
+                      className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all duration-200 cursor-pointer ${
+                        impressumMode === 'url'
+                          ? 'bg-white text-[#003527] shadow-sm'
+                          : 'text-[#404944] hover:text-[#003527]'
+                      }`}
+                    >
+                      Auf bestehende Seite verlinken
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setImpressumMode('text')}
+                      className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all duration-200 cursor-pointer ${
+                        impressumMode === 'text'
+                          ? 'bg-white text-[#003527] shadow-sm'
+                          : 'text-[#404944] hover:text-[#003527]'
+                      }`}
+                    >
+                      Text hinterlegen
+                    </button>
+                  </div>
+
+                  <AnimatePresence mode="wait">
+                    {impressumMode === 'url' ? (
+                      <motion.div
+                        key="impressum-url"
+                        initial={{ opacity: 0, y: -5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -5 }}
+                        className="space-y-2 pt-1"
+                      >
+                        <label className="block text-[10px] font-bold text-[#003527]/70 uppercase tracking-widest">Impressum URL</label>
+                        <input
+                          type="url"
+                          placeholder="https://deine-website.de/impressum"
+                          value={impressumUrl}
+                          onChange={(e) => setImpressumUrl(e.target.value)}
+                          className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-xl px-4 py-3 font-bold text-xs text-[#003527] focus:border-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all"
+                        />
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="impressum-text"
+                        initial={{ opacity: 0, y: -5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -5 }}
+                        className="space-y-2 pt-1"
+                      >
+                        <label className="block text-[10px] font-bold text-[#003527]/70 uppercase tracking-widest">Impressumstext</label>
+                        <textarea
+                          placeholder="Trage hier dein vollständiges Impressum ein (z. B. Vertretungsberechtigte, Registernummer, Steuernummer)..."
+                          value={impressumText}
+                          onChange={(e) => setImpressumText(e.target.value)}
+                          className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-xl px-4 py-3 font-medium text-xs text-[#003527] focus:border-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all h-36 resize-y"
+                        />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {/* Datenschutz */}
+                <div className="bg-white border border-[#bfc9c3]/40 rounded-2xl p-6 space-y-4">
+                  <div>
+                    <h3 className="text-sm font-bold text-[#043F2D]">Datenschutz</h3>
+                    <p className="text-[11px] text-zinc-400 font-semibold mt-0.5">
+                      Gib an, wie die Datenschutzerklärung auf deiner Online-Buchungsseite angezeigt werden soll.
+                    </p>
+                  </div>
+
+                  {/* Toggle Selector */}
+                  <div className="inline-flex bg-[#f3f4f3] p-1 rounded-xl border border-zinc-200/50">
+                    <button
+                      type="button"
+                      onClick={() => setDatenschutzMode('url')}
+                      className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all duration-200 cursor-pointer ${
+                        datenschutzMode === 'url'
+                          ? 'bg-white text-[#003527] shadow-sm'
+                          : 'text-[#404944] hover:text-[#003527]'
+                      }`}
+                    >
+                      Auf bestehende Seite verlinken
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDatenschutzMode('text')}
+                      className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all duration-200 cursor-pointer ${
+                        datenschutzMode === 'text'
+                          ? 'bg-white text-[#003527] shadow-sm'
+                          : 'text-[#404944] hover:text-[#003527]'
+                      }`}
+                    >
+                      Text hinterlegen
+                    </button>
+                  </div>
+
+                  <AnimatePresence mode="wait">
+                    {datenschutzMode === 'url' ? (
+                      <motion.div
+                        key="datenschutz-url"
+                        initial={{ opacity: 0, y: -5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -5 }}
+                        className="space-y-2 pt-1"
+                      >
+                        <label className="block text-[10px] font-bold text-[#003527]/70 uppercase tracking-widest">Datenschutz URL</label>
+                        <input
+                          type="url"
+                          placeholder="https://deine-website.de/datenschutz"
+                          value={datenschutzUrl}
+                          onChange={(e) => setDatenschutzUrl(e.target.value)}
+                          className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-xl px-4 py-3 font-bold text-xs text-[#003527] focus:border-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all"
+                        />
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="datenschutz-text"
+                        initial={{ opacity: 0, y: -5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -5 }}
+                        className="space-y-2 pt-1"
+                      >
+                        <label className="block text-[10px] font-bold text-[#003527]/70 uppercase tracking-widest">Datenschutzerklärung (Text)</label>
+                        <textarea
+                          placeholder="Trage hier deine Datenschutzerklärung ein (z. B. Informationen zur Datenverarbeitung, Patientenrechte)..."
+                          value={datenschutzText}
+                          onChange={(e) => setDatenschutzText(e.target.value)}
+                          className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-xl px-4 py-3 font-medium text-xs text-[#003527] focus:border-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all h-36 resize-y"
+                        />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {/* Save button */}
+                <div className="flex items-center gap-4 pt-2">
+                  <button
+                    type="submit"
+                    disabled={isSavingLegal}
+                    className="bg-[#003527] hover:bg-[#0b513d] text-white px-8 py-3.5 rounded-xl text-xs font-bold transition-all disabled:bg-zinc-200 disabled:text-zinc-400 disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    {isSavingLegal ? 'Speichert...' : 'Angaben speichern'}
+                  </button>
+
+                  {legalSuccess && (
+                    <span className="text-xs font-bold text-emerald-700 flex items-center gap-1 animate-fade-in">
+                      <Check className="w-4 h-4" /> Erfolgreich gespeichert!
+                    </span>
+                  )}
+                </div>
+              </form>
+            </motion.div>
+          )}
+
+          {/* TAB 3: SICHERHEIT */}
           {activeTab === 'security' && (
             <motion.div
               key="security"
@@ -587,7 +817,7 @@ export default function SettingsPage() {
             </motion.div>
           )}
 
-          {/* TAB 3: ABRECHNUNG */}
+          {/* TAB 4: ABRECHNUNG */}
           {activeTab === 'billing' && (
             <motion.div
               key="billing"

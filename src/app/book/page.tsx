@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Calendar as CalendarIcon, Clock, User, Mail, Phone, 
-  CheckCircle2, ChevronRight, ArrowLeft, ArrowRight, ShieldCheck 
+  CheckCircle2, ChevronRight, ArrowLeft, ArrowRight, ShieldCheck, X 
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -32,6 +32,38 @@ export default function PublicBookingPage() {
   const [clientPhone, setClientPhone] = useState('');
   const [clientNotes, setClientNotes] = useState('');
 
+  // Legal local states
+  const [impressumMode, setImpressumMode] = useState<'url' | 'text'>('url');
+  const [impressumUrl, setImpressumUrl] = useState('');
+  const [impressumText, setImpressumText] = useState('');
+  const [datenschutzMode, setDatenschutzMode] = useState<'url' | 'text'>('url');
+  const [datenschutzUrl, setDatenschutzUrl] = useState('');
+  const [datenschutzText, setDatenschutzText] = useState('');
+
+  // Lightbox Modal state
+  const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
+  const [legalModalType, setLegalModalType] = useState<'impressum' | 'datenschutz'>('impressum');
+
+  // Load Legal Settings
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const impMode = localStorage.getItem('legal_impressum_mode') as 'url' | 'text' || 'url';
+      const impUrl = localStorage.getItem('legal_impressum_url') || '';
+      const impText = localStorage.getItem('legal_impressum_text') || '';
+      
+      const dsMode = localStorage.getItem('legal_datenschutz_mode') as 'url' | 'text' || 'url';
+      const dsUrl = localStorage.getItem('legal_datenschutz_url') || '';
+      const dsText = localStorage.getItem('legal_datenschutz_text') || '';
+
+      setImpressumMode(impMode);
+      setImpressumUrl(impUrl);
+      setImpressumText(impText);
+      setDatenschutzMode(dsMode);
+      setDatenschutzUrl(dsUrl);
+      setDatenschutzText(dsText);
+    }
+  }, []);
+
   // Mock available slots for date
   const availableSlots = ['09:00', '10:00', '11:00', '13:00', '14:00', '15:00', '16:00'];
 
@@ -57,10 +89,57 @@ export default function PublicBookingPage() {
     setStep(4);
   };
 
+  // Open Legal information handler
+  const handleOpenLegal = (type: 'impressum' | 'datenschutz') => {
+    const mode = type === 'impressum' ? impressumMode : datenschutzMode;
+    const url = type === 'impressum' ? impressumUrl : datenschutzUrl;
+    
+    if (mode === 'url') {
+      if (url) {
+        const formattedUrl = url.startsWith('http://') || url.startsWith('https://') ? url : `https://${url}`;
+        window.open(formattedUrl, '_blank');
+      } else {
+        // Fallback if URL is empty, show lightbox with defaults
+        setLegalModalType(type);
+        setIsLegalModalOpen(true);
+      }
+    } else {
+      setLegalModalType(type);
+      setIsLegalModalOpen(true);
+    }
+  };
+
+  // Default legal templates as fallback
+  const defaultImpressumText = `Impressum
+
+Praxis Ruether
+Inhaber: Dr. Michael Ruether
+Musterstraße 12
+20095 Hamburg
+
+Kontakt:
+E-Mail: info@praxis-ruether.de
+Telefon: 040 12345678
+
+Aufsichtsbehörde:
+Gesundheitsamt Hamburg`;
+
+  const defaultDatenschutzText = `Datenschutzerklärung
+
+1. Datenschutz auf einen Blick
+Der Schutz Ihrer persönlichen Daten ist uns ein wichtiges Anliegen. Wir verarbeiten personenbezogene Daten, die beim Besuch unserer Webseiten erhoben werden, gemäß den Bestimmungen der DSGVO.
+
+2. Datenerfassung auf unserer Website
+Die Datenverarbeitung auf dieser Website erfolgt durch den Websitebetreiber. Die Daten werden erhoben, um eine fehlerfreie Bereitstellung der Dienste zu gewährleisten (z.B. Terminbuchung).
+
+3. Ihre Rechte
+Sie haben jederzeit das Recht auf kostenfreie Auskunft über Ihre gespeicherten personenbezogenen Daten, deren Herkunft und Empfänger und den Zweck der Datenverarbeitung.`;
+
   return (
     <div className="min-h-screen bg-[#f9f9f8] text-[#191c1c] font-sans antialiased flex flex-col justify-between selection:bg-emerald-500/20 selection:text-[#003527]">
+      
       {/* Header */}
-      <header className="bg-white border-b border-[#bfc9c3]/30 py-6 px-6 sm:px-12 flex justify-between items-center">
+      <header className="bg-white border-b border-[#bfc9c3]/30 py-6 px-6 sm:px-12 flex justify-between items-center flex-shrink-0">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-full bg-[#003527] flex items-center justify-center">
             <CalendarIcon className="text-white h-4 w-4" />
@@ -141,7 +220,7 @@ export default function PublicBookingPage() {
                 className="space-y-6"
               >
                 <div className="flex items-center justify-between">
-                  <button onClick={() => setStep(1)} className="text-xs font-bold text-[#003527] flex items-center gap-1">
+                  <button onClick={() => setStep(1)} className="text-xs font-bold text-[#003527] flex items-center gap-1 bg-transparent border-none cursor-pointer">
                     <ArrowLeft className="w-3.5 h-3.5" /> Zurück
                   </button>
                   <span className="text-xs font-bold text-zinc-400">{selectedService.name}</span>
@@ -173,8 +252,9 @@ export default function PublicBookingPage() {
                         {availableSlots.map((slot) => (
                           <button
                             key={slot}
+                            type="button"
                             onClick={() => setSelectedTime(slot)}
-                            className={`py-2.5 rounded-xl text-xs font-bold transition-all border ${
+                            className={`py-2.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
                               selectedTime === slot 
                                 ? 'bg-[#003527] text-white border-[#003527]' 
                                 : 'bg-[#f9f9f8] border-[#bfc9c3]/40 text-[#003527] hover:border-[#003527]/40'
@@ -209,7 +289,7 @@ export default function PublicBookingPage() {
                 className="space-y-6"
               >
                 <div className="flex items-center justify-between">
-                  <button onClick={() => setStep(2)} className="text-xs font-bold text-[#003527] flex items-center gap-1">
+                  <button onClick={() => setStep(2)} className="text-xs font-bold text-[#003527] flex items-center gap-1 bg-transparent border-none cursor-pointer">
                     <ArrowLeft className="w-3.5 h-3.5" /> Zurück
                   </button>
                   <span className="text-xs font-bold text-zinc-400">
@@ -319,9 +399,83 @@ export default function PublicBookingPage() {
       </main>
 
       {/* Footer */}
-      <footer className="py-6 border-t border-[#bfc9c3]/30 text-center text-[10px] text-zinc-400">
-        &copy; {new Date().getFullYear()} {practiceName} • Powered by PraxisManager
+      <footer className="py-6 border-t border-[#bfc9c3]/30 text-center text-[10px] text-zinc-400 flex-shrink-0">
+        <div>
+          &copy; {new Date().getFullYear()} {practiceName} • Powered by PraxisManager
+        </div>
+        <div className="mt-2 flex justify-center gap-4 text-[10px] text-zinc-400 font-bold select-none">
+          <button 
+            onClick={() => handleOpenLegal('impressum')}
+            className="hover:text-[#003527] transition-colors cursor-pointer hover:underline bg-transparent border-none p-0"
+          >
+            Impressum
+          </button>
+          <span>•</span>
+          <button 
+            onClick={() => handleOpenLegal('datenschutz')}
+            className="hover:text-[#003527] transition-colors cursor-pointer hover:underline bg-transparent border-none p-0"
+          >
+            Datenschutz
+          </button>
+        </div>
       </footer>
+
+      {/* Lightbox Legal Modal */}
+      <AnimatePresence>
+        {isLegalModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsLegalModalOpen(false)}
+              className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
+            />
+            
+            {/* Modal Card */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+              className="relative w-full max-w-lg bg-white rounded-[2rem] p-6 sm:p-8 shadow-2xl border border-zinc-200/50 z-10 flex flex-col max-h-[85vh] text-left"
+            >
+              {/* Header */}
+              <div className="flex justify-between items-center pb-4 border-b border-zinc-100 flex-shrink-0">
+                <h3 className="text-sm font-bold text-[#043F2D]">
+                  {legalModalType === 'impressum' ? 'Impressum' : 'Datenschutzerklärung'}
+                </h3>
+                <button
+                  onClick={() => setIsLegalModalOpen(false)}
+                  className="p-1.5 rounded-full hover:bg-zinc-100 text-zinc-400 hover:text-zinc-600 transition-colors cursor-pointer bg-transparent border-none"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Scrollable Content */}
+              <div className="flex-grow overflow-y-auto py-5 pr-2 text-[11px] text-zinc-500 font-semibold leading-relaxed whitespace-pre-wrap select-text max-h-[50vh] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                {legalModalType === 'impressum' 
+                  ? (impressumText || defaultImpressumText)
+                  : (datenschutzText || defaultDatenschutzText)
+                }
+              </div>
+
+              {/* Footer */}
+              <div className="pt-4 border-t border-zinc-100 text-right flex-shrink-0">
+                <button
+                  onClick={() => setIsLegalModalOpen(false)}
+                  className="bg-[#003527] text-white hover:bg-[#0b513d] px-6 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer bg-transparent border-none"
+                >
+                  Schließen
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+      
     </div>
   );
 }
