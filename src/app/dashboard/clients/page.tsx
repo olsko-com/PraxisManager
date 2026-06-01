@@ -16,9 +16,13 @@ interface ClientListItemProps {
   onToggleFavorite: () => void;
   onToggleFlag: () => void;
   onDelete: () => void;
+  onSendMail: () => void;
+  onAddAppointment: () => void;
 }
 
-function ClientListItem({ client, isSelected, onSelect, onToggleFavorite, onToggleFlag, onDelete }: ClientListItemProps) {
+function ClientListItem({ 
+  client, isSelected, onSelect, onToggleFavorite, onToggleFlag, onDelete, onSendMail, onAddAppointment 
+}: ClientListItemProps) {
   const [swipeState, setSwipeState] = React.useState<'left' | 'right' | 'closed'>('closed');
 
   const handleDragEnd = (event: any, info: any) => {
@@ -100,7 +104,7 @@ function ClientListItem({ client, isSelected, onSelect, onToggleFavorite, onTogg
             onSelect();
           }
         }}
-        className={`px-6 py-4 cursor-pointer flex items-center justify-between bg-white relative z-10 select-none transition-colors ${
+        className={`px-6 py-4 cursor-pointer flex items-center justify-between bg-white relative z-10 select-none transition-colors group ${
           isSelected 
             ? 'bg-[#003527]/5 text-[#003527]' 
             : 'hover:bg-zinc-50 text-[#404944]'
@@ -118,7 +122,35 @@ function ClientListItem({ client, isSelected, onSelect, onToggleFavorite, onTogg
           </div>
           <p className="text-[10px] text-zinc-400 mt-0.5 text-left">Geb: {new Date(client.birthday).toLocaleDateString('de-DE')}</p>
         </div>
-        <ChevronRight className="w-3.5 h-3.5 text-zinc-300" />
+        
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          {/* Hover Actions (Apple-style) */}
+          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 mr-1">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onSendMail();
+              }}
+              className="p-1.5 rounded-lg hover:bg-[#003527]/10 text-zinc-400 hover:text-[#003527] transition-all cursor-pointer bg-transparent border-none"
+              title="E-Mail schreiben"
+            >
+              <Mail className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onAddAppointment();
+              }}
+              className="p-1.5 rounded-lg hover:bg-[#003527]/10 text-zinc-400 hover:text-[#003527] transition-all cursor-pointer bg-transparent border-none"
+              title="Termin vereinbaren"
+            >
+              <CalendarIcon className="w-3.5 h-3.5" />
+            </button>
+          </div>
+          <ChevronRight className="w-3.5 h-3.5 text-zinc-300 group-hover:translate-x-0.5 transition-transform" />
+        </div>
       </motion.div>
     </div>
   );
@@ -309,6 +341,24 @@ export default function ClientsPage() {
                       setSelectedClientId(remaining.length > 0 ? remaining[0].id : '');
                     }
                   }
+                }}
+                onSendMail={() => {
+                  const clientInvoices = invoices.filter(i => i.clientId === c.id);
+                  const clientAppointments = appointments.filter(a => a.clientId === c.id);
+                  const firstInvId = clientInvoices.length > 0 ? clientInvoices[0].id : '';
+                  const firstAppId = clientAppointments.length > 0 ? clientAppointments[0].id : '';
+                  setSelectedMailInvoiceId(firstInvId);
+                  setSelectedMailAppointmentId(firstAppId);
+                  applyMailTemplate('custom', firstInvId, firstAppId, c);
+                  setIsMailModalOpen(true);
+                }}
+                onAddAppointment={() => {
+                  setSheetMode('new');
+                  setNewAppDate(new Date().toISOString().slice(0, 10));
+                  setNewAppHour(9);
+                  setNewAppClientId(c.id);
+                  if (services.length > 0) setNewAppServiceId(services[0].id);
+                  setIsSheetOpen(true);
                 }}
               />
             ));
