@@ -7,7 +7,8 @@ import {
   Calendar as CalendarIcon, Users, FileText, Settings, LogOut, Search, Plus, 
   Trash2, X, CheckCircle2, AlertCircle, Sparkles, Printer, Download, 
   Mail, Clock, User, Check, Star, Flag, AlertCircle as InfoIcon,
-  ZoomIn, ZoomOut, ChevronDown, LayoutGrid, CreditCard, TrendingUp, Activity, ExternalLink
+  ZoomIn, ZoomOut, ChevronDown, LayoutGrid, CreditCard, TrendingUp, Activity, ExternalLink,
+  Globe, ChevronsUpDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import CommandPalette from '@/components/CommandPalette';
@@ -387,78 +388,105 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-[#f9f9f8] text-[#191c1c] font-sans antialiased overflow-hidden flex">
       {/* SideNavBar Shell */}
-      <aside className="fixed left-0 top-0 bottom-0 w-64 bg-[#f3f4f3] flex flex-col p-6 z-50 border-r border-[#bfc9c3]/30">
-        <div className="flex items-center gap-3 mb-10">
-          <div className="w-10 h-10 rounded-full bg-[#003527] flex items-center justify-center text-white font-serif text-lg font-bold">
-            P
+      {/* SideNavBar Shell */}
+      <aside className="fixed left-0 top-0 bottom-0 w-64 bg-[#f3f4f3] flex flex-col p-6 z-50 border-r border-[#bfc9c3]/30 justify-between">
+        
+        {/* TOP SECTION */}
+        <div className="flex flex-col flex-grow min-h-0">
+          {/* Workspace Switcher / Profile Card */}
+          <div className="flex items-center gap-3 px-2.5 py-2 mb-4 hover:bg-white/40 rounded-2xl transition-all text-left w-full cursor-pointer group border border-transparent hover:border-[#bfc9c3]/20">
+            <div className="w-8 h-8 rounded-xl bg-[#003527] flex items-center justify-center shrink-0 shadow-sm">
+              <span className="text-[11px] font-extrabold text-white">
+                {therapistName ? getInitials(therapistName) : 'PM'}
+              </span>
+            </div>
+            <div className="flex-grow overflow-hidden">
+              <h2 className="text-[12px] font-extrabold text-[#043F2D] leading-none tracking-tight">HManager</h2>
+              <p className="text-[10px] text-zinc-400 font-semibold truncate leading-none mt-0.5">{therapistName}</p>
+            </div>
+            <ChevronsUpDown className="w-3.5 h-3.5 text-zinc-400 group-hover:text-[#003527] transition-colors shrink-0" />
           </div>
-          <div>
-            <h1 className="text-sm font-extrabold text-[#043F2D] leading-none tracking-tight">HManager</h1>
-            <p className="text-[10px] text-[#003527]/70 font-semibold mt-1 max-w-[140px] truncate">{therapistName}</p>
-          </div>
-        </div>
 
-        <nav className="flex-grow space-y-2 overflow-y-auto pr-1 -mr-2 hide-scrollbar text-left">
-          <Link
-            href="/dashboard/calendar"
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all ${
-              pathname === '/dashboard/calendar'
-                ? 'bg-white text-[#003527] border border-[#bfc9c3]/30'
-                : 'text-[#404944] hover:bg-white/50 hover:text-[#003527]'
-            }`}
+          {/* Global Quick Action: Neuer Termin */}
+          <button
+            onClick={() => {
+              setSheetMode('new');
+              setNewAppDate(new Date().toISOString().slice(0, 10));
+              setNewAppHour(9);
+              if (clients.length > 0) setNewAppClientId(clients[0].id);
+              if (services.length > 0) setNewAppServiceId(services[0].id);
+              setIsSheetOpen(true);
+            }}
+            className="w-full flex items-center justify-center gap-2 bg-white hover:bg-zinc-50/60 active:scale-[0.99] text-[#003527] text-xs font-bold py-2.5 px-4 rounded-2xl border border-[#bfc9c3]/30 shadow-[0_1px_2px_rgba(0,0,0,0.02)] transition-all mb-6 cursor-pointer"
           >
-            <CalendarIcon className="w-4 h-4" /> Termine & Kalender
-          </Link>
+            <Plus className="w-3.5 h-3.5 text-[#003527]" />
+            Neuer Termin
+          </button>
 
-          <Link
-            href="/dashboard/clients"
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all ${
-              pathname === '/dashboard/clients'
-                ? 'bg-white text-[#003527] border border-[#bfc9c3]/30'
-                : 'text-[#404944] hover:bg-white/50 hover:text-[#003527]'
-            }`}
-          >
-            <Users className="w-4 h-4" /> Patienten & CRM
-          </Link>
+          {/* Primary Navigation */}
+          <nav className="space-y-1 text-left flex-shrink-0">
+            <Link
+              href="/dashboard/calendar"
+              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all ${
+                pathname === '/dashboard/calendar'
+                  ? 'bg-white text-[#003527] border border-[#bfc9c3]/30 shadow-[0_1px_3px_rgba(0,0,0,0.02)]'
+                  : 'text-[#404944] hover:bg-white/50 hover:text-[#003527]'
+              }`}
+            >
+              <CalendarIcon className="w-4 h-4 shrink-0" /> Kalender
+            </Link>
 
-          <Link
-            href="/dashboard/invoices"
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all ${
-              pathname === '/dashboard/invoices'
-                ? 'bg-white text-[#003527] border border-[#bfc9c3]/30'
-                : 'text-[#404944] hover:bg-white/50 hover:text-[#003527]'
-            }`}
-          >
-            <FileText className="w-4 h-4" /> Abrechnung
-          </Link>
+            <Link
+              href="/dashboard/clients"
+              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all ${
+                pathname === '/dashboard/clients'
+                  ? 'bg-white text-[#003527] border border-[#bfc9c3]/30 shadow-[0_1px_3px_rgba(0,0,0,0.02)]'
+                  : 'text-[#404944] hover:bg-white/50 hover:text-[#003527]'
+              }`}
+            >
+              <Users className="w-4 h-4 shrink-0" /> Patienten
+            </Link>
 
-          <Link
-            href="/dashboard/addons"
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all ${
-              pathname === '/dashboard/addons'
-                ? 'bg-white text-[#003527] border border-[#bfc9c3]/30'
-                : 'text-[#404944] hover:bg-white/50 hover:text-[#003527]'
-            }`}
-          >
-            <LayoutGrid className="w-4 h-4" /> Erweiterungen
-          </Link>
+            <Link
+              href="/dashboard/invoices"
+              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all ${
+                pathname === '/dashboard/invoices'
+                  ? 'bg-white text-[#003527] border border-[#bfc9c3]/30 shadow-[0_1px_3px_rgba(0,0,0,0.02)]'
+                  : 'text-[#404944] hover:bg-white/50 hover:text-[#003527]'
+              }`}
+            >
+              <FileText className="w-4 h-4 shrink-0" /> Abrechnung
+            </Link>
+          </nav>
 
-          <Link
-            href="/dashboard/settings"
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all ${
-              pathname === '/dashboard/settings'
-                ? 'bg-white text-[#003527] border border-[#bfc9c3]/30'
-                : 'text-[#404944] hover:bg-white/50 hover:text-[#003527]'
-            }`}
-          >
-            <Settings className="w-4 h-4" /> Einstellungen
-          </Link>
-
-          {/* Active Addon Links */}
+          {/* Dynamic Active Modules (Add-ons) */}
           {Object.values(activeAddons).some(Boolean) && (
-            <div className="pt-4 border-t border-[#bfc9c3]/20 mt-4 space-y-1">
-              <span className="block px-4 text-[9px] font-bold text-zinc-400 uppercase tracking-widest text-left mb-2">Aktive Module</span>
+            <div className="pt-5 border-t border-[#bfc9c3]/20 mt-5 space-y-1.5 overflow-y-auto hide-scrollbar flex-grow text-left">
+              <span className="block px-4 text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1">
+                Aktive Module
+              </span>
               <AnimatePresence>
+                {activeAddons['public-booking'] && (
+                  <motion.div
+                    key="public-booking"
+                    initial={{ opacity: 0, height: 0, y: -5 }}
+                    animate={{ opacity: 1, height: 'auto', y: 0 }}
+                    exit={{ opacity: 0, height: 0, y: -5 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => showToast('Die öffentliche Buchungsseite ist aktiv.', 'info')}
+                      className="w-full flex items-center justify-between px-4 py-2 rounded-xl text-[11px] font-bold text-[#404944] hover:bg-white/50 hover:text-[#003527] transition-all bg-transparent border-none cursor-pointer text-left group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Globe className="w-3.5 h-3.5 text-[#003527]/70 shrink-0" /> 
+                        <span>Buchungsseite</span>
+                      </div>
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                    </button>
+                  </motion.div>
+                )}
                 {activeAddons['waitlist'] && (
                   <motion.div
                     key="waitlist"
@@ -472,7 +500,10 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                       onClick={() => showToast('Die Warteliste läuft im Hintergrund und informiert automatisch Nachrücker.', 'info')}
                       className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-[11px] font-bold text-[#404944] hover:bg-white/50 hover:text-[#003527] transition-all bg-transparent border-none cursor-pointer text-left"
                     >
-                      <Clock className="w-3.5 h-3.5 text-[#003527]/70" /> Warteliste
+                      <div className="flex items-center gap-3">
+                        <Clock className="w-3.5 h-3.5 text-[#003527]/70 shrink-0" /> 
+                        <span>Warteliste</span>
+                      </div>
                     </button>
                   </motion.div>
                 )}
@@ -489,7 +520,10 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                       onClick={() => showToast('Digitale Anamnesebögen werden bei neuen Buchungen mitgeschickt.', 'info')}
                       className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-[11px] font-bold text-[#404944] hover:bg-white/50 hover:text-[#003527] transition-all bg-transparent border-none cursor-pointer text-left"
                     >
-                      <FileText className="w-3.5 h-3.5 text-[#003527]/70" /> Anamnesebögen
+                      <div className="flex items-center gap-3">
+                        <FileText className="w-3.5 h-3.5 text-[#003527]/70 shrink-0" /> 
+                        <span>Anamnesebögen</span>
+                      </div>
                     </button>
                   </motion.div>
                 )}
@@ -506,7 +540,10 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                       onClick={() => showToast('Stripe Online-Zahlungen und Anzahlungen sind im Buchungsprozess aktiv.', 'info')}
                       className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-[11px] font-bold text-[#404944] hover:bg-white/50 hover:text-[#003527] transition-all bg-transparent border-none cursor-pointer text-left"
                     >
-                      <CreditCard className="w-3.5 h-3.5 text-[#003527]/70" /> Online-Zahlungen
+                      <div className="flex items-center gap-3">
+                        <CreditCard className="w-3.5 h-3.5 text-[#003527]/70 shrink-0" /> 
+                        <span>Online-Zahlungen</span>
+                      </div>
                     </button>
                   </motion.div>
                 )}
@@ -523,7 +560,10 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                       onClick={() => showToast('10er-Karten & Abonnements stehen Klienten online zur Verfügung.', 'info')}
                       className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-[11px] font-bold text-[#404944] hover:bg-white/50 hover:text-[#003527] transition-all bg-transparent border-none cursor-pointer text-left"
                     >
-                      <Activity className="w-3.5 h-3.5 text-[#003527]/70" /> Pakete & Abos
+                      <div className="flex items-center gap-3">
+                        <Activity className="w-3.5 h-3.5 text-[#003527]/70 shrink-0" /> 
+                        <span>Pakete & Abos</span>
+                      </div>
                     </button>
                   </motion.div>
                 )}
@@ -540,7 +580,10 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                       onClick={() => showToast('Google Review Autopilot versendet automatische Anfragen nach dem Ersttermin.', 'info')}
                       className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-[11px] font-bold text-[#404944] hover:bg-white/50 hover:text-[#003527] transition-all bg-transparent border-none cursor-pointer text-left"
                     >
-                      <TrendingUp className="w-3.5 h-3.5 text-[#003527]/70" /> Google Reviews
+                      <div className="flex items-center gap-3">
+                        <TrendingUp className="w-3.5 h-3.5 text-[#003527]/70 shrink-0" /> 
+                        <span>Google Reviews</span>
+                      </div>
                     </button>
                   </motion.div>
                 )}
@@ -557,31 +600,70 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                       onClick={() => showToast('Zoom-Integration ist aktiv: Links werden automatisch generiert.', 'info')}
                       className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-[11px] font-bold text-[#404944] hover:bg-white/50 hover:text-[#003527] transition-all bg-transparent border-none cursor-pointer text-left"
                     >
-                      <ExternalLink className="w-3.5 h-3.5 text-[#003527]/70" /> Video-Therapie
+                      <div className="flex items-center gap-3">
+                        <ExternalLink className="w-3.5 h-3.5 text-[#003527]/70 shrink-0" /> 
+                        <span>Video-Therapie</span>
+                      </div>
                     </button>
                   </motion.div>
                 )}
               </AnimatePresence>
             </div>
           )}
-        </nav>
+        </div>
 
-        <div className="pt-6 border-t border-[#bfc9c3]/30 space-y-4">
+        {/* BOTTOM SECTION */}
+        <div className="pt-4 border-t border-[#bfc9c3]/20 space-y-1.5 flex-shrink-0 text-left">
+          {/* Global Search (Command K) */}
           <button 
             onClick={() => setIsCmdkOpen(true)}
-            className="w-full flex items-center justify-between bg-white border border-[#bfc9c3]/30 rounded-2xl px-4 py-3 text-xs font-bold text-zinc-400 hover:border-[#003527]/30 transition-all cursor-pointer group"
+            className="w-full flex items-center justify-between bg-white border border-[#bfc9c3]/20 hover:border-[#bfc9c3]/50 rounded-2xl px-4 py-2.5 text-xs font-bold text-zinc-400 hover:text-[#003527] transition-all cursor-pointer group"
           >
             <span className="flex items-center gap-2">
               <Search className="w-3.5 h-3.5 text-zinc-400 group-hover:text-[#003527]" /> Suche...
             </span>
-            <kbd className="bg-zinc-100 text-[10px] text-zinc-400 px-1.5 py-0.5 rounded font-mono font-bold">⌘K</kbd>
+            <div className="flex items-center gap-0.5 opacity-70">
+              <kbd className="bg-zinc-100 border border-zinc-200/50 px-1 py-0.5 rounded text-[9px] font-mono font-bold shadow-sm text-zinc-500">⌘</kbd>
+              <kbd className="bg-zinc-100 border border-zinc-200/50 px-1.5 py-0.5 rounded text-[9px] font-mono font-bold shadow-sm text-zinc-500">K</kbd>
+            </div>
           </button>
 
+          {/* Separator Line */}
+          <div className="h-px bg-[#bfc9c3]/20 my-1 mx-2" />
+
+          {/* Erweiterungen */}
+          <Link
+            href="/dashboard/addons"
+            className={`w-full flex items-center gap-3 px-4 py-2 rounded-xl text-[11px] font-bold transition-all ${
+              pathname === '/dashboard/addons'
+                ? 'bg-white text-[#003527] border border-[#bfc9c3]/30 shadow-[0_1px_3px_rgba(0,0,0,0.02)]'
+                : 'text-[#404944] hover:bg-white/50 hover:text-[#003527]'
+            }`}
+          >
+            <LayoutGrid className="w-3.5 h-3.5 shrink-0" /> Erweiterungen
+          </Link>
+
+          {/* Einstellungen */}
+          <Link
+            href="/dashboard/settings"
+            className={`w-full flex items-center gap-3 px-4 py-2 rounded-xl text-[11px] font-bold transition-all ${
+              pathname === '/dashboard/settings'
+                ? 'bg-white text-[#003527] border border-[#bfc9c3]/30 shadow-[0_1px_3px_rgba(0,0,0,0.02)]'
+                : 'text-[#404944] hover:bg-white/50 hover:text-[#003527]'
+            }`}
+          >
+            <Settings className="w-3.5 h-3.5 shrink-0" /> Einstellungen
+          </Link>
+
+          {/* Separator Line */}
+          <div className="h-px bg-[#bfc9c3]/20 my-1 mx-2" />
+
+          {/* Abmelden */}
           <button 
             onClick={handleSignOut}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold text-rose-600 hover:bg-rose-50 transition-all cursor-pointer"
+            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-[11px] font-bold text-rose-600 hover:bg-rose-50/50 transition-all cursor-pointer border-none bg-transparent"
           >
-            <LogOut className="w-4 h-4" /> Abmelden
+            <LogOut className="w-3.5 h-3.5 shrink-0" /> Abmelden
           </button>
         </div>
       </aside>
