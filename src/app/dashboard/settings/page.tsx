@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
   CheckCircle2, Check, Copy, Shield, User, CreditCard, Lock, 
-  Smartphone, History, Download, ExternalLink, Eye, EyeOff, Activity, Scale 
+  Smartphone, History, Download, ExternalLink, Eye, EyeOff, Activity, Scale,
+  Globe
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDashboard } from '../context';
@@ -248,14 +249,20 @@ export default function SettingsPage() {
               <form onSubmit={saveSettings} className="space-y-6">
                 
                 {/* Stammdaten */}
-                <div className="bg-white border border-[#bfc9c3]/40 rounded-2xl p-6 space-y-6">
-                  <div>
-                    <h3 className="text-sm font-bold text-[#043F2D]">Praxisdaten</h3>
-                    <p className="text-[11px] text-zinc-400 font-semibold mt-0.5">Hier verwaltest du deine Stammdaten und die Währung deiner Abrechnungen.</p>
+                <div className="bg-white border border-[#bfc9c3]/30 rounded-2xl p-6 space-y-6 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)] transition-all duration-300 relative group overflow-hidden">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200/40 shrink-0">
+                      <User className="w-4 h-4 text-emerald-700" />
+                    </div>
+                    <div className="text-left">
+                      <h3 className="text-sm font-bold text-[#003527]">Praxisdaten</h3>
+                      <p className="text-[10px] text-zinc-400 font-semibold mt-0.5">Hier verwaltest du deine Stammdaten und die Währung deiner Abrechnungen.</p>
+                    </div>
                   </div>
 
+                  <div className="w-full h-px bg-zinc-50" />
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    
                     {/* Praxisname */}
                     <div className="space-y-2">
                       <label className="block text-[10px] font-bold text-[#003527]/70 uppercase tracking-widest">Praxisname / Bezeichnung</label>
@@ -264,7 +271,7 @@ export default function SettingsPage() {
                         required
                         value={therapistName}
                         onChange={(e) => setTherapistName(e.target.value)}
-                        className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-xl px-4 py-3 font-bold text-xs text-[#003527] focus:border-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all"
+                        className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-lg px-4 py-3 font-bold text-xs text-[#003527] focus:border-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all"
                       />
                     </div>
 
@@ -274,7 +281,7 @@ export default function SettingsPage() {
                       <select
                         value={currency}
                         onChange={(e) => setCurrency(e.target.value)}
-                        className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-xl px-4 py-3 font-bold text-xs text-[#003527] focus:border-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all cursor-pointer"
+                        className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-lg px-4 py-3 font-bold text-xs text-[#003527] focus:border-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all cursor-pointer"
                       >
                         <option value="EUR">Euro (€)</option>
                         <option value="USD">US Dollar ($)</option>
@@ -288,7 +295,7 @@ export default function SettingsPage() {
                         type="text" 
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
-                        className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-xl px-4 py-3 font-bold text-xs text-[#003527] focus:border-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all"
+                        className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-lg px-4 py-3 font-bold text-xs text-[#003527] focus:border-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all"
                       />
                     </div>
 
@@ -298,25 +305,32 @@ export default function SettingsPage() {
                       <textarea 
                         value={address}
                         onChange={(e) => setAddress(e.target.value)}
-                        className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-xl px-4 py-2.5 font-bold text-xs text-[#003527] focus:border-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all resize-none h-16"
+                        className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-lg px-4 py-2.5 font-bold text-xs text-[#003527] focus:border-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all resize-none h-16"
                       />
                     </div>
                   </div>
                 </div>
 
                 {/* Buchungslink */}
-                <div className="bg-white border border-[#bfc9c3]/40 rounded-2xl p-6 space-y-4">
-                  <div>
-                    <h3 className="text-sm font-bold text-[#043F2D]">Dein Buchungs-Link</h3>
-                    <p className="text-[11px] text-zinc-400 font-semibold mt-0.5">Teile diesen Link auf deiner Website, um Klienten direkt online buchen zu lassen.</p>
+                <div className="bg-white border border-[#bfc9c3]/30 rounded-2xl p-6 space-y-4 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)] transition-all duration-300 relative group overflow-hidden">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-blue-50 border border-blue-200/40 shrink-0">
+                      <Globe className="w-4 h-4 text-blue-700" />
+                    </div>
+                    <div className="text-left">
+                      <h3 className="text-sm font-bold text-[#003527]">Dein Buchungs-Link</h3>
+                      <p className="text-[10px] text-zinc-400 font-semibold mt-0.5">Teile diesen Link auf deiner Website, um Klienten direkt online buchen zu lassen.</p>
+                    </div>
                   </div>
+
+                  <div className="w-full h-px bg-zinc-50" />
                   
                   <div className="flex gap-2">
                     <input 
                       type="text" 
                       readOnly 
                       value={`https://praxism.de/book/${therapistName.toLowerCase().replace(/\s+/g, '-')}`}
-                      className="bg-[#f9f9f8] border border-[#bfc9c3]/40 rounded-xl px-4 py-3 font-bold text-xs text-[#003527] flex-1 outline-none select-all"
+                      className="bg-[#f9f9f8] border border-[#bfc9c3]/40 rounded-lg px-4 py-3 font-bold text-xs text-[#003527] flex-1 outline-none select-all"
                     />
                     <button
                       type="button"
@@ -325,7 +339,7 @@ export default function SettingsPage() {
                         setCopied(true);
                         setTimeout(() => setCopied(false), 2000);
                       }}
-                      className="bg-[#003527] text-white hover:bg-[#0b513d] px-5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                      className="bg-[#003527] hover:bg-[#0b513d] text-white px-5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
                     >
                       {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                       {copied ? 'Kopiert' : 'Kopieren'}
@@ -334,14 +348,21 @@ export default function SettingsPage() {
                 </div>
 
                 {/* Kalender & No-Show Schutz */}
-                <div className="bg-white border border-[#bfc9c3]/40 rounded-2xl p-6 space-y-5">
-                  <div>
-                    <h3 className="text-sm font-bold text-[#043F2D]">Verknüpfungen & No-Show Schutz</h3>
-                    <p className="text-[11px] text-zinc-400 font-semibold mt-0.5">Automatische Google Kalender-Synchronisation und Erinnerungsvorlagen.</p>
+                <div className="bg-white border border-[#bfc9c3]/30 rounded-2xl p-6 space-y-5 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)] transition-all duration-300 relative group overflow-hidden">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-purple-50 border border-purple-200/40 shrink-0">
+                      <Activity className="w-4 h-4 text-purple-700" />
+                    </div>
+                    <div className="text-left">
+                      <h3 className="text-sm font-bold text-[#003527]">Verknüpfungen & No-Show Schutz</h3>
+                      <p className="text-[10px] text-zinc-400 font-semibold mt-0.5">Automatische Google Kalender-Synchronisation und Erinnerungsvorlagen.</p>
+                    </div>
                   </div>
 
+                  <div className="w-full h-px bg-zinc-50" />
+
                   {/* Google Sync */}
-                  <div className="flex justify-between items-center text-xs font-semibold text-[#404944] pt-2 border-t border-zinc-100">
+                  <div className="flex justify-between items-center text-xs font-semibold text-[#404944] pt-2">
                     <div>
                       <p className="font-bold text-[#003527]">Google Calendar Sync</p>
                       <p className="text-[10px] text-zinc-400 mt-0.5">Automatische Synchronisation aller Termine in beide Richtungen.</p>
@@ -350,14 +371,14 @@ export default function SettingsPage() {
                     <button
                       type="button"
                       onClick={() => setSyncEnabled(!syncEnabled)}
-                      className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors ${
+                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
                         syncEnabled ? 'bg-[#003527]' : 'bg-zinc-200'
                       }`}
                     >
-                      <motion.div 
-                        layout
-                        className="bg-white w-4 h-4 rounded-full border border-[#bfc9c3]/30"
+                      <motion.span
                         animate={{ x: syncEnabled ? 20 : 0 }}
+                        transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                        className="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0"
                       />
                     </button>
                   </div>
@@ -366,7 +387,7 @@ export default function SettingsPage() {
                     <motion.div 
                       initial={{ opacity: 0, y: -5 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="bg-emerald-50 border border-emerald-100 rounded-xl p-3 text-[10px] font-bold text-emerald-800 flex items-center gap-2"
+                      className="bg-emerald-50 border border-emerald-100 rounded-lg p-3 text-[10px] font-bold text-emerald-800 flex items-center gap-2"
                     >
                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                       Google Sync aktiv: {therapistName.toLowerCase().replace(/\s+/g, '')}@gmail.com
@@ -392,7 +413,7 @@ export default function SettingsPage() {
                         <select
                           value={reminderHours}
                           onChange={(e) => setReminderHours(e.target.value)}
-                          className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-xl px-3 py-2 font-bold text-xs text-[#003527] cursor-pointer"
+                          className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-lg px-3 py-2 font-bold text-xs text-[#003527] cursor-pointer"
                         >
                           <option value="12">12 Stunden vorher</option>
                           <option value="24">24 Stunden vorher</option>
@@ -408,7 +429,7 @@ export default function SettingsPage() {
                   <button
                     type="submit"
                     disabled={isSavingSettings}
-                    className="bg-[#003527] hover:bg-[#0b513d] text-white px-8 py-3.5 rounded-xl text-xs font-bold transition-all disabled:bg-zinc-200 disabled:text-zinc-400 disabled:cursor-not-allowed cursor-pointer"
+                    className="bg-[#003527] hover:bg-[#0b513d] text-white px-8 py-3.5 rounded-lg text-xs font-bold transition-all disabled:bg-zinc-200 disabled:text-zinc-400 disabled:cursor-not-allowed cursor-pointer"
                   >
                     {isSavingSettings ? 'Speichert...' : 'Profil speichern'}
                   </button>
@@ -434,22 +455,28 @@ export default function SettingsPage() {
               className="space-y-6"
             >
               <form onSubmit={handleSaveLegal} className="space-y-6">
-                
-                {/* Impressum */}
-                <div className="bg-white border border-[#bfc9c3]/40 rounded-2xl p-6 space-y-4">
-                  <div>
-                    <h3 className="text-sm font-bold text-[#043F2D]">Impressum</h3>
-                    <p className="text-[11px] text-zinc-400 font-semibold mt-0.5">
-                      Gib an, wie das Impressum auf deiner Online-Buchungsseite angezeigt werden soll.
-                    </p>
+                      {/* Impressum */}
+                <div className="bg-white border border-[#bfc9c3]/30 rounded-2xl p-6 space-y-4 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)] transition-all duration-300 relative group overflow-hidden">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-amber-50 border border-amber-200/40 shrink-0">
+                      <Scale className="w-4 h-4 text-amber-700" />
+                    </div>
+                    <div className="text-left">
+                      <h3 className="text-sm font-bold text-[#003527]">Impressum</h3>
+                      <p className="text-[10px] text-zinc-400 font-semibold mt-0.5">
+                        Gib an, wie das Impressum auf deiner Online-Buchungsseite angezeigt werden soll.
+                      </p>
+                    </div>
                   </div>
 
+                  <div className="w-full h-px bg-zinc-50" />
+
                   {/* Toggle Selector */}
-                  <div className="inline-flex bg-[#f3f4f3] p-1 rounded-xl border border-zinc-200/50">
+                  <div className="inline-flex bg-[#f3f4f3] p-1 rounded-lg border border-zinc-200/50">
                     <button
                       type="button"
                       onClick={() => setImpressumMode('url')}
-                      className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all duration-200 cursor-pointer ${
+                      className={`px-3 py-1.5 rounded-md text-[10px] font-bold transition-all duration-200 cursor-pointer ${
                         impressumMode === 'url'
                           ? 'bg-white text-[#003527] shadow-sm'
                           : 'text-[#404944] hover:text-[#003527]'
@@ -460,7 +487,7 @@ export default function SettingsPage() {
                     <button
                       type="button"
                       onClick={() => setImpressumMode('text')}
-                      className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all duration-200 cursor-pointer ${
+                      className={`px-3 py-1.5 rounded-md text-[10px] font-bold transition-all duration-200 cursor-pointer ${
                         impressumMode === 'text'
                           ? 'bg-white text-[#003527] shadow-sm'
                           : 'text-[#404944] hover:text-[#003527]'
@@ -485,7 +512,7 @@ export default function SettingsPage() {
                           placeholder="https://deine-website.de/impressum"
                           value={impressumUrl}
                           onChange={(e) => setImpressumUrl(e.target.value)}
-                          className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-xl px-4 py-3 font-bold text-xs text-[#003527] focus:border-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all"
+                          className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-lg px-4 py-3 font-bold text-xs text-[#003527] focus:border-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all"
                         />
                       </motion.div>
                     ) : (
@@ -501,7 +528,7 @@ export default function SettingsPage() {
                           placeholder="Trage hier dein vollständiges Impressum ein (z. B. Vertretungsberechtigte, Registernummer, Steuernummer)..."
                           value={impressumText}
                           onChange={(e) => setImpressumText(e.target.value)}
-                          className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-xl px-4 py-3 font-medium text-xs text-[#003527] focus:border-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all h-36 resize-y"
+                          className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-lg px-4 py-3 font-medium text-xs text-[#003527] focus:border-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all h-36 resize-y"
                         />
                       </motion.div>
                     )}
@@ -509,20 +536,27 @@ export default function SettingsPage() {
                 </div>
 
                 {/* Datenschutz */}
-                <div className="bg-white border border-[#bfc9c3]/40 rounded-2xl p-6 space-y-4">
-                  <div>
-                    <h3 className="text-sm font-bold text-[#043F2D]">Datenschutz</h3>
-                    <p className="text-[11px] text-zinc-400 font-semibold mt-0.5">
-                      Gib an, wie die Datenschutzerklärung auf deiner Online-Buchungsseite angezeigt werden soll.
-                    </p>
+                <div className="bg-white border border-[#bfc9c3]/30 rounded-2xl p-6 space-y-4 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)] transition-all duration-300 relative group overflow-hidden">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-rose-50 border border-rose-200/40 shrink-0">
+                      <Shield className="w-4 h-4 text-rose-700" />
+                    </div>
+                    <div className="text-left">
+                      <h3 className="text-sm font-bold text-[#003527]">Datenschutz</h3>
+                      <p className="text-[10px] text-zinc-400 font-semibold mt-0.5">
+                        Gib an, wie die Datenschutzerklärung auf deiner Online-Buchungsseite angezeigt werden soll.
+                      </p>
+                    </div>
                   </div>
 
+                  <div className="w-full h-px bg-zinc-50" />
+
                   {/* Toggle Selector */}
-                  <div className="inline-flex bg-[#f3f4f3] p-1 rounded-xl border border-zinc-200/50">
+                  <div className="inline-flex bg-[#f3f4f3] p-1 rounded-lg border border-zinc-200/50">
                     <button
                       type="button"
                       onClick={() => setDatenschutzMode('url')}
-                      className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all duration-200 cursor-pointer ${
+                      className={`px-3 py-1.5 rounded-md text-[10px] font-bold transition-all duration-200 cursor-pointer ${
                         datenschutzMode === 'url'
                           ? 'bg-white text-[#003527] shadow-sm'
                           : 'text-[#404944] hover:text-[#003527]'
@@ -533,7 +567,7 @@ export default function SettingsPage() {
                     <button
                       type="button"
                       onClick={() => setDatenschutzMode('text')}
-                      className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all duration-200 cursor-pointer ${
+                      className={`px-3 py-1.5 rounded-md text-[10px] font-bold transition-all duration-200 cursor-pointer ${
                         datenschutzMode === 'text'
                           ? 'bg-white text-[#003527] shadow-sm'
                           : 'text-[#404944] hover:text-[#003527]'
@@ -558,7 +592,7 @@ export default function SettingsPage() {
                           placeholder="https://deine-website.de/datenschutz"
                           value={datenschutzUrl}
                           onChange={(e) => setDatenschutzUrl(e.target.value)}
-                          className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-xl px-4 py-3 font-bold text-xs text-[#003527] focus:border-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all"
+                          className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-lg px-4 py-3 font-bold text-xs text-[#003527] focus:border-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all"
                         />
                       </motion.div>
                     ) : (
@@ -574,7 +608,7 @@ export default function SettingsPage() {
                           placeholder="Trage hier deine Datenschutzerklärung ein (z. B. Informationen zur Datenverarbeitung, Patientenrechte)..."
                           value={datenschutzText}
                           onChange={(e) => setDatenschutzText(e.target.value)}
-                          className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-xl px-4 py-3 font-medium text-xs text-[#003527] focus:border-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all h-36 resize-y"
+                          className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-lg px-4 py-3 font-medium text-xs text-[#003527] focus:border-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all h-36 resize-y"
                         />
                       </motion.div>
                     )}
@@ -586,7 +620,7 @@ export default function SettingsPage() {
                   <button
                     type="submit"
                     disabled={isSavingLegal}
-                    className="bg-[#003527] hover:bg-[#0b513d] text-white px-8 py-3.5 rounded-xl text-xs font-bold transition-all disabled:bg-zinc-200 disabled:text-zinc-400 disabled:cursor-not-allowed cursor-pointer"
+                    className="bg-[#003527] hover:bg-[#0b513d] text-white px-8 py-3.5 rounded-lg text-xs font-bold transition-all disabled:bg-zinc-200 disabled:text-zinc-400 disabled:cursor-not-allowed cursor-pointer"
                   >
                     {isSavingLegal ? 'Speichert...' : 'Angaben speichern'}
                   </button>
@@ -612,11 +646,18 @@ export default function SettingsPage() {
               className="space-y-6"
             >
               {/* Passwort ändern */}
-              <div className="bg-white border border-[#bfc9c3]/40 rounded-2xl p-6 space-y-6">
-                <div>
-                  <h3 className="text-sm font-bold text-[#043F2D]">Passwort ändern</h3>
-                  <p className="text-[11px] text-zinc-400 font-semibold mt-0.5">Ändere dein Anmeldepasswort. Verwende ein starkes, einzigartiges Passwort.</p>
+              <div className="bg-white border border-[#bfc9c3]/30 rounded-2xl p-6 space-y-6 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)] transition-all duration-300 relative group overflow-hidden">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-rose-50 border border-rose-200/40 shrink-0">
+                    <Lock className="w-4 h-4 text-rose-700" />
+                  </div>
+                  <div className="text-left">
+                    <h3 className="text-sm font-bold text-[#003527]">Passwort ändern</h3>
+                    <p className="text-[10px] text-zinc-400 font-semibold mt-0.5">Ändere dein Anmeldepasswort. Verwende ein starkes, einzigartiges Passwort.</p>
+                  </div>
                 </div>
+
+                <div className="w-full h-px bg-zinc-50" />
 
                 <form onSubmit={handleUpdatePassword} className="space-y-4">
                   {/* Aktuelles Passwort */}
@@ -627,7 +668,7 @@ export default function SettingsPage() {
                       required
                       value={currentPassword}
                       onChange={(e) => setCurrentPassword(e.target.value)}
-                      className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-xl px-4 py-3 font-bold text-xs text-[#003527] focus:border-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all pr-10"
+                      className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-lg px-4 py-3 font-bold text-xs text-[#003527] focus:border-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all pr-10"
                     />
                     <button
                       type="button"
@@ -648,7 +689,7 @@ export default function SettingsPage() {
                       onFocus={() => setFocusField('newPassword')}
                       onBlur={() => setFocusField(null)}
                       onChange={(e) => setNewPassword(e.target.value)}
-                      className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-xl px-4 py-3 font-bold text-xs text-[#003527] focus:border-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all pr-10"
+                      className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-lg px-4 py-3 font-bold text-xs text-[#003527] focus:border-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all pr-10"
                     />
                     <button
                       type="button"
@@ -684,15 +725,15 @@ export default function SettingsPage() {
                       {(() => {
                         const { requirements } = checkPasswordStrength(newPassword);
                         const reqList = [
-                          { key: 'length', text: 'Mindestens 8 Zeichen' },
-                          { key: 'uppercase', text: 'Großbuchstabe (A-Z)' },
-                          { key: 'lowercase', text: 'Kleinbuchstabe (a-z)' },
-                          { key: 'number', text: 'Zahl (0-9)' },
-                          { key: 'special', text: 'Sonderzeichen (@, !)' }
+                           { key: 'length', text: 'Mindestens 8 Zeichen' },
+                           { key: 'uppercase', text: 'Großbuchstabe (A-Z)' },
+                           { key: 'lowercase', text: 'Kleinbuchstabe (a-z)' },
+                           { key: 'number', text: 'Zahl (0-9)' },
+                           { key: 'special', text: 'Sonderzeichen (@, !)' }
                         ];
 
                         return (
-                          <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[9px] font-semibold text-zinc-500 bg-[#f3f4f3]/40 border border-[#bfc9c3]/20 rounded-xl p-3">
+                          <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[9px] font-semibold text-zinc-500 bg-[#f3f4f3]/40 border border-[#bfc9c3]/20 rounded-lg p-3">
                             {reqList.map((req) => {
                               const isMet = requirements[req.key as keyof typeof requirements];
                               return (
@@ -720,7 +761,7 @@ export default function SettingsPage() {
                       required
                       value={confirmNewPassword}
                       onChange={(e) => setConfirmNewPassword(e.target.value)}
-                      className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-xl px-4 py-3 font-bold text-xs text-[#003527] focus:border-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all pr-10"
+                      className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-lg px-4 py-3 font-bold text-xs text-[#003527] focus:border-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all pr-10"
                     />
                     <button
                       type="button"
@@ -735,7 +776,7 @@ export default function SettingsPage() {
                     <button
                       type="submit"
                       disabled={isPasswordButtonDisabled}
-                      className="bg-[#003527] hover:bg-[#0b513d] text-white px-6 py-3 rounded-xl text-xs font-bold transition-all disabled:bg-zinc-200 disabled:text-zinc-400 disabled:cursor-not-allowed cursor-pointer"
+                      className="bg-[#003527] hover:bg-[#0b513d] text-white px-6 py-3 rounded-lg text-xs font-bold transition-all disabled:bg-zinc-200 disabled:text-zinc-400 disabled:cursor-not-allowed cursor-pointer"
                     >
                       {isSavingPassword ? 'Speichert...' : 'Passwort aktualisieren'}
                     </button>
@@ -744,14 +785,19 @@ export default function SettingsPage() {
               </div>
 
               {/* Zwei-Faktor-Authentifizierung */}
-              <div className="bg-white border border-[#bfc9c3]/40 rounded-2xl p-6 space-y-4">
+              <div className="bg-white border border-[#bfc9c3]/30 rounded-2xl p-6 space-y-4 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)] transition-all duration-300 relative group overflow-hidden">
                 <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="text-sm font-bold text-[#043F2D] flex items-center gap-1.5">
-                      Zwei-Faktor-Authentifizierung (2FA)
-                      <span className="bg-zinc-100 text-zinc-500 font-bold text-[9px] px-1.5 py-0.5 rounded-md uppercase tracking-wider">Optional</span>
-                    </h3>
-                    <p className="text-[11px] text-zinc-400 font-semibold mt-0.5">Sichere dein Konto zusätzlich ab, indem du bei der Anmeldung einen Bestätigungscode per E-Mail oder Authentifikator-App anforderst.</p>
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-teal-50 border border-teal-200/40 shrink-0">
+                      <Smartphone className="w-4 h-4 text-teal-700" />
+                    </div>
+                    <div className="text-left">
+                      <h3 className="text-sm font-bold text-[#003527] flex items-center gap-1.5">
+                        Zwei-Faktor-Authentifizierung (2FA)
+                        <span className="bg-zinc-100 text-zinc-500 font-bold text-[8px] px-1.5 py-0.5 rounded-md uppercase tracking-wider">Optional</span>
+                      </h3>
+                      <p className="text-[10px] text-zinc-400 font-semibold mt-0.5">Sichere dein Konto zusätzlich ab, indem du bei der Anmeldung einen Bestätigungscode per E-Mail oder Authentifikator-App anforderst.</p>
+                    </div>
                   </div>
 
                   <button
@@ -765,16 +811,23 @@ export default function SettingsPage() {
               </div>
 
               {/* Aktive Sitzungen */}
-              <div className="bg-white border border-[#bfc9c3]/40 rounded-2xl p-6 space-y-4">
-                <div>
-                  <h3 className="text-sm font-bold text-[#043F2D]">Aktive Sitzungen</h3>
-                  <p className="text-[11px] text-zinc-400 font-semibold mt-0.5">Geräte, die derzeit in deinem Konto angemeldet sind.</p>
+              <div className="bg-white border border-[#bfc9c3]/30 rounded-2xl p-6 space-y-4 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)] transition-all duration-300 relative group overflow-hidden">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-indigo-50 border border-indigo-200/40 shrink-0">
+                    <Activity className="w-4 h-4 text-indigo-700" />
+                  </div>
+                  <div className="text-left">
+                    <h3 className="text-sm font-bold text-[#003527]">Aktive Sitzungen</h3>
+                    <p className="text-[10px] text-zinc-400 font-semibold mt-0.5">Geräte, die derzeit in deinem Konto angemeldet sind.</p>
+                  </div>
                 </div>
+
+                <div className="w-full h-px bg-zinc-50" />
 
                 <div className="space-y-3 pt-2">
                   <div className="flex justify-between items-center text-xs border-b border-zinc-50 pb-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-zinc-100 flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-lg bg-zinc-100 flex items-center justify-center">
                         <Activity className="w-4 h-4 text-[#003527]" />
                       </div>
                       <div>
@@ -787,7 +840,7 @@ export default function SettingsPage() {
 
                   <div className="flex justify-between items-center text-xs pb-1">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-zinc-100 flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-lg bg-zinc-100 flex items-center justify-center">
                         <Smartphone className="w-4 h-4 text-zinc-400" />
                       </div>
                       <div>
@@ -808,7 +861,7 @@ export default function SettingsPage() {
                 <div className="border-t border-zinc-100 pt-4 text-right">
                   <button
                     onClick={handleSignOutOthers}
-                    className="border border-rose-200 text-rose-600 hover:bg-rose-50 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                    className="border border-rose-200 text-rose-600 hover:bg-rose-50 px-4 py-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer"
                   >
                     Von allen anderen Geräten abmelden
                   </button>
