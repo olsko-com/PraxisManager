@@ -143,10 +143,17 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const [newInvoiceDueDate, setNewInvoiceDueDate] = React.useState('');
   const dropdownRef = React.useRef<HTMLDivElement>(null);
 
+  // Local state for workspace/profile dropdown
+  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = React.useState(false);
+  const profileDropdownRef = React.useRef<HTMLDivElement>(null);
+
   React.useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsClientDropdownOpen(false);
+      }
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target as Node)) {
+        setIsProfileDropdownOpen(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -394,40 +401,82 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         {/* TOP SECTION */}
         <div className="flex flex-col flex-grow min-h-0">
           {/* Workspace Switcher / Profile Card */}
-          <div className="flex items-center gap-3 px-2.5 py-2 mb-4 hover:bg-white/40 rounded-2xl transition-all text-left w-full cursor-pointer group border border-transparent hover:border-[#bfc9c3]/20">
-            <div className="w-8 h-8 rounded-xl bg-[#003527] flex items-center justify-center shrink-0 shadow-sm">
-              <span className="text-[11px] font-extrabold text-white">
-                {therapistName ? getInitials(therapistName) : 'PM'}
-              </span>
+          <div ref={profileDropdownRef} className="relative mb-4">
+            <div 
+              onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+              className="flex items-center gap-3 px-2.5 py-2 hover:bg-white/40 rounded-lg transition-all text-left w-full cursor-pointer group border border-transparent hover:border-[#bfc9c3]/20"
+            >
+              <div className="w-8 h-8 rounded-md bg-[#003527] flex items-center justify-center shrink-0 shadow-sm">
+                <span className="text-[11px] font-extrabold text-white">
+                  {therapistName ? getInitials(therapistName) : 'PM'}
+                </span>
+              </div>
+              <div className="flex-grow overflow-hidden">
+                <h2 className="text-[12px] font-extrabold text-[#043F2D] leading-none tracking-tight">HManager</h2>
+                <p className="text-[10px] text-zinc-400 font-semibold truncate leading-none mt-0.5">{therapistName}</p>
+              </div>
+              <ChevronsUpDown className="w-3.5 h-3.5 text-zinc-400 group-hover:text-[#003527] transition-colors shrink-0" />
             </div>
-            <div className="flex-grow overflow-hidden">
-              <h2 className="text-[12px] font-extrabold text-[#043F2D] leading-none tracking-tight">HManager</h2>
-              <p className="text-[10px] text-zinc-400 font-semibold truncate leading-none mt-0.5">{therapistName}</p>
-            </div>
-            <ChevronsUpDown className="w-3.5 h-3.5 text-zinc-400 group-hover:text-[#003527] transition-colors shrink-0" />
+
+            {/* Profile Dropdown Menu */}
+            {isProfileDropdownOpen && (
+              <div className="absolute left-0 right-0 mt-1 bg-white/95 backdrop-blur-md border border-[#bfc9c3]/30 rounded-lg shadow-lg py-1.5 z-[100] text-left">
+                <div className="px-3 py-1.5 border-b border-[#bfc9c3]/15 mb-1 select-none">
+                  <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">Workspace</p>
+                  <p className="text-[11px] font-extrabold text-[#003527] truncate mt-0.5">{therapistName}</p>
+                </div>
+
+                {/* Quick Action: Neuer Termin */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsProfileDropdownOpen(false);
+                    setSheetMode('new');
+                    setNewAppDate(new Date().toISOString().slice(0, 10));
+                    setNewAppHour(9);
+                    if (clients.length > 0) setNewAppClientId(clients[0].id);
+                    if (services.length > 0) setNewAppServiceId(services[0].id);
+                    setIsSheetOpen(true);
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-[11px] font-bold text-[#404944] hover:bg-[#003527]/5 hover:text-[#003527] transition-all cursor-pointer border-none bg-transparent text-left"
+                >
+                  <Plus className="w-3.5 h-3.5 text-[#003527]" />
+                  <span>Neuer Termin</span>
+                </button>
+
+                {/* Settings Quick Link */}
+                <Link
+                  href="/dashboard/settings"
+                  onClick={() => setIsProfileDropdownOpen(false)}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-[11px] font-bold text-[#404944] hover:bg-[#003527]/5 hover:text-[#003527] transition-all cursor-pointer text-left block"
+                >
+                  <Settings className="w-3.5 h-3.5 text-[#404944]" />
+                  <span>Einstellungen</span>
+                </Link>
+
+                <div className="h-px bg-[#bfc9c3]/15 my-1" />
+
+                {/* LogOut Action */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsProfileDropdownOpen(false);
+                    handleSignOut();
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-[11px] font-bold text-rose-600 hover:bg-rose-50/50 transition-all cursor-pointer border-none bg-transparent text-left"
+                >
+                  <LogOut className="w-3.5 h-3.5 shrink-0" />
+                  <span>Abmelden</span>
+                </button>
+              </div>
+            )}
           </div>
 
-          {/* Global Quick Action: Neuer Termin */}
-          <button
-            onClick={() => {
-              setSheetMode('new');
-              setNewAppDate(new Date().toISOString().slice(0, 10));
-              setNewAppHour(9);
-              if (clients.length > 0) setNewAppClientId(clients[0].id);
-              if (services.length > 0) setNewAppServiceId(services[0].id);
-              setIsSheetOpen(true);
-            }}
-            className="w-full flex items-center justify-center gap-2 bg-white hover:bg-zinc-50/60 active:scale-[0.99] text-[#003527] text-xs font-bold py-2.5 px-4 rounded-2xl border border-[#bfc9c3]/30 shadow-[0_1px_2px_rgba(0,0,0,0.02)] transition-all mb-6 cursor-pointer"
-          >
-            <Plus className="w-3.5 h-3.5 text-[#003527]" />
-            Neuer Termin
-          </button>
-
           {/* Primary Navigation */}
-          <nav className="space-y-1 text-left flex-shrink-0">
+          <nav className="space-y-1 text-left flex-shrink-0 mb-4">
             <Link
               href="/dashboard/calendar"
-              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all ${
+              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-xs font-bold transition-all ${
                 pathname === '/dashboard/calendar'
                   ? 'bg-white text-[#003527] border border-[#bfc9c3]/30 shadow-[0_1px_3px_rgba(0,0,0,0.02)]'
                   : 'text-[#404944] hover:bg-white/50 hover:text-[#003527]'
@@ -438,7 +487,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
             <Link
               href="/dashboard/clients"
-              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all ${
+              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-xs font-bold transition-all ${
                 pathname === '/dashboard/clients'
                   ? 'bg-white text-[#003527] border border-[#bfc9c3]/30 shadow-[0_1px_3px_rgba(0,0,0,0.02)]'
                   : 'text-[#404944] hover:bg-white/50 hover:text-[#003527]'
@@ -449,7 +498,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
             <Link
               href="/dashboard/invoices"
-              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all ${
+              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-xs font-bold transition-all ${
                 pathname === '/dashboard/invoices'
                   ? 'bg-white text-[#003527] border border-[#bfc9c3]/30 shadow-[0_1px_3px_rgba(0,0,0,0.02)]'
                   : 'text-[#404944] hover:bg-white/50 hover:text-[#003527]'
@@ -477,7 +526,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                     <button
                       type="button"
                       onClick={() => showToast('Die öffentliche Buchungsseite ist aktiv.', 'info')}
-                      className="w-full flex items-center justify-between px-4 py-2 rounded-xl text-[11px] font-bold text-[#404944] hover:bg-white/50 hover:text-[#003527] transition-all bg-transparent border-none cursor-pointer text-left group"
+                      className="w-full flex items-center justify-between px-4 py-2 rounded-md text-[11px] font-bold text-[#404944] hover:bg-white/50 hover:text-[#003527] transition-all bg-transparent border-none cursor-pointer text-left group"
                     >
                       <div className="flex items-center gap-3">
                         <Globe className="w-3.5 h-3.5 text-[#003527]/70 shrink-0" /> 
@@ -498,7 +547,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                     <button
                       type="button"
                       onClick={() => showToast('Die Warteliste läuft im Hintergrund und informiert automatisch Nachrücker.', 'info')}
-                      className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-[11px] font-bold text-[#404944] hover:bg-white/50 hover:text-[#003527] transition-all bg-transparent border-none cursor-pointer text-left"
+                      className="w-full flex items-center gap-3 px-4 py-2 rounded-md text-[11px] font-bold text-[#404944] hover:bg-white/50 hover:text-[#003527] transition-all bg-transparent border-none cursor-pointer text-left"
                     >
                       <div className="flex items-center gap-3">
                         <Clock className="w-3.5 h-3.5 text-[#003527]/70 shrink-0" /> 
@@ -518,7 +567,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                     <button
                       type="button"
                       onClick={() => showToast('Digitale Anamnesebögen werden bei neuen Buchungen mitgeschickt.', 'info')}
-                      className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-[11px] font-bold text-[#404944] hover:bg-white/50 hover:text-[#003527] transition-all bg-transparent border-none cursor-pointer text-left"
+                      className="w-full flex items-center gap-3 px-4 py-2 rounded-md text-[11px] font-bold text-[#404944] hover:bg-white/50 hover:text-[#003527] transition-all bg-transparent border-none cursor-pointer text-left"
                     >
                       <div className="flex items-center gap-3">
                         <FileText className="w-3.5 h-3.5 text-[#003527]/70 shrink-0" /> 
@@ -538,7 +587,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                     <button
                       type="button"
                       onClick={() => showToast('Stripe Online-Zahlungen und Anzahlungen sind im Buchungsprozess aktiv.', 'info')}
-                      className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-[11px] font-bold text-[#404944] hover:bg-white/50 hover:text-[#003527] transition-all bg-transparent border-none cursor-pointer text-left"
+                      className="w-full flex items-center gap-3 px-4 py-2 rounded-md text-[11px] font-bold text-[#404944] hover:bg-white/50 hover:text-[#003527] transition-all bg-transparent border-none cursor-pointer text-left"
                     >
                       <div className="flex items-center gap-3">
                         <CreditCard className="w-3.5 h-3.5 text-[#003527]/70 shrink-0" /> 
@@ -558,7 +607,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                     <button
                       type="button"
                       onClick={() => showToast('10er-Karten & Abonnements stehen Klienten online zur Verfügung.', 'info')}
-                      className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-[11px] font-bold text-[#404944] hover:bg-white/50 hover:text-[#003527] transition-all bg-transparent border-none cursor-pointer text-left"
+                      className="w-full flex items-center gap-3 px-4 py-2 rounded-md text-[11px] font-bold text-[#404944] hover:bg-white/50 hover:text-[#003527] transition-all bg-transparent border-none cursor-pointer text-left"
                     >
                       <div className="flex items-center gap-3">
                         <Activity className="w-3.5 h-3.5 text-[#003527]/70 shrink-0" /> 
@@ -578,7 +627,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                     <button
                       type="button"
                       onClick={() => showToast('Google Review Autopilot versendet automatische Anfragen nach dem Ersttermin.', 'info')}
-                      className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-[11px] font-bold text-[#404944] hover:bg-white/50 hover:text-[#003527] transition-all bg-transparent border-none cursor-pointer text-left"
+                      className="w-full flex items-center gap-3 px-4 py-2 rounded-md text-[11px] font-bold text-[#404944] hover:bg-white/50 hover:text-[#003527] transition-all bg-transparent border-none cursor-pointer text-left"
                     >
                       <div className="flex items-center gap-3">
                         <TrendingUp className="w-3.5 h-3.5 text-[#003527]/70 shrink-0" /> 
@@ -598,7 +647,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                     <button
                       type="button"
                       onClick={() => showToast('Zoom-Integration ist aktiv: Links werden automatisch generiert.', 'info')}
-                      className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-[11px] font-bold text-[#404944] hover:bg-white/50 hover:text-[#003527] transition-all bg-transparent border-none cursor-pointer text-left"
+                      className="w-full flex items-center gap-3 px-4 py-2 rounded-md text-[11px] font-bold text-[#404944] hover:bg-white/50 hover:text-[#003527] transition-all bg-transparent border-none cursor-pointer text-left"
                     >
                       <div className="flex items-center gap-3">
                         <ExternalLink className="w-3.5 h-3.5 text-[#003527]/70 shrink-0" /> 
@@ -617,7 +666,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           {/* Global Search (Command K) */}
           <button 
             onClick={() => setIsCmdkOpen(true)}
-            className="w-full flex items-center justify-between bg-white border border-[#bfc9c3]/20 hover:border-[#bfc9c3]/50 rounded-2xl px-4 py-2.5 text-xs font-bold text-zinc-400 hover:text-[#003527] transition-all cursor-pointer group"
+            className="w-full flex items-center justify-between bg-white border border-[#bfc9c3]/20 hover:border-[#bfc9c3]/50 rounded-lg px-4 py-2.5 text-xs font-bold text-zinc-400 hover:text-[#003527] transition-all cursor-pointer group"
           >
             <span className="flex items-center gap-2">
               <Search className="w-3.5 h-3.5 text-zinc-400 group-hover:text-[#003527]" /> Suche...
@@ -634,7 +683,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           {/* Erweiterungen */}
           <Link
             href="/dashboard/addons"
-            className={`w-full flex items-center gap-3 px-4 py-2 rounded-xl text-[11px] font-bold transition-all ${
+            className={`w-full flex items-center gap-3 px-4 py-2 rounded-md text-[11px] font-bold transition-all ${
               pathname === '/dashboard/addons'
                 ? 'bg-white text-[#003527] border border-[#bfc9c3]/30 shadow-[0_1px_3px_rgba(0,0,0,0.02)]'
                 : 'text-[#404944] hover:bg-white/50 hover:text-[#003527]'
@@ -646,7 +695,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           {/* Einstellungen */}
           <Link
             href="/dashboard/settings"
-            className={`w-full flex items-center gap-3 px-4 py-2 rounded-xl text-[11px] font-bold transition-all ${
+            className={`w-full flex items-center gap-3 px-4 py-2 rounded-md text-[11px] font-bold transition-all ${
               pathname === '/dashboard/settings'
                 ? 'bg-white text-[#003527] border border-[#bfc9c3]/30 shadow-[0_1px_3px_rgba(0,0,0,0.02)]'
                 : 'text-[#404944] hover:bg-white/50 hover:text-[#003527]'
@@ -654,17 +703,6 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           >
             <Settings className="w-3.5 h-3.5 shrink-0" /> Einstellungen
           </Link>
-
-          {/* Separator Line */}
-          <div className="h-px bg-[#bfc9c3]/20 my-1 mx-2" />
-
-          {/* Abmelden */}
-          <button 
-            onClick={handleSignOut}
-            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-[11px] font-bold text-rose-600 hover:bg-rose-50/50 transition-all cursor-pointer border-none bg-transparent"
-          >
-            <LogOut className="w-3.5 h-3.5 shrink-0" /> Abmelden
-          </button>
         </div>
       </aside>
 
