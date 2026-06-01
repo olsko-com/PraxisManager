@@ -760,7 +760,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
             >
               <div>
                 <div className="flex justify-between items-center border-b border-[#bfc9c3]/30 pb-4 mb-6">
-                  <h3 className="text-lg font-bold text-[#043F2D]">E-Mail schreiben</h3>
+                  <h3 className="text-lg font-bold text-[#043F2D]">E-Mail an {currentClient.name}</h3>
                   <button 
                     onClick={() => setIsMailModalOpen(false)}
                     className="p-1 rounded-full hover:bg-zinc-100 text-[#003527] cursor-pointer"
@@ -899,12 +899,15 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
                   <div className="space-y-2">
                     <label className="block text-[10px] font-bold text-[#003527]/70 uppercase tracking-widest text-left">Empfänger</label>
-                    <input
-                      type="email"
-                      value={currentClient.email}
-                      disabled
-                      className="w-full bg-zinc-50 border border-zinc-200 text-zinc-400 rounded-2xl px-4 py-3 font-semibold text-xs outline-none cursor-not-allowed text-left"
-                    />
+                    <div className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl px-4 py-2.5 flex items-center gap-2.5 text-left select-none">
+                      <div className="w-6 h-6 rounded-full bg-[#003527]/10 text-[#003527] flex items-center justify-center text-[10px] font-extrabold flex-shrink-0">
+                        {getInitials(currentClient.name)}
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-xs font-bold text-[#003527] truncate">{currentClient.name}</span>
+                        <span className="text-[10px] text-zinc-400 font-semibold truncate">{currentClient.email}</span>
+                      </div>
+                    </div>
                   </div>
 
                   <div className="space-y-2">
