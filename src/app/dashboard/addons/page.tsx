@@ -256,9 +256,6 @@ export default function AddonsPage() {
               <LayoutGrid className="w-5 h-5 text-[#003527]" />
               Erweiterungen
             </h2>
-            <p className="text-xs text-zinc-400 font-semibold mt-1">
-              Passe deinen Workspace an deine Praxisbedürfnisse an. Aktiviere Module mit einem Klick.
-            </p>
           </div>
         </div>
 
