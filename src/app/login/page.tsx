@@ -27,7 +27,7 @@ export default function LoginPage() {
 
   const checkPasswordStrength = (pw: string) => {
     const requirements = {
-      length: pw.length >= 10,
+      length: pw.length >= 8,
       uppercase: /[A-Z]/.test(pw),
       lowercase: /[a-z]/.test(pw),
       number: /[0-9]/.test(pw),
@@ -466,11 +466,11 @@ export default function LoginPage() {
                     {(() => {
                       const { requirements } = checkPasswordStrength(password);
                       const reqList = [
-                        { key: 'length', text: 'Mindestens 10 Zeichen' },
-                        { key: 'uppercase', text: 'Ein Großbuchstabe (A-Z)' },
-                        { key: 'lowercase', text: 'Ein Kleinbuchstabe (a-z)' },
-                        { key: 'number', text: 'Eine Zahl (0-9)' },
-                        { key: 'special', text: 'Ein Sonderzeichen (z. B. @, $, !, %)' }
+                        { key: 'length', text: 'Mindestens 8 Zeichen' },
+                        { key: 'uppercase', text: 'Großbuchstabe (A-Z)' },
+                        { key: 'lowercase', text: 'Kleinbuchstabe (a-z)' },
+                        { key: 'number', text: 'Zahl (0-9)' },
+                        { key: 'special', text: 'Sonderzeichen (@, !)' }
                       ];
 
                       return (
