@@ -25,6 +25,43 @@ export default function LoginPage() {
   // States to keep track of active input focus
   const [focusField, setFocusField] = useState<string | null>(null);
 
+  const checkPasswordStrength = (pw: string) => {
+    const requirements = {
+      length: pw.length >= 10,
+      uppercase: /[A-Z]/.test(pw),
+      lowercase: /[a-z]/.test(pw),
+      number: /[0-9]/.test(pw),
+      special: /[^A-Za-z0-9]/.test(pw),
+    };
+
+    const score = Object.values(requirements).filter(Boolean).length;
+    
+    let label = 'Sehr schwach';
+    let color = 'bg-rose-500';
+    let width = 'w-1/5';
+    if (score === 2) {
+      label = 'Schwach';
+      color = 'bg-orange-400';
+      width = 'w-2/5';
+    } else if (score === 3) {
+      label = 'Mittel';
+      color = 'bg-amber-400';
+      width = 'w-3/5';
+    } else if (score === 4) {
+      label = 'Gut';
+      color = 'bg-emerald-400';
+      width = 'w-4/5';
+    } else if (score === 5) {
+      label = 'Stark (Empfohlen)';
+      color = 'bg-[#003527]';
+      width = 'w-full';
+    }
+
+    const isValid = requirements.length && requirements.uppercase && requirements.lowercase && requirements.number && requirements.special;
+
+    return { requirements, score, label, color, width, isValid };
+  };
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
@@ -126,6 +163,14 @@ export default function LoginPage() {
     } else {
       if (!restaurantName) {
         setError('Bitte gib den Namen deiner Praxis oder deinen Namen an.');
+        setIsLoading(false);
+        return;
+      }
+
+      // Secure password check
+      const strength = checkPasswordStrength(password);
+      if (!strength.isValid) {
+        setError('Bitte wähle ein sichereres Passwort, das alle Kriterien erfüllt.');
         setIsLoading(false);
         return;
       }
@@ -305,6 +350,7 @@ export default function LoginPage() {
                       type="text"
                       required
                       value={restaurantName}
+                      autoComplete="organization"
                       onFocus={() => setFocusField('restaurantName')}
                       onBlur={() => setFocusField(null)}
                       onChange={(e) => setRestaurantName(e.target.value)}
@@ -336,6 +382,7 @@ export default function LoginPage() {
                     type="email"
                     required
                     value={email}
+                    autoComplete="email"
                     onFocus={() => setFocusField('email')}
                     onBlur={() => setFocusField(null)}
                     onChange={(e) => setEmail(e.target.value)}
@@ -366,6 +413,7 @@ export default function LoginPage() {
                     type={showPassword ? 'text' : 'password'}
                     required
                     value={password}
+                    autoComplete={activeMode === 'login' ? 'current-password' : 'new-password'}
                     onFocus={() => setFocusField('password')}
                     onBlur={() => setFocusField(null)}
                     onChange={(e) => setPassword(e.target.value)}
@@ -379,6 +427,62 @@ export default function LoginPage() {
                     {showPassword ? <EyeOff className="h-4.5 w-4.5" /> : <Eye className="h-4.5 w-4.5" />}
                   </button>
                 </div>
+
+                {/* Password Strength Indicator (Sign Up Mode only) */}
+                {activeMode === 'signup' && password.length > 0 && (
+                  <motion.div 
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="space-y-2.5 pt-1 overflow-hidden"
+                  >
+                    {/* Strength Bar */}
+                    {(() => {
+                      const { label, color, width } = checkPasswordStrength(password);
+                      return (
+                        <div className="space-y-1">
+                          <div className="flex justify-between items-center text-[10px] font-bold">
+                            <span className="text-zinc-400">Passwortstärke:</span>
+                            <span className="text-[#003527]">{label}</span>
+                          </div>
+                          <div className="h-1 w-full bg-zinc-200 rounded-full overflow-hidden">
+                            <div className={`h-full ${color} ${width} transition-all duration-300 rounded-full`} />
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Requirements Checklist */}
+                    {(() => {
+                      const { requirements } = checkPasswordStrength(password);
+                      const reqList = [
+                        { key: 'length', text: 'Mindestens 10 Zeichen' },
+                        { key: 'uppercase', text: 'Ein Großbuchstabe (A-Z)' },
+                        { key: 'lowercase', text: 'Ein Kleinbuchstabe (a-z)' },
+                        { key: 'number', text: 'Eine Zahl (0-9)' },
+                        { key: 'special', text: 'Ein Sonderzeichen (z. B. @, $, !, %)' }
+                      ];
+
+                      return (
+                        <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[10px] font-medium text-zinc-500 bg-[#f3f4f3]/40 border border-[#bfc9c3]/20 rounded-xl p-3">
+                          {reqList.map((req) => {
+                            const isMet = requirements[req.key as keyof typeof requirements];
+                            return (
+                              <div key={req.key} className="flex items-center gap-1.5">
+                                <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 transition-colors ${
+                                  isMet ? 'bg-[#003527]' : 'bg-zinc-300'
+                                }`} />
+                                <span className={`transition-colors ${isMet ? 'text-[#003527] font-semibold' : 'text-zinc-400'}`}>
+                                  {req.text}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
+                  </motion.div>
+                )}
 
                 {/* Forgot password (only in login mode) */}
                 {activeMode === 'login' && (
