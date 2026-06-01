@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { 
   Calendar as CalendarIcon, Users, FileText, Settings, LogOut, Search, Plus, 
   Trash2, X, CheckCircle2, AlertCircle, Sparkles, Printer, Download, 
   Mail, Clock, User, Check, Star, Flag, AlertCircle as InfoIcon,
-  ZoomIn, ZoomOut, ChevronDown
+  ZoomIn, ZoomOut, ChevronDown, LayoutGrid, CreditCard, TrendingUp, Activity, ExternalLink
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import CommandPalette from '@/components/CommandPalette';
@@ -110,6 +110,28 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   } = useDashboard();
 
   const currentClient = clients.find(c => c.id === selectedClientId);
+
+  // Local state for active addons
+  const [activeAddons, setActiveAddons] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    const loadAddons = () => {
+      const addons: Record<string, boolean> = {};
+      const addonKeys = [
+        'public-booking', 'waitlist', 'intake-forms', 
+        'stripe-payments', 'packages-abos', 'sms-reminders', 
+        'google-reviews', 'calendar-sync', 'zoom-integration'
+      ];
+      addonKeys.forEach(key => {
+        addons[key] = localStorage.getItem(`addon_${key}`) === 'true';
+      });
+      setActiveAddons(addons);
+    };
+
+    loadAddons();
+    window.addEventListener('addons-updated', loadAddons);
+    return () => window.removeEventListener('addons-updated', loadAddons);
+  }, []);
 
   // Local state for line items in the invoice creator
   const [lineItems, setLineItems] = React.useState<{ id: string; description: string; price: number }[]>([]);
@@ -376,7 +398,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        <nav className="flex-grow space-y-2">
+        <nav className="flex-grow space-y-2 overflow-y-auto pr-1 -mr-2 hide-scrollbar text-left">
           <Link
             href="/dashboard/calendar"
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all ${
@@ -411,6 +433,17 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           </Link>
 
           <Link
+            href="/dashboard/addons"
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all ${
+              pathname === '/dashboard/addons'
+                ? 'bg-white text-[#003527] border border-[#bfc9c3]/30'
+                : 'text-[#404944] hover:bg-white/50 hover:text-[#003527]'
+            }`}
+          >
+            <LayoutGrid className="w-4 h-4" /> Erweiterungen
+          </Link>
+
+          <Link
             href="/dashboard/settings"
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all ${
               pathname === '/dashboard/settings'
@@ -420,6 +453,117 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           >
             <Settings className="w-4 h-4" /> Einstellungen
           </Link>
+
+          {/* Active Addon Links */}
+          {Object.values(activeAddons).some(Boolean) && (
+            <div className="pt-4 border-t border-[#bfc9c3]/20 mt-4 space-y-1">
+              <span className="block px-4 text-[9px] font-bold text-zinc-400 uppercase tracking-widest text-left mb-2">Aktive Module</span>
+              <AnimatePresence>
+                {activeAddons['waitlist'] && (
+                  <motion.div
+                    key="waitlist"
+                    initial={{ opacity: 0, height: 0, y: -5 }}
+                    animate={{ opacity: 1, height: 'auto', y: 0 }}
+                    exit={{ opacity: 0, height: 0, y: -5 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => showToast('Die Warteliste läuft im Hintergrund und informiert automatisch Nachrücker.', 'info')}
+                      className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-[11px] font-bold text-[#404944] hover:bg-white/50 hover:text-[#003527] transition-all bg-transparent border-none cursor-pointer text-left"
+                    >
+                      <Clock className="w-3.5 h-3.5 text-[#003527]/70" /> Warteliste
+                    </button>
+                  </motion.div>
+                )}
+                {activeAddons['intake-forms'] && (
+                  <motion.div
+                    key="intake-forms"
+                    initial={{ opacity: 0, height: 0, y: -5 }}
+                    animate={{ opacity: 1, height: 'auto', y: 0 }}
+                    exit={{ opacity: 0, height: 0, y: -5 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => showToast('Digitale Anamnesebögen werden bei neuen Buchungen mitgeschickt.', 'info')}
+                      className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-[11px] font-bold text-[#404944] hover:bg-white/50 hover:text-[#003527] transition-all bg-transparent border-none cursor-pointer text-left"
+                    >
+                      <FileText className="w-3.5 h-3.5 text-[#003527]/70" /> Anamnesebögen
+                    </button>
+                  </motion.div>
+                )}
+                {activeAddons['stripe-payments'] && (
+                  <motion.div
+                    key="stripe"
+                    initial={{ opacity: 0, height: 0, y: -5 }}
+                    animate={{ opacity: 1, height: 'auto', y: 0 }}
+                    exit={{ opacity: 0, height: 0, y: -5 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => showToast('Stripe Online-Zahlungen und Anzahlungen sind im Buchungsprozess aktiv.', 'info')}
+                      className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-[11px] font-bold text-[#404944] hover:bg-white/50 hover:text-[#003527] transition-all bg-transparent border-none cursor-pointer text-left"
+                    >
+                      <CreditCard className="w-3.5 h-3.5 text-[#003527]/70" /> Online-Zahlungen
+                    </button>
+                  </motion.div>
+                )}
+                {activeAddons['packages-abos'] && (
+                  <motion.div
+                    key="packages"
+                    initial={{ opacity: 0, height: 0, y: -5 }}
+                    animate={{ opacity: 1, height: 'auto', y: 0 }}
+                    exit={{ opacity: 0, height: 0, y: -5 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => showToast('10er-Karten & Abonnements stehen Klienten online zur Verfügung.', 'info')}
+                      className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-[11px] font-bold text-[#404944] hover:bg-white/50 hover:text-[#003527] transition-all bg-transparent border-none cursor-pointer text-left"
+                    >
+                      <Activity className="w-3.5 h-3.5 text-[#003527]/70" /> Pakete & Abos
+                    </button>
+                  </motion.div>
+                )}
+                {activeAddons['google-reviews'] && (
+                  <motion.div
+                    key="reviews"
+                    initial={{ opacity: 0, height: 0, y: -5 }}
+                    animate={{ opacity: 1, height: 'auto', y: 0 }}
+                    exit={{ opacity: 0, height: 0, y: -5 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => showToast('Google Review Autopilot versendet automatische Anfragen nach dem Ersttermin.', 'info')}
+                      className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-[11px] font-bold text-[#404944] hover:bg-white/50 hover:text-[#003527] transition-all bg-transparent border-none cursor-pointer text-left"
+                    >
+                      <TrendingUp className="w-3.5 h-3.5 text-[#003527]/70" /> Google Reviews
+                    </button>
+                  </motion.div>
+                )}
+                {activeAddons['zoom-integration'] && (
+                  <motion.div
+                    key="zoom"
+                    initial={{ opacity: 0, height: 0, y: -5 }}
+                    animate={{ opacity: 1, height: 'auto', y: 0 }}
+                    exit={{ opacity: 0, height: 0, y: -5 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => showToast('Zoom-Integration ist aktiv: Links werden automatisch generiert.', 'info')}
+                      className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-[11px] font-bold text-[#404944] hover:bg-white/50 hover:text-[#003527] transition-all bg-transparent border-none cursor-pointer text-left"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5 text-[#003527]/70" /> Video-Therapie
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          )}
         </nav>
 
         <div className="pt-6 border-t border-[#bfc9c3]/30 space-y-4">
