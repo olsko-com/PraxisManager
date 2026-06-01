@@ -39,7 +39,12 @@ export default function LoginPage() {
     let label = 'Sehr schwach';
     let color = 'bg-rose-500';
     let width = 'w-1/5';
-    if (score === 2) {
+    
+    if (pw.length === 0) {
+      label = 'Passwort eingeben';
+      color = 'bg-zinc-200';
+      width = 'w-0';
+    } else if (score === 2) {
       label = 'Schwach';
       color = 'bg-orange-400';
       width = 'w-2/5';
@@ -203,11 +208,16 @@ export default function LoginPage() {
         } else {
           // Trigger the new success screen instead of a small box message
           setIsSuccessScreen(true);
-          setIsLoading(false);
         }
       }
     }
   };
+
+  const isButtonDisabled = isLoading || (
+    activeMode === 'login' 
+      ? (!email || !password) 
+      : (!email || !restaurantName || !checkPasswordStrength(password).isValid)
+  );
 
   return (
     <div className="min-h-screen bg-[#f9f9f8] flex flex-col lg:flex-row font-sans selection:bg-emerald-500/20 selection:text-[#003527] overflow-y-auto">
@@ -429,7 +439,7 @@ export default function LoginPage() {
                 </div>
 
                 {/* Password Strength Indicator (Sign Up Mode only) */}
-                {activeMode === 'signup' && password.length > 0 && (
+                {activeMode === 'signup' && (password.length > 0 || focusField === 'password') && (
                   <motion.div 
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: 'auto', opacity: 1 }}
@@ -515,10 +525,10 @@ export default function LoginPage() {
                 {/* Main Log In Action */}
                 <div className="pt-2">
                   <motion.button
-                    whileTap={{ scale: 0.98 }}
+                    whileTap={!isButtonDisabled ? { scale: 0.98 } : {}}
                     type="submit"
-                    disabled={isLoading}
-                    className="w-full bg-[#003527] hover:bg-[#0b513d] text-white py-3.5 rounded-xl text-sm font-bold tracking-wide transition-all shadow-none cursor-pointer disabled:opacity-50"
+                    disabled={isButtonDisabled}
+                    className="w-full bg-[#003527] hover:bg-[#0b513d] text-white py-3.5 rounded-xl text-sm font-bold tracking-wide transition-all shadow-none cursor-pointer disabled:bg-zinc-200 disabled:text-zinc-400 disabled:cursor-not-allowed disabled:hover:bg-zinc-200"
                   >
                     {isLoading 
                       ? (activeMode === 'login' ? 'Melde an...' : 'Registriere...') 
