@@ -3,7 +3,7 @@
 import React from 'react';
 import { 
   Plus, Search, Mail, Calendar as CalendarIcon, Paperclip, FileText, 
-  Edit2, Trash2, Star, Flag, ChevronRight, MoreVertical
+  Edit2, Trash2, Star, Flag, ChevronRight, MoreVertical, User, Phone, Heart
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDashboard } from '../context';
@@ -483,79 +483,142 @@ export default function ClientsPage() {
 
             {/* Scrollable details content */}
             <div className="flex-grow overflow-y-auto px-12 py-8 space-y-6">
-              {/* Quick profile info grid */}
-              <div className="bg-[#f9f9f8] border border-[#bfc9c3]/30 rounded-2xl p-6 grid grid-cols-1 md:grid-cols-2 gap-8 text-xs text-[#404944] text-left">
-                {/* Stammdaten */}
-                <div className="space-y-4">
-                  <h4 className="text-[10px] font-bold text-[#003527]/60 uppercase tracking-widest border-b border-[#bfc9c3]/30 pb-1.5">Stammdaten</h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-0.5">
-                      <span className="block text-[10px] font-medium text-zinc-400">Geburtstag</span>
-                      <span className="block text-xs font-bold text-[#043F2D]">{new Date(currentClient.birthday).toLocaleDateString('de-DE')}</span>
+              {/* Quick profile info grid (Bento Grid) */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Bento Card 1: Stammdaten */}
+                <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 flex flex-col justify-between transition-all duration-300 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)] relative group overflow-hidden">
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-start">
+                      <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200/40 text-emerald-700">
+                        <User className="w-4 h-4" />
+                      </div>
+                      <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-500">
+                        Stammdaten
+                      </span>
                     </div>
-                    <div className="space-y-0.5">
-                      <span className="block text-[10px] font-medium text-zinc-400">Telefon</span>
-                      <span className="block text-xs font-bold text-[#043F2D]">{currentClient.phone || 'Keine Angabe'}</span>
-                    </div>
-                    <div className="space-y-0.5 col-span-2">
-                      <span className="block text-[10px] font-medium text-zinc-400">E-Mail</span>
-                      <span className="block text-xs font-bold text-[#043F2D] break-all">{currentClient.email}</span>
+                    <div className="space-y-3.5 text-left pt-1">
+                      <div className="space-y-0.5">
+                        <span className="block text-[10px] font-medium text-zinc-400">Geburtstag</span>
+                        <span className="block text-xs font-extrabold text-[#003527]">{new Date(currentClient.birthday).toLocaleDateString('de-DE')}</span>
+                      </div>
+                      <div className="space-y-0.5">
+                        <span className="block text-[10px] font-medium text-zinc-400">Mitglied seit</span>
+                        <span className="block text-xs font-extrabold text-[#003527]">{new Date(currentClient.createdAt).toLocaleDateString('de-DE')}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Notfallkontakt & Notizen */}
-                <div className="space-y-4">
-                  <h4 className="text-[10px] font-bold text-[#003527]/60 uppercase tracking-widest border-b border-[#bfc9c3]/30 pb-1.5">Notfallkontakt & Notizen</h4>
+                {/* Bento Card 2: Kontakt */}
+                <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 flex flex-col justify-between transition-all duration-300 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)] relative group overflow-hidden">
                   <div className="space-y-4">
-                    <div className="space-y-0.5">
-                      <span className="block text-[10px] font-medium text-zinc-400">Kontakt</span>
-                      <span className="block text-xs font-bold text-[#043F2D]">{currentClient.emergencyContact || 'Kein Kontakt hinterlegt'}</span>
+                    <div className="flex justify-between items-start">
+                      <div className="p-2 rounded-xl bg-blue-50 border border-blue-200/40 text-blue-700">
+                        <Phone className="w-4 h-4" />
+                      </div>
+                      <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-500">
+                        Erreichbarkeit
+                      </span>
                     </div>
-                    <div className="space-y-0.5">
-                      <span className="block text-[10px] font-medium text-zinc-400">Notizen</span>
-                      <span className="block text-xs font-bold text-[#043F2D] leading-relaxed">{currentClient.notes || 'Keine Notizen hinterlegt'}</span>
+                    <div className="space-y-3.5 text-left pt-1">
+                      <div className="space-y-0.5">
+                        <span className="block text-[10px] font-medium text-zinc-400">Telefon</span>
+                        <span className="block text-xs font-extrabold text-[#003527]">{currentClient.phone || 'Keine Angabe'}</span>
+                      </div>
+                      <div className="space-y-0.5">
+                        <span className="block text-[10px] font-medium text-zinc-400">E-Mail</span>
+                        <span className="block text-xs font-extrabold text-[#003527] break-all">{currentClient.email}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bento Card 3: Notfallkontakt */}
+                <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 flex flex-col justify-between transition-all duration-300 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)] relative group overflow-hidden">
+                  <div className="space-y-4 flex-grow">
+                    <div className="flex justify-between items-start">
+                      <div className="p-2 rounded-xl bg-rose-50 border border-rose-200/40 text-rose-700">
+                        <Heart className="w-4 h-4" />
+                      </div>
+                      <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-500">
+                        Notfallkontakt
+                      </span>
+                    </div>
+                    <div className="space-y-3 text-left pt-3 min-h-[82px] flex flex-col justify-center">
+                      <p className="text-xs font-extrabold text-[#003527] leading-relaxed">
+                        {currentClient.emergencyContact || 'Kein Notfallkontakt hinterlegt'}
+                      </p>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Patient Document Locker */}
-              <div className="space-y-3 text-left">
-                <div className="flex justify-between items-center px-1">
-                  <h4 className="text-[10px] font-bold text-[#003527]/60 uppercase tracking-widest">Dokumenten-Ablage (DSGVO-safe)</h4>
-                  <button 
-                    onClick={() => {
-                      const name = prompt('Dokumentenname (z.B. Rezept_Befund.pdf):');
-                      if (name) {
-                        const docs = clientDocuments[currentClient.id] || [];
-                        setClientDocuments((prev: Record<string, {name: string, size: string}[]>) => ({
-                          ...prev,
-                          [currentClient.id]: [...docs, { name, size: '150 KB' }]
-                        }));
-                      }
-                    }}
-                    className="text-[10px] font-bold text-[#003527] hover:text-[#0b513d] flex items-center gap-1 cursor-pointer transition-colors bg-transparent border-none p-0"
-                  >
-                    <Paperclip className="w-3.5 h-3.5" /> PDF hochladen
-                  </button>
+              {/* Bento Row 2: Notes & Document Locker side-by-side */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Bento Card 4: Medizinische Notizen / Anamnese (col-span-2) */}
+                <div className="md:col-span-2 bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 flex flex-col justify-between transition-all duration-300 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)] relative group overflow-hidden">
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-start">
+                      <div className="p-2 rounded-xl bg-purple-50 border border-purple-200/40 text-purple-700">
+                        <FileText className="w-4 h-4" />
+                      </div>
+                      <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-500">
+                        Praxisnotizen & Anamnese
+                      </span>
+                    </div>
+                    <div className="text-left pt-1">
+                      <p className="text-xs font-semibold leading-relaxed text-[#404944] min-h-[60px]">
+                        {currentClient.notes || 'Keine medizinischen Notizen hinterlegt.'}
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="bg-[#f9f9f8] border border-[#bfc9c3]/30 rounded-2xl p-4 divide-y divide-zinc-200/50">
-                  {(clientDocuments[currentClient.id] || []).length > 0 ? (
-                    (clientDocuments[currentClient.id] || []).map((doc, idx) => (
-                      <div key={idx} className="py-2.5 first:pt-0 last:pb-0 flex justify-between items-center text-xs font-semibold text-zinc-800">
-                        <span className="flex items-center gap-2">
-                          <FileText className="w-4 h-4 text-[#003527]/70" />
-                          <span>{doc.name}</span> 
-                          <span className="text-[9px] text-zinc-400 font-medium">({doc.size})</span>
-                        </span>
-                        <a href="#" className="text-[10px] font-bold text-[#003527] hover:underline transition-all">Ansehen</a>
+                {/* Bento Card 5: Dokumente locker (col-span-1) */}
+                <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 flex flex-col justify-between transition-all duration-300 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)] relative group overflow-hidden">
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-start">
+                      <div className="p-2 rounded-xl bg-amber-50 border border-amber-200/40 text-amber-700">
+                        <Paperclip className="w-4 h-4" />
                       </div>
-                    ))
-                  ) : (
-                    <div className="text-center py-6 text-xs text-zinc-400 font-semibold italic">Keine Befunde oder Anamnesebögen hochgeladen.</div>
-                  )}
+                      <button 
+                        onClick={() => {
+                          const name = prompt('Dokumentenname (z.B. Rezept_Befund.pdf):');
+                          if (name) {
+                            const docs = clientDocuments[currentClient.id] || [];
+                            setClientDocuments((prev: Record<string, {name: string, size: string}[]>) => ({
+                              ...prev,
+                              [currentClient.id]: [...docs, { name, size: '150 KB' }]
+                            }));
+                            showToast('Dokument erfolgreich hinzugefügt.', 'success');
+                          }
+                        }}
+                        className="text-[9px] font-bold text-[#003527] hover:text-[#0b513d] flex items-center gap-0.5 transition-colors cursor-pointer bg-zinc-100 hover:bg-[#003527]/5 border border-transparent rounded-md px-2 py-0.5"
+                      >
+                        + PDF
+                      </button>
+                    </div>
+
+                    <div className="space-y-2 text-left">
+                      {(clientDocuments[currentClient.id] || []).length > 0 ? (
+                        <div className="max-h-[110px] overflow-y-auto pr-1 space-y-1.5 hide-scrollbar">
+                          {(clientDocuments[currentClient.id] || []).map((doc, idx) => (
+                            <div key={idx} className="flex justify-between items-center text-[10px] font-semibold text-[#404944] bg-zinc-50 border border-zinc-200/30 p-2 rounded-lg hover:border-zinc-200 transition-all">
+                              <span className="flex items-center gap-1.5 min-w-0 pr-2">
+                                <FileText className="w-3.5 h-3.5 text-[#003527]/60 flex-shrink-0" />
+                                <span className="truncate" title={doc.name}>{doc.name}</span>
+                              </span>
+                              <a href="#" className="text-[9px] font-extrabold text-[#003527] hover:underline flex-shrink-0">Ansehen</a>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center py-6 text-center text-[10px] text-zinc-400 font-medium italic">
+                          Keine Dokumente abgelegt
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -574,83 +637,100 @@ export default function ClientsPage() {
                 <div className="space-y-4">
                   {clientSoapNotes.length > 0 ? (
                     clientSoapNotes.map((note) => (
-                      <div key={note.id} className="bg-[#f9f9f8] border border-[#bfc9c3]/30 rounded-2xl p-5 space-y-3.5 relative">
-                        <div className="flex justify-between items-center border-b border-[#bfc9c3]/30 pb-2">
-                          <span className="text-[10px] font-bold text-zinc-400">Behandlungs-Eintrag vom {new Date(note.date).toLocaleDateString('de-DE')}</span>
+                      <div key={note.id} className="bg-white border border-[#bfc9c3]/30 rounded-2xl p-5 space-y-4 hover:border-[#bfc9c3]/50 transition-all duration-300 relative group overflow-hidden shadow-[0_4px_20px_rgba(0,53,39,0.01)]">
+                        <div className="flex justify-between items-center border-b border-zinc-100 pb-3">
+                          <div className="flex items-center gap-2">
+                            <div className="p-1.5 rounded-lg bg-emerald-50/60 border border-emerald-200/30 text-emerald-700">
+                              <CalendarIcon className="w-3.5 h-3.5" />
+                            </div>
+                            <span className="text-[10px] font-extrabold text-[#003527] uppercase tracking-wider">Eintrag vom {new Date(note.date).toLocaleDateString('de-DE')}</span>
+                          </div>
                           {soapEditId === note.id ? (
-                            <button onClick={saveSoapNote} className="text-[10px] font-bold text-emerald-700 hover:text-emerald-800 transition-colors cursor-pointer border-none bg-transparent p-0">Speichern</button>
+                            <button onClick={saveSoapNote} className="text-[10px] font-extrabold text-emerald-700 hover:text-emerald-800 transition-colors cursor-pointer border-none bg-transparent p-0">Speichern</button>
                           ) : (
-                            <button onClick={() => startEditSoap(note)} className="text-[10px] font-bold text-[#003527] hover:text-[#0b513d] transition-colors flex items-center gap-0.5 cursor-pointer border-none bg-transparent p-0">
+                            <button onClick={() => startEditSoap(note)} className="text-[10px] font-extrabold text-zinc-400 hover:text-[#003527] transition-colors flex items-center gap-0.5 cursor-pointer border-none bg-transparent p-0 opacity-0 group-hover:opacity-100">
                               <Edit2 className="w-3 h-3" /> Bearbeiten
                             </button>
                           )}
                         </div>
 
                         {soapEditId === note.id ? (
-                          <div className="space-y-3.5 text-xs text-left">
-                            <div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-left">
+                            <div className="space-y-1.5">
                               <label className="block text-[9px] font-bold uppercase tracking-widest text-[#003527]/70">Subjective (Befund)</label>
                               <textarea 
                                 value={soapSubjective} 
                                 onChange={(e) => setSoapSubjective(e.target.value)} 
-                                className="w-full bg-white border border-[#bfc9c3]/50 rounded-xl p-2.5 mt-1 text-xs text-zinc-950 focus:ring-1 focus:ring-[#003527]/30 focus:border-[#003527] outline-none transition-all resize-y min-h-[60px]" 
+                                className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-xl p-2.5 text-xs text-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all resize-y min-h-[60px]" 
                               />
                             </div>
-                            <div>
+                            <div className="space-y-1.5">
                               <label className="block text-[9px] font-bold uppercase tracking-widest text-[#003527]/70">Objective (Untersuchung)</label>
                               <textarea 
                                 value={soapObjective} 
                                 onChange={(e) => setSoapObjective(e.target.value)} 
-                                className="w-full bg-white border border-[#bfc9c3]/50 rounded-xl p-2.5 mt-1 text-xs text-zinc-950 focus:ring-1 focus:ring-[#003527]/30 focus:border-[#003527] outline-none transition-all resize-y min-h-[60px]" 
+                                className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-xl p-2.5 text-xs text-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all resize-y min-h-[60px]" 
                               />
                             </div>
-                            <div>
+                            <div className="space-y-1.5">
                               <label className="block text-[9px] font-bold uppercase tracking-widest text-[#003527]/70">Assessment (Beurteilung)</label>
                               <textarea 
                                 value={soapAssessment} 
                                 onChange={(e) => setSoapAssessment(e.target.value)} 
-                                className="w-full bg-white border border-[#bfc9c3]/50 rounded-xl p-2.5 mt-1 text-xs text-zinc-950 focus:ring-1 focus:ring-[#003527]/30 focus:border-[#003527] outline-none transition-all resize-y min-h-[60px]" 
+                                className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-xl p-2.5 text-xs text-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all resize-y min-h-[60px]" 
                               />
                             </div>
-                            <div>
+                            <div className="space-y-1.5">
                               <label className="block text-[9px] font-bold uppercase tracking-widest text-[#003527]/70">Plan (Fortsetzung)</label>
                               <textarea 
                                 value={soapPlan} 
                                 onChange={(e) => setSoapPlan(e.target.value)} 
-                                className="w-full bg-white border border-[#bfc9c3]/50 rounded-xl p-2.5 mt-1 text-xs text-zinc-950 focus:ring-1 focus:ring-[#003527]/30 focus:border-[#003527] outline-none transition-all resize-y min-h-[60px]" 
+                                className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-xl p-2.5 text-xs text-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all resize-y min-h-[60px]" 
                               />
                             </div>
                           </div>
                         ) : (
-                          <div className="space-y-3.5 text-left">
-                            <div className="border-l-2 border-amber-500/80 pl-3">
-                              <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-400">Subjective (Befund)</span>
-                              <p className="text-xs text-zinc-800 font-medium mt-0.5 leading-relaxed italic">{note.subjective}</p>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="bg-zinc-50/50 border border-zinc-200/20 rounded-xl p-3.5 space-y-1.5 text-left">
+                              <div className="flex items-center gap-1.5">
+                                <span className="inline-flex items-center gap-1 text-[8px] font-bold text-amber-800 bg-amber-50 border border-amber-200/50 px-1.5 py-0.5 rounded-md uppercase tracking-wider">S</span>
+                                <span className="block text-[9px] font-extrabold tracking-widest text-zinc-400 uppercase">Subjective (Befund)</span>
+                              </div>
+                              <p className="text-xs text-[#404944] font-medium leading-relaxed italic">{note.subjective}</p>
                             </div>
-                            <div className="border-l-2 border-blue-500/80 pl-3">
-                              <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-400">Objective (Untersuchung)</span>
-                              <p className="text-xs text-zinc-800 font-medium mt-0.5 leading-relaxed">{note.objective}</p>
+                            <div className="bg-zinc-50/50 border border-zinc-200/20 rounded-xl p-3.5 space-y-1.5 text-left">
+                              <div className="flex items-center gap-1.5">
+                                <span className="inline-flex items-center gap-1 text-[8px] font-bold text-blue-800 bg-blue-50 border border-blue-200/50 px-1.5 py-0.5 rounded-md uppercase tracking-wider">O</span>
+                                <span className="block text-[9px] font-extrabold tracking-widest text-zinc-400 uppercase">Objective (Untersuchung)</span>
+                              </div>
+                              <p className="text-xs text-[#404944] font-medium leading-relaxed">{note.objective}</p>
                             </div>
-                            <div className="border-l-2 border-emerald-500/80 pl-3">
-                              <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-400">Assessment (Beurteilung)</span>
-                              <p className="text-xs text-zinc-800 font-medium mt-0.5 leading-relaxed">{note.assessment}</p>
+                            <div className="bg-zinc-50/50 border border-zinc-200/20 rounded-xl p-3.5 space-y-1.5 text-left">
+                              <div className="flex items-center gap-1.5">
+                                <span className="inline-flex items-center gap-1 text-[8px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200/50 px-1.5 py-0.5 rounded-md uppercase tracking-wider">A</span>
+                                <span className="block text-[9px] font-extrabold tracking-widest text-zinc-400 uppercase">Assessment (Beurteilung)</span>
+                              </div>
+                              <p className="text-[#404944] text-xs font-medium leading-relaxed">{note.assessment}</p>
                             </div>
-                            <div className="border-l-2 border-[#003527]/50 pl-3">
-                              <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-400">Plan (Fortsetzung)</span>
-                              <p className="text-xs text-zinc-800 font-medium mt-0.5 leading-relaxed">{note.plan}</p>
+                            <div className="bg-zinc-50/50 border border-zinc-200/20 rounded-xl p-3.5 space-y-1.5 text-left">
+                              <div className="flex items-center gap-1.5">
+                                <span className="inline-flex items-center gap-1 text-[8px] font-bold text-purple-800 bg-purple-50 border border-purple-200/50 px-1.5 py-0.5 rounded-md uppercase tracking-wider">P</span>
+                                <span className="block text-[9px] font-extrabold tracking-widest text-zinc-400 uppercase">Plan (Fortsetzung)</span>
+                              </div>
+                              <p className="text-[#404944] text-xs font-medium leading-relaxed">{note.plan}</p>
                             </div>
                           </div>
                         )}
                       </div>
                     ))
                   ) : (
-                    <div className="text-center py-8 text-xs text-zinc-400 font-semibold italic bg-[#f9f9f8] border border-[#bfc9c3]/20 rounded-2xl">Keine Behandlungsberichte für diesen Patienten vorhanden.</div>
+                    <div className="text-center py-8 text-xs text-zinc-400 font-semibold italic bg-white border border-[#bfc9c3]/20 rounded-2xl shadow-[0_4px_20px_rgba(0,53,39,0.01)]">Keine Behandlungsberichte für diesen Patienten vorhanden.</div>
                   )}
                 </div>
               </div>
 
               {/* Danger Zone */}
-              <div className="pt-6 border-t border-rose-200/50 flex justify-between items-center text-left">
+              <div className="pt-6 border-t border-rose-200/30 flex justify-between items-center text-left">
                 <div>
                   <h4 className="text-[10px] font-bold text-rose-800 uppercase tracking-widest">Gefahrenbereich</h4>
                   <p className="text-[11px] text-zinc-400 mt-0.5">Diesen Patienten unwiderruflich aus der Datenbank entfernen.</p>
