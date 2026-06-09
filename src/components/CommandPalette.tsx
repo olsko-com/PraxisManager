@@ -71,7 +71,6 @@ export default function CommandPalette({ isOpen, setIsOpen, actions }: Props) {
         id: 'action-new-patient',
         type: 'action',
         title: 'Neuen Patienten anlegen',
-        subtitle: 'Patientenstamm erweitern',
         icon: Plus,
         onSelect: () => {
           setIsNewClientModalOpen(true);
@@ -81,7 +80,6 @@ export default function CommandPalette({ isOpen, setIsOpen, actions }: Props) {
         id: 'action-new-appt',
         type: 'action',
         title: 'Neuen Termin planen',
-        subtitle: 'Terminkalender befüllen',
         icon: Calendar,
         onSelect: () => {
           setSheetMode('new');
@@ -96,7 +94,6 @@ export default function CommandPalette({ isOpen, setIsOpen, actions }: Props) {
         id: 'action-new-invoice',
         type: 'action',
         title: 'Neue Rechnung erstellen',
-        subtitle: 'Leistungen abrechnen',
         icon: FileText,
         onSelect: () => {
           setIsNewInvoiceSheetOpen(true);
@@ -126,7 +123,6 @@ export default function CommandPalette({ isOpen, setIsOpen, actions }: Props) {
         id: 'action-new-patient',
         type: 'action',
         title: 'Neuen Patienten anlegen',
-        subtitle: 'Patientenstamm erweitern',
         icon: Plus,
         onSelect: () => {
           setIsNewClientModalOpen(true);
@@ -136,7 +132,6 @@ export default function CommandPalette({ isOpen, setIsOpen, actions }: Props) {
         id: 'action-new-appt',
         type: 'action',
         title: 'Neuen Termin planen',
-        subtitle: 'Terminkalender befüllen',
         icon: Calendar,
         onSelect: () => {
           setSheetMode('new');
@@ -151,7 +146,6 @@ export default function CommandPalette({ isOpen, setIsOpen, actions }: Props) {
         id: 'action-new-invoice',
         type: 'action',
         title: 'Neue Rechnung erstellen',
-        subtitle: 'Leistungen abrechnen',
         icon: FileText,
         onSelect: () => {
           setIsNewInvoiceSheetOpen(true);
@@ -308,7 +302,7 @@ export default function CommandPalette({ isOpen, setIsOpen, actions }: Props) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setIsOpen(false)}
-            className="fixed inset-0 bg-zinc-900/45"
+            className="fixed inset-0 bg-black/60"
           />
 
           {/* Modal */}
@@ -430,7 +424,7 @@ export default function CommandPalette({ isOpen, setIsOpen, actions }: Props) {
                                     router.push('/dashboard/clients');
                                     setIsOpen(false);
                                   }}
-                                  className="px-2.5 py-1 text-[9px] font-extrabold bg-white text-[#003527] rounded-lg shadow-sm border border-zinc-200/50 hover:bg-zinc-50 active:scale-95 transition-all cursor-pointer"
+                                  className="px-2.5 py-1 text-[9px] font-extrabold bg-white text-[#003527] rounded-lg border border-zinc-200/50 hover:bg-zinc-50 active:scale-95 transition-all cursor-pointer"
                                 >
                                   Akte öffnen
                                 </button>
@@ -445,7 +439,7 @@ export default function CommandPalette({ isOpen, setIsOpen, actions }: Props) {
                                     setIsSheetOpen(true);
                                     setIsOpen(false);
                                   }}
-                                  className="px-2.5 py-1 text-[9px] font-extrabold bg-[#003527] text-white rounded-lg shadow-sm border border-transparent hover:bg-[#0b513d] active:scale-95 transition-all cursor-pointer"
+                                  className="px-2.5 py-1 text-[9px] font-extrabold bg-[#003527] text-white rounded-lg border border-transparent hover:bg-[#0b513d] active:scale-95 transition-all cursor-pointer"
                                 >
                                   Termin
                                 </button>
