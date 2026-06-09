@@ -139,8 +139,8 @@ interface DashboardContextProps {
   setNewInvoiceAppointmentId: (id: string | null) => void;
 
   // Email form values
-  mailTopic: 'rechnung' | 'stornierung' | 'bestaetigung' | 'custom' | 'mahnung';
-  setMailTopic: (topic: 'rechnung' | 'stornierung' | 'bestaetigung' | 'custom' | 'mahnung') => void;
+  mailTopic: 'rechnung' | 'stornierung' | 'bestaetigung' | 'custom' | 'mahnung' | 'erinnerung' | 'fragebogen';
+  setMailTopic: (topic: 'rechnung' | 'stornierung' | 'bestaetigung' | 'custom' | 'mahnung' | 'erinnerung' | 'fragebogen') => void;
   mailSubject: string;
   setMailSubject: (subject: string) => void;
   mailBody: string;
@@ -181,7 +181,7 @@ interface DashboardContextProps {
   handleContextMenu: (e: React.MouseEvent, app: Appointment) => void;
   handleCreateInvoice: (e: React.FormEvent) => void;
   applyMailTemplate: (
-    topic: 'rechnung' | 'stornierung' | 'bestaetigung' | 'custom' | 'mahnung',
+    topic: 'rechnung' | 'stornierung' | 'bestaetigung' | 'custom' | 'mahnung' | 'erinnerung' | 'fragebogen',
     invoiceId?: string,
     appointmentId?: string,
     targetClient?: Client
@@ -327,7 +327,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const [newInvoiceNumber, setNewInvoiceNumber] = useState('');
   const [newInvoiceStatus, setNewInvoiceStatus] = useState<'open' | 'paid' | 'overdue'>('open');
   const [newInvoiceAppointmentId, setNewInvoiceAppointmentId] = useState<string | null>(null);
-  const [mailTopic, setMailTopic] = useState<'rechnung' | 'stornierung' | 'bestaetigung' | 'custom' | 'mahnung'>('rechnung');
+  const [mailTopic, setMailTopic] = useState<'rechnung' | 'stornierung' | 'bestaetigung' | 'custom' | 'mahnung' | 'erinnerung' | 'fragebogen'>('rechnung');
   const [mailSubject, setMailSubject] = useState('');
   const [mailBody, setMailBody] = useState('');
   const [selectedMailInvoiceId, setSelectedMailInvoiceId] = useState('');
@@ -597,7 +597,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
   // Set template text for email writing modal
   const applyMailTemplate = (
-    topic: 'rechnung' | 'stornierung' | 'bestaetigung' | 'custom' | 'mahnung',
+    topic: 'rechnung' | 'stornierung' | 'bestaetigung' | 'custom' | 'mahnung' | 'erinnerung' | 'fragebogen',
     invoiceId?: string,
     appointmentId?: string,
     targetClient?: Client
@@ -606,6 +606,16 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     if (!client) return;
 
     setMailTopic(topic);
+    
+    const parts = client.name.trim().split(/\s+/);
+    const lastName = parts[parts.length - 1] || client.name;
+    let salutation = 'Herr/Frau';
+    const firstName = parts[0]?.toLowerCase() || '';
+    if (['emma', 'sarah', 'maria', 'anna', 'julia', 'laura', 'lisa'].includes(firstName)) {
+      salutation = 'Frau';
+    } else if (['alexander', 'maximilian', 'karl', 'tim', 'joe', 'lee'].includes(firstName)) {
+      salutation = 'Herr';
+    }
     
     if (topic === 'rechnung') {
       const activeInvoiceId = invoiceId !== undefined ? invoiceId : selectedMailInvoiceId;
@@ -636,6 +646,24 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       const appService = app ? app.serviceName : 'Behandlung';
       setMailSubject(`Terminbestätigung: ${appService} am ${appDateStr}`);
       setMailBody(`Sehr geehrte(r) ${client.name},\n\nwir freuen uns, Ihren Termin für die Behandlung (${appService}) am ${appDateStr} um ${appTimeStr} Uhr zu bestätigen.\n\nSollten Sie den Termin nicht wahrnehmen können, sagen Sie diesen bitte mindestens 24 Stunden vorher ab.\n\nMit freundlichen Grüßen,\nIhr Praxis-Team`);
+    } else if (topic === 'erinnerung') {
+      const clientAppointments = appointments.filter(a => a.clientId === client.id);
+      const futureApps = clientAppointments.filter(a => new Date(a.startTime).getTime() >= new Date('2026-06-01').getTime());
+      const nextApp = futureApps.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())[0] || clientAppointments[0];
+      
+      const appDate = nextApp ? new Date(nextApp.startTime) : null;
+      let dayName = 'kommenden Werktag';
+      if (appDate) {
+        const days = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
+        dayName = `kommenden ${days[appDate.getDay()]}`;
+      }
+      const appTimeStr = nextApp ? new Date(nextApp.startTime).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : '14:00';
+      
+      setMailSubject(`Terminerinnerung - Praxis Ruether`);
+      setMailBody(`Hallo ${salutation} ${lastName},\n\nhiermit erinnere ich an Ihren Termin am ${dayName} um ${appTimeStr} Uhr.\n\nMit freundlichen Grüßen,\nIhr Praxis-Team`);
+    } else if (topic === 'fragebogen') {
+      setMailSubject(`Anamnesebogen / Fragebogen zur Behandlung`);
+      setMailBody(`Hallo ${salutation} ${lastName},\n\nbitte füllen Sie vor unserer ersten Sitzung den digitalen Anamnesebogen aus. Dies hilft mir, mich optimal auf Ihre Behandlung vorzubereiten:\n\nhttps://hmanager.de/anamnese/${client.id}\n\nVielen Dank für Ihre Mithilfe und bis bald!\n\nMit freundlichen Grüßen,\nIhr Praxis-Team`);
     } else {
       setMailSubject('');
       setMailBody('');
