@@ -308,7 +308,7 @@ export default function CommandPalette({ isOpen, setIsOpen, actions }: Props) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setIsOpen(false)}
-            className="fixed inset-0 bg-zinc-955/15 backdrop-blur-md"
+            className="fixed inset-0 bg-zinc-900/45"
           />
 
           {/* Modal */}
