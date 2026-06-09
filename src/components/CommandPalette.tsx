@@ -308,7 +308,7 @@ export default function CommandPalette({ isOpen, setIsOpen, actions }: Props) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setIsOpen(false)}
-            className="fixed inset-0 bg-[#043F2D]/40 backdrop-blur-sm"
+            className="fixed inset-0 bg-zinc-955/15 backdrop-blur-md"
           />
 
           {/* Modal */}
@@ -317,24 +317,24 @@ export default function CommandPalette({ isOpen, setIsOpen, actions }: Props) {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: -20 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="w-full max-w-2xl bg-[#f9f9f8] rounded-[2rem] shadow-[0_20px_50px_rgba(0,53,39,0.15)] border border-[#bfc9c3]/50 overflow-hidden relative z-10 flex flex-col"
+            className="w-full max-w-2xl bg-[#f9f9f8] rounded-[2rem] shadow-[0_25px_60px_rgba(0,0,0,0.08)] border border-[#bfc9c3]/40 overflow-hidden relative z-10 flex flex-col"
           >
             {/* Input Area */}
-            <div className="flex items-center px-6 py-4 border-b border-[#bfc9c3]/30 bg-white relative">
-              <Search className="h-6 w-6 text-[#003527]/40 mr-4" />
+            <div className="flex items-center px-6 py-4.5 border-b border-[#bfc9c3]/35 bg-white relative">
+              <Search className="h-5.5 w-5.5 text-[#003527]/35 mr-4" />
               <input
                 ref={inputRef}
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Suche nach Patienten, Rechnungen, Terminen oder tippe 'neu'..."
-                className="flex-1 bg-transparent border-none outline-none text-lg font-bold text-[#003527] placeholder:text-[#003527]/30"
+                className="flex-1 bg-transparent border-none outline-none text-[17px] font-bold text-[#003527] placeholder:text-[#003527]/30"
               />
-              <span className="text-[10px] font-mono text-[#003527]/40 bg-[#f3f4f3] px-2 py-1 rounded">ESC</span>
+              <span className="text-[10px] font-mono font-bold text-[#003527]/40 bg-[#f3f4f3] px-2 py-1 rounded">ESC</span>
             </div>
 
             {/* Results Area */}
-            <div className="max-h-[60vh] overflow-y-auto p-3 space-y-1.5 no-scrollbar">
+            <div className="max-h-[60vh] overflow-y-auto p-3.5 space-y-1.5 no-scrollbar">
               {allFilteredItems.length === 0 ? (
                 <div className="py-12 text-center flex flex-col items-center justify-center">
                   <div className="bg-[#bfc9c3]/15 p-4 rounded-full mb-3 text-[#003527]/40">
@@ -357,7 +357,7 @@ export default function CommandPalette({ isOpen, setIsOpen, actions }: Props) {
                         item.type === 'patient' ? 'Patienten' : 
                         item.type === 'appointment' ? 'Termine' : 'Rechnungen';
                       categoryHeader = (
-                        <div className="px-3 pt-3 pb-1.5 text-[9px] font-extrabold uppercase tracking-widest text-[#003527]/40 text-left">
+                        <div className="px-3 pt-3.5 pb-1.5 text-[9px] font-extrabold uppercase tracking-widest text-[#003527]/35 text-left">
                           {typeLabel}
                         </div>
                       );
@@ -370,10 +370,10 @@ export default function CommandPalette({ isOpen, setIsOpen, actions }: Props) {
                         {categoryHeader}
                         
                         <div 
-                          className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl transition-all cursor-pointer border select-none relative group overflow-hidden ${
+                          className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl transition-all cursor-pointer border border-transparent select-none relative group overflow-hidden ${
                             isActive 
-                              ? 'bg-[#003527] border-[#003527] text-white shadow-sm' 
-                              : 'bg-white border-[#bfc9c3]/20 hover:border-[#bfc9c3]/40 text-[#043F2D]'
+                              ? 'bg-[#003527]/5 text-[#003527]' 
+                              : 'bg-transparent text-[#043F2D]'
                           }`}
                           onMouseEnter={() => setActiveIndex(idx)}
                           onClick={() => {
@@ -385,17 +385,13 @@ export default function CommandPalette({ isOpen, setIsOpen, actions }: Props) {
                             {/* Initials / Avatar / Icon */}
                             {item.type === 'patient' && item.initials ? (
                               <div className={`w-8 h-8 rounded-full flex items-center justify-center font-extrabold text-[11px] mr-3 shrink-0 ${
-                                isActive 
-                                  ? 'bg-white/20 text-white' 
-                                  : item.initialsColor || 'bg-emerald-50 text-emerald-700'
+                                item.initialsColor || 'bg-emerald-50 text-emerald-700'
                               }`}>
                                 {item.initials}
                               </div>
                             ) : (
                               Icon && (
-                                <div className={`p-1.5 rounded-xl mr-3 shrink-0 ${
-                                  isActive ? 'bg-white/20 text-white' : 'bg-[#003527]/5 text-[#003527]/60'
-                                }`}>
+                                <div className="p-1.5 rounded-xl mr-3 shrink-0 bg-[#003527]/5 text-[#003527]/60">
                                   <Icon className="w-4 h-4" />
                                 </div>
                               )
@@ -403,11 +399,11 @@ export default function CommandPalette({ isOpen, setIsOpen, actions }: Props) {
 
                             {/* Details */}
                             <div className="text-left min-w-0 flex-1">
-                              <p className={`text-xs font-bold truncate ${isActive ? 'text-white' : 'text-[#003527]'}`}>
+                              <p className="text-xs font-bold truncate text-[#003527]">
                                 {item.title}
                               </p>
                               {item.subtitle && (
-                                <p className={`text-[10px] font-semibold truncate ${isActive ? 'text-white/70' : 'text-zinc-400'}`}>
+                                <p className="text-[10px] font-semibold truncate text-zinc-400">
                                   {item.subtitle}
                                 </p>
                               )}
@@ -416,10 +412,8 @@ export default function CommandPalette({ isOpen, setIsOpen, actions }: Props) {
 
                           {/* Badge or Quick Actions */}
                           <div className="flex items-center shrink-0 ml-3 z-10">
-                            {item.badge && (
-                              <span className={`text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider ${
-                                isActive ? 'bg-white/20 text-white' : item.badgeColor
-                              }`}>
+                            {item.badge && (item.type !== 'patient' || !isActive) && (
+                              <span className={`text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider ${item.badgeColor}`}>
                                 {item.badge}
                               </span>
                             )}
@@ -436,7 +430,7 @@ export default function CommandPalette({ isOpen, setIsOpen, actions }: Props) {
                                     router.push('/dashboard/clients');
                                     setIsOpen(false);
                                   }}
-                                  className="px-2.5 py-1 text-[9px] font-extrabold bg-white text-[#003527] rounded-lg shadow-sm border-none hover:bg-zinc-100 active:scale-95 transition-all cursor-pointer"
+                                  className="px-2.5 py-1 text-[9px] font-extrabold bg-white text-[#003527] rounded-lg shadow-sm border border-zinc-200/50 hover:bg-zinc-50 active:scale-95 transition-all cursor-pointer"
                                 >
                                   Akte öffnen
                                 </button>
@@ -451,7 +445,7 @@ export default function CommandPalette({ isOpen, setIsOpen, actions }: Props) {
                                     setIsSheetOpen(true);
                                     setIsOpen(false);
                                   }}
-                                  className="px-2.5 py-1 text-[9px] font-extrabold bg-[#0b513d] text-white rounded-lg shadow-sm border-none hover:bg-[#003527] active:scale-95 transition-all cursor-pointer"
+                                  className="px-2.5 py-1 text-[9px] font-extrabold bg-[#003527] text-white rounded-lg shadow-sm border border-transparent hover:bg-[#0b513d] active:scale-95 transition-all cursor-pointer"
                                 >
                                   Termin
                                 </button>
