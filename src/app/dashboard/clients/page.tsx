@@ -19,10 +19,11 @@ interface ClientListItemProps {
   onDelete: () => void;
   onSendMail: () => void;
   onAddAppointment: () => void;
+  onContextMenu: (e: React.MouseEvent) => void;
 }
 
 function ClientListItem({ 
-  client, isSelected, onSelect, onToggleFavorite, onToggleFlag, onDelete, onSendMail, onAddAppointment 
+  client, isSelected, onSelect, onToggleFavorite, onToggleFlag, onDelete, onSendMail, onAddAppointment, onContextMenu 
 }: ClientListItemProps) {
   const [swipeState, setSwipeState] = React.useState<'left' | 'right' | 'closed'>('closed');
 
@@ -98,6 +99,7 @@ function ClientListItem({
         animate={{ x: xOffset }}
         transition={{ type: 'spring', stiffness: 400, damping: 30 }}
         onDragEnd={handleDragEnd}
+        onContextMenu={onContextMenu}
         onClick={() => {
           if (swipeState !== 'closed') {
             setSwipeState('closed');
@@ -163,6 +165,7 @@ export default function ClientsPage() {
     toggleClientFavorite,
     toggleClientFlag,
     toggleClientGdpr,
+    handleClientContextMenu,
     deleteClient,
     therapistId,
     appointments,
@@ -351,6 +354,9 @@ export default function ClientsPage() {
                 }}
                 onToggleFlag={() => {
                   toggleClientFlag(c.id);
+                }}
+                onContextMenu={(e) => {
+                  handleClientContextMenu(e, c);
                 }}
                 onDelete={async () => {
                   if (confirm(`Möchtest du ${c.name} wirklich löschen?`)) {

@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Users, Calendar as CalendarIcon, FileText, ArrowUpRight, Search, Star } from 'lucide-react';
 
 export default function DashboardOverviewPage() {
-  const { therapistName, clients, appointments, invoices, setSelectedClientId, toggleClientGdpr } = useDashboard();
+  const { therapistName, clients, appointments, invoices, setSelectedClientId, toggleClientGdpr, handleClientContextMenu } = useDashboard();
   const router = useRouter();
   const [greeting, setGreeting] = React.useState('Guten Tag');
   const [searchQuery, setSearchQuery] = React.useState('');
@@ -133,7 +133,11 @@ export default function DashboardOverviewPage() {
               </thead>
               <tbody className="font-bold">
                 {filteredClients.map((client) => (
-                  <tr key={client.id} className="text-[#003527] group">
+                  <tr 
+                    key={client.id} 
+                    className="text-[#003527] group cursor-pointer"
+                    onContextMenu={(e) => handleClientContextMenu(e, client)}
+                  >
                     {/* Name with initials avatar */}
                     <td className="py-3.5 px-5 border-b border-zinc-100 group-last:border-b-0 group-hover:bg-[#003527]/3 transition-colors text-left">
                       <span className="text-xs font-bold text-[#003527] flex items-center gap-1.5">

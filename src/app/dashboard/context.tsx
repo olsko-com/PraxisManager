@@ -199,6 +199,7 @@ interface DashboardContextProps {
     date?: string;
   }) => void;
   handleContextMenu: (e: React.MouseEvent, app: Appointment) => void;
+  handleClientContextMenu: (e: React.MouseEvent, client: Client) => void;
   handleCreateInvoice: (e: React.FormEvent) => void;
   applyMailTemplate: (
     topic: 'rechnung' | 'stornierung' | 'bestaetigung' | 'custom' | 'mahnung' | 'erinnerung' | 'fragebogen',
@@ -221,8 +222,8 @@ interface DashboardContextProps {
   exportInvoicesCsv: () => void;
 
   // Context Menu state ref
-  contextMenu: { x: number; y: number; appointment: Appointment } | null;
-  setContextMenu: (menu: { x: number; y: number; appointment: Appointment } | null) => void;
+  contextMenu: { x: number; y: number; type: 'appointment' | 'client'; appointment?: Appointment; client?: Client } | null;
+  setContextMenu: (menu: { x: number; y: number; type: 'appointment' | 'client'; appointment?: Appointment; client?: Client } | null) => void;
 
   // Sign out
   handleSignOut: () => Promise<void>;
@@ -354,7 +355,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const [selectedMailAppointmentId, setSelectedMailAppointmentId] = useState('');
 
   // Context Menu State
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; appointment: Appointment } | null>(null);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; type: 'appointment' | 'client'; appointment?: Appointment; client?: Client } | null>(null);
 
   // Selected calendar date
   const [currentCalendarDate, setCurrentCalendarDate] = useState<Date>(new Date('2026-06-01'));
@@ -1090,7 +1091,20 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     setContextMenu({
       x: e.clientX,
       y: e.clientY,
+      type: 'appointment',
       appointment: app
+    });
+  };
+
+  // Handle Right Click context menu for client records
+  const handleClientContextMenu = (e: React.MouseEvent, client: Client) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      type: 'client',
+      client: client
     });
   };
 
@@ -1636,6 +1650,7 @@ Vielen Dank fuer Ihr Vertrauen!
       openNewInvoiceSheet,
       openNewInvoiceSheetWithPrefill,
       handleContextMenu,
+      handleClientContextMenu,
       handleCreateInvoice,
       deleteService,
       updateService,

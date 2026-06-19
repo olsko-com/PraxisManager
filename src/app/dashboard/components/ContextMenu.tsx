@@ -3,7 +3,7 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { 
-  FileText, Printer, Download, Plus, Settings, Sparkles, Mail, Trash2 
+  FileText, Printer, Download, Plus, Settings, Sparkles, Mail, Trash2, Calendar as CalendarIcon 
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useDashboard } from '../context';
@@ -30,7 +30,12 @@ export default function ContextMenu() {
     setAppointments,
     deleteAppointment,
     openNewInvoiceSheetWithPrefill,
-    showToast
+    showToast,
+    setNewAppDate,
+    setNewAppHour,
+    setNewAppClientId,
+    setNewAppServiceId,
+    services
   } = useDashboard();
 
   if (!contextMenu) return null;
@@ -51,144 +56,214 @@ export default function ContextMenu() {
       onClick={(e) => e.stopPropagation()}
     >
       <div className="px-3 py-2 text-[10px] text-zinc-400 font-bold uppercase tracking-wider select-none text-left">
-        {contextMenu.appointment.clientName || contextMenu.appointment.serviceName || 'Termin'}
+        {contextMenu.type === 'client' 
+          ? (contextMenu.client?.name || 'Patient') 
+          : (contextMenu.appointment?.clientName || contextMenu.appointment?.serviceName || 'Termin')}
       </div>
 
-      <div className="py-1 flex flex-col">
-        {(() => {
-          const invoice = invoices.find(inv => inv.appointmentId === contextMenu.appointment.id);
-          if (invoice) {
-            return (
+      {contextMenu.type === 'client' ? (
+        <div className="py-1 flex flex-col">
+          <button
+            onClick={() => {
+              setContextMenu(null);
+              const client = contextMenu.client;
+              if (client) {
+                setSelectedClientId(client.id);
+                router.push('/dashboard/clients');
+              }
+            }}
+            className="w-full text-left px-3 py-1.5 rounded-xl hover:bg-[#003527]/5 font-bold transition-all flex items-center gap-2 cursor-pointer border-none bg-transparent"
+          >
+            <FileText className="w-3.5 h-3.5" />
+            Akte öffnen
+          </button>
+          
+          <button
+            onClick={() => {
+              setContextMenu(null);
+              const client = contextMenu.client;
+              if (client) {
+                setSheetMode('new');
+                setNewAppDate(new Date().toISOString().slice(0, 10));
+                setNewAppHour(9);
+                setNewAppClientId(client.id);
+                if (services.length > 0) setNewAppServiceId(services[0].id);
+                setIsSheetOpen(true);
+              }
+            }}
+            className="w-full text-left px-3 py-1.5 rounded-xl hover:bg-[#003527]/5 font-bold transition-all flex items-center gap-2 cursor-pointer border-none bg-transparent"
+          >
+            <CalendarIcon className="w-3.5 h-3.5" />
+            Termin vereinbaren
+          </button>
+
+          <button
+            onClick={() => {
+              setContextMenu(null);
+              const client = contextMenu.client;
+              if (client) {
+                setSelectedClientId(client.id);
+                const clientInvoices = invoices.filter(i => i.clientId === client.id);
+                const clientAppointments = appointments.filter(a => a.clientId === client.id);
+                const firstInvId = clientInvoices.length > 0 ? clientInvoices[0].id : '';
+                const firstAppId = clientAppointments.length > 0 ? clientAppointments[0].id : '';
+                setSelectedMailInvoiceId(firstInvId);
+                setSelectedMailAppointmentId(firstAppId);
+                applyMailTemplate('custom', firstInvId, firstAppId, client);
+                setIsMailModalOpen(true);
+              }
+            }}
+            className="w-full text-left px-3 py-1.5 rounded-xl hover:bg-[#003527]/5 font-bold transition-all flex items-center gap-2 cursor-pointer border-none bg-transparent"
+          >
+            <Mail className="w-3.5 h-3.5" />
+            E-Mail schreiben
+          </button>
+        </div>
+      ) : (
+        <>
+          <div className="py-1 flex flex-col">
+            {(() => {
+              const app = contextMenu.appointment;
+              if (!app) return null;
+              const invoice = invoices.find(inv => inv.appointmentId === app.id);
+              if (invoice) {
+                return (
+                  <>
+                    <button
+                      onClick={() => {
+                        setContextMenu(null);
+                        router.push('/dashboard/invoices');
+                      }}
+                      className="w-full text-left px-3 py-1.5 rounded-xl hover:bg-[#003527]/5 font-bold transition-all flex items-center gap-2 cursor-pointer border-none bg-transparent"
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      Rechnung anzeigen
+                    </button>
+                    <button
+                      onClick={() => {
+                        setContextMenu(null);
+                        printInvoice(invoice);
+                      }}
+                      className="w-full text-left px-3 py-1.5 rounded-xl hover:bg-[#003527]/5 font-bold transition-all flex items-center gap-2 cursor-pointer border-none bg-transparent"
+                    >
+                      <Printer className="w-3.5 h-3.5" />
+                      Rechnung drucken
+                    </button>
+                    <button
+                      onClick={() => {
+                        setContextMenu(null);
+                        downloadInvoicePdf(invoice);
+                      }}
+                      className="w-full text-left px-3 py-1.5 rounded-xl hover:bg-[#003527]/5 font-bold transition-all flex items-center gap-2 cursor-pointer border-none bg-transparent"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      Als PDF laden
+                    </button>
+                  </>
+                );
+              } else if (app.clientId) {
+                return (
+                  <button
+                    onClick={() => {
+                      setContextMenu(null);
+                      openNewInvoiceSheetWithPrefill({
+                        clientId: app.clientId || '',
+                        amount: app.price,
+                        appointmentId: app.id,
+                        clientName: app.clientName,
+                        date: app.startTime.slice(0, 10)
+                      });
+                    }}
+                    className="w-full text-left px-3 py-1.5 rounded-xl hover:bg-[#003527]/5 font-bold text-emerald-700 transition-all flex items-center gap-2 cursor-pointer border-none bg-transparent"
+                  >
+                    <Plus className="w-3.5 h-3.5 text-emerald-600" />
+                    Rechnung erstellen
+                  </button>
+                );
+              }
+              return null;
+            })()}
+          </div>
+
+          <div className="py-1 flex flex-col">
+            <button
+              onClick={() => {
+                if (contextMenu.appointment) {
+                  setContextMenu(null);
+                  setSelectedAppointment(contextMenu.appointment);
+                  setSheetMode('edit');
+                  setIsSheetOpen(true);
+                }
+              }}
+              className="w-full text-left px-3 py-1.5 rounded-xl hover:bg-[#003527]/5 font-bold transition-all flex items-center gap-2 cursor-pointer border-none bg-transparent"
+            >
+              <Settings className="w-3.5 h-3.5" />
+              Termin bearbeiten
+            </button>
+            
+            {contextMenu.appointment?.clientId && (
               <>
                 <button
                   onClick={() => {
                     setContextMenu(null);
-                    router.push('/dashboard/invoices');
+                    const client = clients.find(c => c.id === contextMenu.appointment?.clientId);
+                    if (client && contextMenu.appointment) {
+                      setSelectedClientId(client.id);
+                      createSoapNote(contextMenu.appointment.id, client.id);
+                      router.push('/dashboard/clients');
+                    }
                   }}
                   className="w-full text-left px-3 py-1.5 rounded-xl hover:bg-[#003527]/5 font-bold transition-all flex items-center gap-2 cursor-pointer border-none bg-transparent"
                 >
-                  <FileText className="w-3.5 h-3.5" />
-                  Rechnung anzeigen
+                  <Sparkles className="w-3.5 h-3.5" />
+                  SOAP-Bericht erstellen
                 </button>
+
                 <button
                   onClick={() => {
                     setContextMenu(null);
-                    printInvoice(invoice);
+                    const client = clients.find(c => c.id === contextMenu.appointment?.clientId);
+                    if (client && contextMenu.appointment) {
+                      setSelectedClientId(client.id);
+                      setSelectedMailAppointmentId(contextMenu.appointment.id);
+                      const invoice = invoices.find(inv => inv.appointmentId === contextMenu.appointment?.id);
+                      if (invoice) {
+                        setSelectedMailInvoiceId(invoice.id);
+                        applyMailTemplate('rechnung', invoice.id, contextMenu.appointment.id, client);
+                      } else {
+                        applyMailTemplate('bestaetigung', undefined, contextMenu.appointment.id, client);
+                      }
+                      setIsMailModalOpen(true);
+                    }
                   }}
                   className="w-full text-left px-3 py-1.5 rounded-xl hover:bg-[#003527]/5 font-bold transition-all flex items-center gap-2 cursor-pointer border-none bg-transparent"
                 >
-                  <Printer className="w-3.5 h-3.5" />
-                  Rechnung drucken
-                </button>
-                <button
-                  onClick={() => {
-                    setContextMenu(null);
-                    downloadInvoicePdf(invoice);
-                  }}
-                  className="w-full text-left px-3 py-1.5 rounded-xl hover:bg-[#003527]/5 font-bold transition-all flex items-center gap-2 cursor-pointer border-none bg-transparent"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  Als PDF laden
+                  <Mail className="w-3.5 h-3.5" />
+                  E-Mail schreiben
                 </button>
               </>
-            );
-          } else if (contextMenu.appointment.clientId) {
-            return (
-              <button
-                onClick={() => {
+            )}
+          </div>
+
+          <div className="py-1 flex flex-col">
+            <button
+              onClick={async () => {
+                if (contextMenu.appointment) {
                   setContextMenu(null);
-                  openNewInvoiceSheetWithPrefill({
-                    clientId: contextMenu.appointment.clientId || '',
-                    amount: contextMenu.appointment.price,
-                    appointmentId: contextMenu.appointment.id,
-                    clientName: contextMenu.appointment.clientName,
-                    date: contextMenu.appointment.startTime.slice(0, 10)
-                  });
-                }}
-                className="w-full text-left px-3 py-1.5 rounded-xl hover:bg-[#003527]/5 font-bold text-emerald-700 transition-all flex items-center gap-2 cursor-pointer border-none bg-transparent"
-              >
-                <Plus className="w-3.5 h-3.5 text-emerald-600" />
-                Rechnung erstellen
-              </button>
-            );
-          }
-          return null;
-        })()}
-      </div>
-
-      <div className="py-1 flex flex-col">
-        <button
-          onClick={() => {
-            setContextMenu(null);
-            setSelectedAppointment(contextMenu.appointment);
-            setSheetMode('edit');
-            setIsSheetOpen(true);
-          }}
-          className="w-full text-left px-3 py-1.5 rounded-xl hover:bg-[#003527]/5 font-bold transition-all flex items-center gap-2 cursor-pointer border-none bg-transparent"
-        >
-          <Settings className="w-3.5 h-3.5" />
-          Termin bearbeiten
-        </button>
-        
-        {contextMenu.appointment.clientId && (
-          <>
-            <button
-              onClick={() => {
-                setContextMenu(null);
-                const client = clients.find(c => c.id === contextMenu.appointment.clientId);
-                if (client) {
-                  setSelectedClientId(client.id);
-                  createSoapNote(contextMenu.appointment.id, client.id);
-                  router.push('/dashboard/clients');
-                }
-              }}
-              className="w-full text-left px-3 py-1.5 rounded-xl hover:bg-[#003527]/5 font-bold transition-all flex items-center gap-2 cursor-pointer border-none bg-transparent"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              SOAP-Bericht erstellen
-            </button>
-
-            <button
-              onClick={() => {
-                setContextMenu(null);
-                const client = clients.find(c => c.id === contextMenu.appointment.clientId);
-                if (client) {
-                  setSelectedClientId(client.id);
-                  setSelectedMailAppointmentId(contextMenu.appointment.id);
-                  const invoice = invoices.find(inv => inv.appointmentId === contextMenu.appointment.id);
-                  if (invoice) {
-                    setSelectedMailInvoiceId(invoice.id);
-                    applyMailTemplate('rechnung', invoice.id, contextMenu.appointment.id, client);
-                  } else {
-                    applyMailTemplate('bestaetigung', undefined, contextMenu.appointment.id, client);
+                  const displayName = contextMenu.appointment.clientName || contextMenu.appointment.serviceName || 'diesen Termin';
+                  if (confirm(`Möchtest du den Termin für "${displayName}" wirklich löschen?`)) {
+                    await deleteAppointment(contextMenu.appointment.id);
                   }
-                  setIsMailModalOpen(true);
                 }
               }}
-              className="w-full text-left px-3 py-1.5 rounded-xl hover:bg-[#003527]/5 font-bold transition-all flex items-center gap-2 cursor-pointer border-none bg-transparent"
+              className="w-full text-left px-3 py-1.5 rounded-xl hover:bg-rose-50 text-rose-600 font-bold transition-all flex items-center gap-2 cursor-pointer border-none bg-transparent"
             >
-              <Mail className="w-3.5 h-3.5" />
-              E-Mail schreiben
+              <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+              Termin löschen
             </button>
-          </>
-        )}
-      </div>
-
-      <div className="py-1 flex flex-col">
-        <button
-          onClick={async () => {
-            setContextMenu(null);
-            const displayName = contextMenu.appointment.clientName || contextMenu.appointment.serviceName || 'diesen Termin';
-            if (confirm(`Möchtest du den Termin für "${displayName}" wirklich löschen?`)) {
-              await deleteAppointment(contextMenu.appointment.id);
-            }
-          }}
-          className="w-full text-left px-3 py-1.5 rounded-xl hover:bg-rose-50 text-rose-600 font-bold transition-all flex items-center gap-2 cursor-pointer border-none bg-transparent"
-        >
-          <Trash2 className="w-3.5 h-3.5 text-rose-600" />
-          Termin löschen
-        </button>
-      </div>
+          </div>
+        </>
+      )}
     </motion.div>
   );
 }
