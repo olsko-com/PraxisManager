@@ -3,10 +3,10 @@
 import React from 'react';
 import { useDashboard } from './context';
 import { useRouter } from 'next/navigation';
-import { Users, Calendar as CalendarIcon, FileText, ArrowUpRight, Search, Star } from 'lucide-react';
+import { Users, Calendar as CalendarIcon, FileText, ArrowUpRight, Search, Star, Plus } from 'lucide-react';
 
 export default function DashboardOverviewPage() {
-  const { therapistName, clients, appointments, invoices, setSelectedClientId, toggleClientGdpr, handleClientContextMenu } = useDashboard();
+  const { therapistName, clients, appointments, invoices, setSelectedClientId, toggleClientGdpr, handleClientContextMenu, setIsNewClientModalOpen } = useDashboard();
   const router = useRouter();
   const [greeting, setGreeting] = React.useState('Guten Tag');
   const [searchQuery, setSearchQuery] = React.useState('');
@@ -105,7 +105,16 @@ export default function DashboardOverviewPage() {
         {/* Patients Table Card */}
         <div className="bg-white border border-[#bfc9c3]/40 rounded-2xl px-8 pt-0 pb-4 shadow-none text-left relative">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#bfc9c3]/20 pt-6 pb-5 -mx-8 px-8">
-            <h3 className="text-sm font-bold text-[#003527]">Patienten</h3>
+            <div className="flex items-center gap-1.5 text-left">
+              <h3 className="text-sm font-bold text-[#003527]">Patienten</h3>
+              <button
+                onClick={() => setIsNewClientModalOpen(true)}
+                className="p-1.5 rounded-lg text-zinc-400 hover:text-[#003527] hover:bg-[#003527]/5 transition-all cursor-pointer"
+                title="Patient anlegen"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+            </div>
             
             {/* Search Input */}
             <div className="relative w-full sm:w-64">
