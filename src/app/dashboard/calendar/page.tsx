@@ -50,6 +50,29 @@ export default function CalendarPage() {
     newEndTime: string;
   } | null>(null);
 
+  // Current time state for real-time indicator line
+  const [currentTime, setCurrentTime] = React.useState(new Date());
+
+  React.useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 30000); // update every 30 seconds
+    return () => clearInterval(timer);
+  }, []);
+
+  const getNowIndicatorPosition = (time: Date) => {
+    const hours = time.getHours();
+    const minutes = time.getMinutes();
+    
+    // Calendar business hours: 09:00 to 17:00
+    if (hours < 9 || hours >= 17) {
+      return null;
+    }
+    
+    const minutesSince09 = (hours - 9) * 60 + minutes;
+    return (minutesSince09 / 60) * 88;
+  };
+
   const handleNewAppointmentClick = () => {
     setSheetMode('new');
     setNewAppDate(currentCalendarDate.toISOString().slice(0, 10));
@@ -249,7 +272,7 @@ export default function CalendarPage() {
   };
 
   const handleToday = () => {
-    setCurrentCalendarDate(new Date('2026-06-01'));
+    setCurrentCalendarDate(new Date());
   };
 
   const getCalendarTitleText = () => {
@@ -386,11 +409,18 @@ export default function CalendarPage() {
   };
 
   return (
-    <div className={`flex-grow overflow-y-auto hide-scrollbar pl-12 py-8 flex flex-col space-y-6 h-screen transition-all duration-300 ${
-      isSidebarOpen ? 'pr-[368px]' : 'pr-12'
-    }`}>
-      {/* Calendar Controls */}
-      <div className="flex flex-wrap justify-between items-center gap-4">
+    <div className="relative flex-grow bg-[#eef0ed] rounded-[24px] border border-[#003527]/10 my-4 mr-4 ml-4 flex flex-col h-[calc(100vh-32px)] overflow-hidden shadow-none transition-all duration-300">
+      {/* Calendar Title (Sticky Title inside Card) */}
+      <div className={`pl-8 pt-10 pb-5 bg-transparent flex-shrink-0 transition-all duration-300 ${
+        isSidebarOpen ? 'pr-[384px]' : 'pr-8'
+      }`}>
+        <h1 className="text-[26px] font-bold text-[#003527] tracking-tight">Kalender</h1>
+      </div>
+
+      {/* Calendar Controls (Sticky Header inside Card) */}
+      <div className={`flex flex-wrap justify-between items-center gap-4 pl-8 pt-0 pb-3 bg-transparent flex-shrink-0 transition-all duration-300 ${
+        isSidebarOpen ? 'pr-[384px]' : 'pr-8'
+      }`}>
         <div className="flex items-center gap-2">
           <div className="flex border border-[#bfc9c3]/50 rounded-xl overflow-hidden bg-white">
             <button 
@@ -460,8 +490,11 @@ export default function CalendarPage() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="bg-white border border-[#bfc9c3]/40 rounded-2xl pt-0 pb-6 px-0 shadow-none overflow-x-auto hide-scrollbar"
+            className={`flex-grow flex flex-col pb-6 pt-0 pl-8 transition-all duration-300 min-h-0 ${
+              isSidebarOpen ? 'pr-[384px]' : 'pr-8'
+            }`}
           >
+            <div className="mt-3 bg-white border border-[#bfc9c3]/40 rounded-2xl flex-grow overflow-y-auto overflow-x-hidden hide-scrollbar pt-0 pb-6 px-0 shadow-none flex flex-col min-h-0">
             {/* Header Row */}
             <div className="min-w-[600px] grid grid-cols-[80px_1fr] border-b border-[#bfc9c3]/20 bg-zinc-50/75 backdrop-blur-md rounded-t-2xl py-3 mb-0 sticky top-0 z-30">
               <div className="w-[80px]" />
@@ -516,6 +549,7 @@ export default function CalendarPage() {
                 </div>
 
                 <div className="absolute inset-y-0 left-0 right-0 pointer-events-none">
+
                   {appointments
                     .filter(app => isSameDay(currentCalendarDate, app.startTime))
                     .map((app) => {
@@ -530,6 +564,7 @@ export default function CalendarPage() {
                           draggable={!isResizing}
                           onDragStart={() => setDraggedAppId(app.id)}
                           onDragEnd={() => { setDraggedAppId(null); setDragOverSlot(null); }}
+                          onContextMenu={(e) => handleContextMenu(e, app)}
                           onClick={(e) => {
                             e.stopPropagation();
                             setSelectedAppointment(app);
@@ -544,7 +579,9 @@ export default function CalendarPage() {
                           } ${
                             isResizing || isDragging ? '' : 'transition-all duration-200 ease-out'
                           } ${
-                            app.status === 'booked' 
+                            !app.clientId
+                              ? 'bg-zinc-100/90 border-zinc-200/70 text-zinc-800'
+                              : app.status === 'booked' 
                               ? 'bg-amber-50/90 border-amber-200/60 text-amber-900' 
                               : app.status === 'confirmed' 
                               ? 'bg-blue-50/90 border-blue-200/60 text-blue-900'
@@ -556,8 +593,12 @@ export default function CalendarPage() {
                           {/* Left: Service & Client inline */}
                           <div className="flex items-center gap-2 min-w-0 flex-wrap">
                             <h4 className="font-extrabold text-xs tracking-tight truncate">{app.serviceName}</h4>
-                            <span className="text-[10px] opacity-40 font-bold">•</span>
-                            <p className="text-[10px] font-bold opacity-80 truncate">{app.clientName}</p>
+                            {app.clientId && (
+                              <>
+                                <span className="text-[10px] opacity-40 font-bold">•</span>
+                                <p className="text-[10px] font-bold opacity-80 truncate">{app.clientName}</p>
+                              </>
+                            )}
                           </div>
 
                           {/* Right: Time, Resize badge, Invoice actions */}
@@ -571,43 +612,45 @@ export default function CalendarPage() {
                                 {dur} Min.
                               </span>
                             )}
-                            <div className="flex items-center gap-1.5">
-                              {appInvoice ? (
-                                <span 
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    showToast('Rechnungsdetails geladen.', 'info');
-                                  }}
-                                  className={`p-1 rounded border flex items-center justify-center cursor-pointer ${
-                                    appInvoice.status === 'paid'
-                                      ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                                      : appInvoice.status === 'overdue'
-                                      ? 'bg-rose-50 border-rose-200 text-rose-800'
-                                      : 'bg-amber-50 border-amber-200 text-amber-800'
-                                  }`}
-                                  title={`Rechnung: ${appInvoice.invoiceNumber} (${appInvoice.status === 'paid' ? 'Bezahlt' : appInvoice.status === 'overdue' ? 'Überfällig' : 'Offen'})`}
-                                >
-                                  <FileText className="w-2.5 h-2.5" />
-                                </span>
-                              ) : (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    openNewInvoiceSheetWithPrefill({
-                                      clientId: app.clientId,
-                                      amount: app.price,
-                                      appointmentId: app.id,
-                                      clientName: app.clientName,
-                                      date: app.startTime.slice(0, 10)
-                                    });
-                                  }}
-                                  className="opacity-20 hover:opacity-100 p-1 bg-white hover:bg-zinc-100 border border-[#bfc9c3]/40 rounded text-[#003527] transition-all cursor-pointer flex items-center justify-center shadow-none"
-                                  title="Rechnung erstellen"
-                                >
-                                  <Plus className="w-2.5 h-2.5" />
-                                </button>
-                              )}
-                            </div>
+                            {app.clientId && (
+                              <div className="flex items-center gap-1.5">
+                                {appInvoice ? (
+                                  <span 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      showToast('Rechnungsdetails geladen.', 'info');
+                                    }}
+                                    className={`p-1 rounded border flex items-center justify-center cursor-pointer ${
+                                      appInvoice.status === 'paid'
+                                        ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                                        : appInvoice.status === 'overdue'
+                                        ? 'bg-rose-50 border-rose-200 text-rose-800'
+                                        : 'bg-amber-50 border-amber-200 text-amber-800'
+                                    }`}
+                                    title={`Rechnung: ${appInvoice.invoiceNumber} (${appInvoice.status === 'paid' ? 'Bezahlt' : appInvoice.status === 'overdue' ? 'Überfällig' : 'Offen'})`}
+                                  >
+                                    <FileText className="w-2.5 h-2.5" />
+                                  </span>
+                                ) : (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      openNewInvoiceSheetWithPrefill({
+                                        clientId: app.clientId || '',
+                                        amount: app.price,
+                                        appointmentId: app.id,
+                                        clientName: app.clientName,
+                                        date: app.startTime.slice(0, 10)
+                                      });
+                                    }}
+                                    className="opacity-20 hover:opacity-100 p-1 bg-white hover:bg-zinc-100 border border-[#bfc9c3]/40 rounded text-[#003527] transition-all cursor-pointer flex items-center justify-center shadow-none"
+                                    title="Rechnung erstellen"
+                                  >
+                                    <Plus className="w-2.5 h-2.5" />
+                                  </button>
+                                )}
+                              </div>
+                            )}
                           </div>
 
                           <div 
@@ -648,6 +691,34 @@ export default function CalendarPage() {
                   )}
                 </div>
               </div>
+              {/* Day View Current Time Indicator Line (placed in parent grid container) */}
+              {(() => {
+                const isToday = currentTime.getFullYear() === currentCalendarDate.getFullYear() &&
+                                currentTime.getMonth() === currentCalendarDate.getMonth() &&
+                                currentTime.getDate() === currentCalendarDate.getDate();
+                const topPx = getNowIndicatorPosition(currentTime);
+                if (!isToday || topPx === null) return null;
+                return (
+                  <div 
+                    className="absolute left-0 right-0 z-20 pointer-events-none h-0 grid grid-cols-[80px_1fr]" 
+                    style={{ top: `${topPx}px` }}
+                  >
+                    {/* Time Pill column */}
+                    <div className="relative w-full h-0">
+                      <div 
+                        className="absolute right-2 -translate-y-1/2 bg-rose-500 text-white text-[9px] font-extrabold px-2 py-0.5 rounded-full select-none flex-shrink-0 shadow-[0_1px_3px_rgba(0,0,0,0.1)]"
+                      >
+                        {currentTime.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                    </div>
+                    {/* Line column */}
+                    <div className="relative w-full h-0">
+                      <div className="w-full border-t-2 border-rose-500" />
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
             </div>
           </motion.div>
         )}
@@ -659,15 +730,18 @@ export default function CalendarPage() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="bg-white border border-[#bfc9c3]/40 rounded-2xl pt-0 pb-6 px-0 shadow-none overflow-x-auto hide-scrollbar"
+            className={`flex-grow flex flex-col pb-6 pt-0 pl-8 transition-all duration-300 min-h-0 ${
+              isSidebarOpen ? 'pr-[384px]' : 'pr-8'
+            }`}
           >
+            <div className="mt-3 bg-white border border-[#bfc9c3]/40 rounded-2xl flex-grow overflow-y-auto overflow-x-hidden hide-scrollbar pt-0 pb-6 px-0 shadow-none flex flex-col min-h-0">
             {/* Week Header Row */}
             <div className="min-w-[800px] grid grid-cols-[80px_repeat(5,1fr)] divide-x divide-zinc-200/50 border-b border-[#bfc9c3]/20 bg-zinc-50/75 backdrop-blur-md rounded-t-2xl mb-0 sticky top-0 z-30">
               <div className="w-[80px]" />
               {getWeekDays(currentCalendarDate).map((dayDate) => {
                 const isToday = new Date().toDateString() === dayDate.toDateString();
                 return (
-                  <div key={dayDate.toISOString()} className="flex items-center justify-center gap-1.5 py-2.5 select-none">
+                  <div key={dayDate.toISOString()} className="flex items-center justify-center gap-1.5 py-2.5 select-none relative">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
                       {dayDate.toLocaleDateString('de-DE', { weekday: 'short' }).replace('.', '')}
                     </span>
@@ -678,6 +752,9 @@ export default function CalendarPage() {
                     }`}>
                       {dayDate.getDate()}
                     </span>
+                    {isToday && (
+                      <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#003527] z-10" />
+                    )}
                   </div>
                 );
               })}
@@ -703,11 +780,12 @@ export default function CalendarPage() {
               {getWeekDays(currentCalendarDate).map((dayDate) => {
                 const dateStr = dayDate.toISOString().slice(0, 10);
                 const isOverThisDay = dragOverSlot && dragOverSlot.dateStr === dateStr;
+                const isToday = new Date().toDateString() === dayDate.toDateString();
 
                 return (
                   <div 
                     key={dateStr} 
-                    className="relative h-[704px] w-full"
+                    className={`relative h-[704px] w-full ${isToday ? 'bg-[#003527]/[0.015]' : ''}`}
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={() => handleDrop(dateStr, dragOverSlot?.hour || 9)}
                   >
@@ -735,6 +813,7 @@ export default function CalendarPage() {
 
                     {/* Foreground Appointments Overlay */}
                     <div className="absolute inset-0 pointer-events-none">
+
                       {appointments
                         .filter(app => isSameDay(dayDate, app.startTime))
                         .map((app) => {
@@ -764,7 +843,9 @@ export default function CalendarPage() {
                               } ${
                                 isResizing || isDragging ? '' : 'transition-all duration-200 ease-out'
                               } ${
-                                app.status === 'booked' 
+                                !app.clientId
+                                  ? 'bg-zinc-100/90 border-zinc-200/70 text-zinc-800'
+                                  : app.status === 'booked' 
                                   ? 'bg-amber-50/90 border-amber-200/60 text-amber-900' 
                                   : app.status === 'confirmed' 
                                   ? 'bg-blue-50/90 border-blue-200/60 text-blue-900'
@@ -777,43 +858,45 @@ export default function CalendarPage() {
                                 <div className="flex justify-between items-start">
                                   <div className="flex-grow">
                                     <h4 className="font-extrabold text-[10px] tracking-tight leading-tight line-clamp-1">{app.serviceName}</h4>
-                                    <p className="text-[9px] font-semibold opacity-75 mt-0.5 text-left">{app.clientName}</p>
+                                    {app.clientId && <p className="text-[9px] font-semibold opacity-75 mt-0.5 text-left">{app.clientName}</p>}
                                   </div>
                                   <div className="flex items-center gap-1 flex-shrink-0 ml-1">
-                                    {appInvoice ? (
-                                      <span 
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          showToast('Rechnungsdetails geladen.', 'info');
-                                        }}
-                                        className={`p-0.5 rounded border flex items-center justify-center cursor-pointer ${
-                                          appInvoice.status === 'paid'
-                                            ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                                            : appInvoice.status === 'overdue'
-                                            ? 'bg-rose-50 border-rose-200 text-rose-800'
-                                            : 'bg-amber-50 border-amber-200 text-amber-800'
-                                        }`}
-                                        title={`Rechnung: ${appInvoice.invoiceNumber} (${appInvoice.status === 'paid' ? 'Bezahlt' : appInvoice.status === 'overdue' ? 'Überfällig' : 'Offen'})`}
-                                      >
-                                        <FileText className="w-2 h-2" />
-                                      </span>
-                                    ) : (
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          openNewInvoiceSheetWithPrefill({
-                                            clientId: app.clientId,
-                                            amount: app.price,
-                                            appointmentId: app.id,
-                                            clientName: app.clientName,
-                                            date: app.startTime.slice(0, 10)
-                                          });
-                                        }}
-                                        className="opacity-20 hover:opacity-100 p-0.5 bg-white hover:bg-zinc-100 border border-[#bfc9c3]/40 rounded text-[#003527] transition-all cursor-pointer flex items-center justify-center shadow-none"
-                                        title="Rechnung erstellen"
-                                      >
-                                        <Plus className="w-2 h-2" />
-                                      </button>
+                                    {app.clientId && (
+                                      appInvoice ? (
+                                        <span 
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            showToast('Rechnungsdetails geladen.', 'info');
+                                          }}
+                                          className={`p-0.5 rounded border flex items-center justify-center cursor-pointer ${
+                                            appInvoice.status === 'paid'
+                                              ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                                              : appInvoice.status === 'overdue'
+                                              ? 'bg-rose-50 border-rose-200 text-rose-800'
+                                              : 'bg-amber-50 border-amber-200 text-amber-800'
+                                          }`}
+                                          title={`Rechnung: ${appInvoice.invoiceNumber} (${appInvoice.status === 'paid' ? 'Bezahlt' : appInvoice.status === 'overdue' ? 'Überfällig' : 'Offen'})`}
+                                        >
+                                          <FileText className="w-2 h-2" />
+                                        </span>
+                                      ) : (
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            openNewInvoiceSheetWithPrefill({
+                                              clientId: app.clientId || '',
+                                              amount: app.price,
+                                              appointmentId: app.id,
+                                              clientName: app.clientName,
+                                              date: app.startTime.slice(0, 10)
+                                            });
+                                          }}
+                                          className="opacity-20 hover:opacity-100 p-0.5 bg-white hover:bg-zinc-100 border border-[#bfc9c3]/40 rounded text-[#003527] transition-all cursor-pointer flex items-center justify-center shadow-none"
+                                          title="Rechnung erstellen"
+                                        >
+                                          <Plus className="w-2 h-2" />
+                                        </button>
+                                      )
                                     )}
                                   </div>
                                 </div>
@@ -866,6 +949,44 @@ export default function CalendarPage() {
                   </div>
                 );
               })}
+              {/* Week View Current Time Indicator Line (placed in parent grid container) */}
+              {(() => {
+                const weekDays = getWeekDays(currentCalendarDate);
+                const isTodayInWeek = weekDays.some(dayDate => 
+                  currentTime.getFullYear() === dayDate.getFullYear() &&
+                  currentTime.getMonth() === dayDate.getMonth() &&
+                  currentTime.getDate() === dayDate.getDate()
+                );
+                const topPx = getNowIndicatorPosition(currentTime);
+                if (!isTodayInWeek || topPx === null) return null;
+                return (
+                  <div 
+                    className="absolute left-0 right-0 z-20 pointer-events-none h-0 grid grid-cols-[80px_repeat(5,1fr)]" 
+                    style={{ top: `${topPx}px` }}
+                  >
+                    {/* Time Pill Column */}
+                    <div className="relative w-full h-0">
+                      <div 
+                        className="absolute right-2 -translate-y-1/2 bg-rose-500 text-white text-[9px] font-extrabold px-2 py-0.5 rounded-full select-none flex-shrink-0 shadow-[0_1px_3px_rgba(0,0,0,0.1)]"
+                      >
+                        {currentTime.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                    </div>
+                    {/* Day Column lines (faded for other days, solid for today) */}
+                    {weekDays.map((dayDate) => {
+                      const isToday = currentTime.getFullYear() === dayDate.getFullYear() &&
+                                      currentTime.getMonth() === dayDate.getMonth() &&
+                                      currentTime.getDate() === dayDate.getDate();
+                      return (
+                        <div key={dayDate.toISOString()} className="relative w-full h-0">
+                          <div className={`w-full border-t-2 ${isToday ? 'border-rose-500' : 'border-rose-500/25'}`} />
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </div>
             </div>
           </motion.div>
         )}
@@ -877,11 +998,14 @@ export default function CalendarPage() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="bg-zinc-200 border border-zinc-200 rounded-2xl overflow-hidden grid grid-cols-7 gap-[1px]"
+            className={`flex-grow flex flex-col pb-6 pt-0 pl-8 transition-all duration-300 min-h-0 ${
+              isSidebarOpen ? 'pr-[384px]' : 'pr-8'
+            }`}
           >
+            <div className="mt-3 bg-zinc-200 border border-zinc-200 rounded-2xl flex-grow overflow-y-auto overflow-x-hidden hide-scrollbar grid grid-cols-7 gap-[1px] min-h-0">
             {/* Day Headers */}
             {['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map((day) => (
-              <div key={day} className="bg-[#f3f4f3] py-2 text-center text-[10px] font-bold text-zinc-400 select-none">
+              <div key={day} className="bg-[#f3f4f3] py-2 text-center text-[10px] font-bold text-zinc-400 select-none sticky top-0 z-30">
                 {day}
               </div>
             ))}
@@ -924,6 +1048,7 @@ export default function CalendarPage() {
                           setDraggedAppId(app.id);
                         }}
                         onDragEnd={() => setDraggedAppId(null)}
+                        onContextMenu={(e) => handleContextMenu(e, app)}
                         onClick={(e) => {
                           e.stopPropagation();
                           setSelectedAppointment(app);
@@ -931,7 +1056,9 @@ export default function CalendarPage() {
                           setIsSheetOpen(true);
                         }}
                         className={`px-1.5 py-0.5 rounded text-[8px] font-extrabold truncate border text-left ${
-                          app.status === 'booked' 
+                          !app.clientId
+                            ? 'bg-zinc-100/90 border-zinc-200/50 text-zinc-700 font-bold'
+                            : app.status === 'booked' 
                             ? 'bg-amber-50/70 border-amber-200/50 text-amber-800' 
                             : app.status === 'confirmed' 
                             ? 'bg-blue-50/70 border-blue-200/50 text-blue-800'
@@ -940,13 +1067,14 @@ export default function CalendarPage() {
                             : 'bg-rose-50/70 border-rose-200/50 text-rose-800'
                         }`}
                       >
-                        {formatTime(app.startTime)} {app.clientName.split(' ')[0]}
+                        {formatTime(app.startTime)} {!app.clientId ? app.serviceName : app.clientName.split(' ')[0]}
                       </div>
                     ))}
                   </div>
                 </div>
               );
             })}
+          </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -955,11 +1083,11 @@ export default function CalendarPage() {
       <AnimatePresence>
         {isSidebarOpen && (
           <motion.aside
-            initial={{ x: 320, opacity: 0.8 }}
+            initial={{ x: 400, opacity: 0.8 }}
             animate={{ x: 0, opacity: 1 }}
-            exit={{ x: 320, opacity: 0.8 }}
+            exit={{ x: 400, opacity: 0.8 }}
             transition={{ type: 'spring', damping: 26, stiffness: 220 }}
-            className="fixed right-0 top-0 bottom-0 w-80 bg-white border-l border-[#bfc9c3]/30 flex flex-col z-40 shadow-none"
+            className="absolute right-8 top-8 bottom-8 w-80 bg-white border border-[#003527]/10 flex flex-col z-30 shadow-none rounded-[20px] overflow-hidden"
           >
             {/* Sidebar Header (Matches Patients List layout style) */}
             <div className="p-6 pt-8 space-y-4 border-b border-[#bfc9c3]/20 flex-shrink-0 bg-white">
@@ -1001,10 +1129,13 @@ export default function CalendarPage() {
                       setSheetMode('edit');
                       setIsSheetOpen(true);
                     }}
+                    onContextMenu={(e) => handleContextMenu(e, app)}
                     className="flex items-center gap-3 p-3 bg-zinc-50 hover:bg-zinc-100/70 border border-[#bfc9c3]/20 rounded-xl transition-all cursor-pointer select-none text-left"
                   >
                     <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                      app.status === 'booked' 
+                      !app.clientId
+                        ? 'bg-zinc-400'
+                        : app.status === 'booked' 
                         ? 'bg-amber-500' 
                         : app.status === 'confirmed' 
                         ? 'bg-blue-500' 
@@ -1014,7 +1145,7 @@ export default function CalendarPage() {
                     }`} />
                     <div className="min-w-0 flex-grow">
                       <h5 className="font-extrabold text-xs text-[#003527] leading-tight truncate">{app.serviceName}</h5>
-                      <p className="text-[10px] font-bold text-zinc-400 mt-0.5 truncate">{app.clientName}</p>
+                      {app.clientId && <p className="text-[10px] font-bold text-zinc-400 mt-0.5 truncate">{app.clientName}</p>}
                       <p className="text-[9px] font-bold text-zinc-500 mt-1 flex items-center gap-1">
                         <Clock className="w-2.5 h-2.5 text-zinc-400" />
                         {formatTime(app.startTime)} - {formatTime(app.endTime)}
@@ -1089,7 +1220,7 @@ export default function CalendarPage() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 20, scale: 0.95 }}
               className={`fixed bottom-6 z-50 flex flex-col bg-white/95 backdrop-blur-xl border border-[#bfc9c3]/30 w-full max-w-md rounded-2xl shadow-[0_12px_45px_rgba(0,53,39,0.14)] p-5 select-none overflow-hidden m-4 transition-all duration-300 ${
-                isSidebarOpen ? 'right-[344px]' : 'right-6'
+                isSidebarOpen ? 'right-[400px]' : 'right-8'
               }`}
             >
               <div className="flex items-start justify-between gap-4">

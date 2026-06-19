@@ -1,6 +1,9 @@
 export interface Client {
   id: string;
   name: string;
+  salutation?: 'Frau' | 'Herr' | 'Keine' | string;
+  firstName?: string;
+  lastName?: string;
   birthday: string;
   email: string;
   phone: string;
@@ -9,7 +12,9 @@ export interface Client {
   createdAt: string;
   isFavorite?: boolean;
   isFlagged?: boolean;
+  gdprAccepted?: boolean;
 }
+
 
 export interface Service {
   id: string;
@@ -20,14 +25,14 @@ export interface Service {
 
 export interface Appointment {
   id: string;
-  clientId: string;
+  clientId: string | null;
   clientName: string;
-  serviceId: string;
+  serviceId: string | null;
   serviceName: string;
   price: number;
   startTime: string; // ISO string
   endTime: string; // ISO string
-  status: 'booked' | 'confirmed' | 'cancelled' | 'noshow';
+  status: 'booked' | 'confirmed' | 'cancelled' | 'noshow' | string;
   notes?: string;
 }
 

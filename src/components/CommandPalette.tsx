@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Plus, Calendar, Users, FileText, Settings, User } from 'lucide-react';
+import { Search, Plus, Calendar, Users, FileText, Settings, User, FolderOpen, Mail } from 'lucide-react';
 import { useDashboard } from '@/app/dashboard/context';
 import { useRouter } from 'next/navigation';
 
@@ -39,9 +39,28 @@ const getInitials = (name: string) => {
   return (parts[0][0] + (parts[parts.length - 1]?.[0] || '')).toUpperCase();
 };
 
+const getAvatarColor = (name: string) => {
+  const colors = [
+    'bg-blue-50 border border-blue-200/60 text-blue-800',
+    'bg-emerald-50 border border-emerald-200/60 text-emerald-800',
+    'bg-purple-50 border border-purple-200/60 text-purple-800',
+    'bg-amber-50 border border-amber-200/60 text-amber-800',
+    'bg-rose-50 border border-rose-200/60 text-rose-800',
+    'bg-teal-50 border border-teal-200/60 text-teal-800'
+  ];
+  if (!name) return colors[0];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % colors.length;
+  return colors[index];
+};
+
 export default function CommandPalette({ isOpen, setIsOpen, actions }: Props) {
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
+  const [selectedTab, setSelectedTab] = useState('all');
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
@@ -58,7 +77,9 @@ export default function CommandPalette({ isOpen, setIsOpen, actions }: Props) {
     setNewAppDate,
     setNewAppHour,
     setNewAppClientId,
-    setNewAppServiceId
+    setNewAppServiceId,
+    setIsMailModalOpen,
+    applyMailTemplate
   } = useDashboard();
 
   const allFilteredItems: SearchResultItem[] = [];
@@ -109,7 +130,7 @@ export default function CommandPalette({ isOpen, setIsOpen, actions }: Props) {
         title: patient.name,
         subtitle: `${patient.phone || 'Keine Telefonnummer'} • Geb. ${patient.birthday || 'k.A.'}`,
         initials: getInitials(patient.name),
-        initialsColor: patient.isFavorite ? 'bg-emerald-100 text-emerald-800 border border-emerald-200 shadow-sm' : 'bg-zinc-100 text-zinc-800',
+        initialsColor: patient.isFavorite ? 'bg-emerald-100 text-emerald-800 border border-emerald-200 shadow-sm' : getAvatarColor(patient.name),
         onSelect: () => {
           setSelectedClientId(patient.id);
           router.push('/dashboard/clients');
@@ -178,7 +199,7 @@ export default function CommandPalette({ isOpen, setIsOpen, actions }: Props) {
         title: patient.name,
         subtitle: `${patient.phone || 'Keine Telefonnummer'} • Geb. ${patient.birthday || 'k.A.'}`,
         initials: getInitials(patient.name),
-        initialsColor: 'bg-emerald-50 text-emerald-700 border border-emerald-100',
+        initialsColor: getAvatarColor(patient.name),
         onSelect: () => {
           setSelectedClientId(patient.id);
           router.push('/dashboard/clients');
@@ -257,17 +278,22 @@ export default function CommandPalette({ isOpen, setIsOpen, actions }: Props) {
     });
   }
 
+  const displayedItems = selectedTab === 'all'
+    ? allFilteredItems
+    : allFilteredItems.filter(item => item.type === selectedTab);
+
   useEffect(() => {
     if (isOpen) {
       setQuery('');
       setActiveIndex(0);
+      setSelectedTab('all');
       setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [isOpen]);
 
   useEffect(() => {
     setActiveIndex(0);
-  }, [query]);
+  }, [query, selectedTab]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -277,20 +303,20 @@ export default function CommandPalette({ isOpen, setIsOpen, actions }: Props) {
         setIsOpen(false);
       } else if (e.key === 'ArrowDown') {
         e.preventDefault();
-        setActiveIndex(prev => (prev + 1) % (allFilteredItems.length || 1));
+        setActiveIndex(prev => (prev + 1) % (displayedItems.length || 1));
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
-        setActiveIndex(prev => (prev - 1 + allFilteredItems.length) % (allFilteredItems.length || 1));
-      } else if (e.key === 'Enter' && allFilteredItems.length > 0) {
+        setActiveIndex(prev => (prev - 1 + displayedItems.length) % (displayedItems.length || 1));
+      } else if (e.key === 'Enter' && displayedItems.length > 0) {
         e.preventDefault();
-        allFilteredItems[activeIndex].onSelect();
+        displayedItems[activeIndex].onSelect();
         setIsOpen(false);
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, allFilteredItems, activeIndex, setIsOpen]);
+  }, [isOpen, displayedItems, activeIndex, setIsOpen]);
 
   return (
     <AnimatePresence>
@@ -311,25 +337,72 @@ export default function CommandPalette({ isOpen, setIsOpen, actions }: Props) {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: -20 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="w-full max-w-2xl bg-[#f9f9f8] rounded-[2rem] shadow-[0_25px_60px_rgba(0,0,0,0.08)] border border-[#bfc9c3]/40 overflow-hidden relative z-10 flex flex-col"
+            className="w-full max-w-2xl bg-white rounded-2xl shadow-[0_25px_60px_rgba(0,0,0,0.08)] border border-[#bfc9c3]/40 overflow-hidden relative z-10 flex flex-col"
           >
             {/* Input Area */}
-            <div className="flex items-center px-6 py-4.5 border-b border-[#bfc9c3]/35 bg-white relative">
+            <div className="flex items-center px-6 py-4.5 bg-white relative">
               <Search className="h-5.5 w-5.5 text-[#003527]/35 mr-4" />
               <input
                 ref={inputRef}
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Suche nach Patienten, Rechnungen, Terminen oder tippe 'neu'..."
+                placeholder="Suchen..."
                 className="flex-1 bg-transparent border-none outline-none text-[17px] font-bold text-[#003527] placeholder:text-[#003527]/30"
               />
-              <span className="text-[10px] font-mono font-bold text-[#003527]/40 bg-[#f3f4f3] px-2 py-1 rounded">ESC</span>
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                title="Suche schließen"
+                className="text-[10px] font-mono font-bold text-[#003527]/40 bg-[#f3f4f3] hover:bg-[#e4e5e4] active:scale-95 px-2 py-1 rounded cursor-pointer transition-all shrink-0"
+              >
+                ESC
+              </button>
+            </div>
+
+            {/* Filter Tabs */}
+            <div className="flex items-center gap-6 px-6 border-b border-[#bfc9c3]/20 bg-white overflow-x-auto no-scrollbar">
+              {[
+                { id: 'all', label: 'Alle', icon: null },
+                { id: 'patient', label: 'Patienten', icon: Users },
+                { id: 'appointment', label: 'Termine', icon: Calendar },
+                { id: 'invoice', label: 'Rechnungen', icon: FileText },
+                { id: 'action', label: 'Aktionen', icon: Plus }
+              ].map(tab => {
+                const count = tab.id === 'all'
+                  ? allFilteredItems.length
+                  : allFilteredItems.filter(item => item.type === tab.id).length;
+
+                const Icon = tab.icon;
+
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setSelectedTab(tab.id)}
+                    className={`pb-3 pt-2 text-[12px] font-extrabold transition-all border-b-2 cursor-pointer select-none shrink-0 flex items-center gap-1.5 -mb-[1px] ${
+                      selectedTab === tab.id
+                        ? 'border-[#003527] text-[#003527]'
+                        : 'border-transparent text-[#003527]/40 hover:text-[#003527]/75'
+                    }`}
+                  >
+                    {Icon && <Icon className="w-3.5 h-3.5 opacity-70 shrink-0" />}
+                    <span>{tab.label}</span>
+                    <span className={`px-1.5 py-0.5 text-[9px] font-extrabold rounded-md transition-all select-none ${
+                      selectedTab === tab.id
+                        ? 'bg-[#003527]/10 text-[#003527]'
+                        : 'bg-zinc-100 text-[#003527]/45'
+                    }`}>
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
 
             {/* Results Area */}
-            <div className="max-h-[60vh] overflow-y-auto p-3.5 space-y-1.5 no-scrollbar">
-              {allFilteredItems.length === 0 ? (
+            <div className="max-h-[60vh] overflow-y-auto py-1 no-scrollbar">
+              {displayedItems.length === 0 ? (
                 <div className="py-12 text-center flex flex-col items-center justify-center">
                   <div className="bg-[#bfc9c3]/15 p-4 rounded-full mb-3 text-[#003527]/40">
                     <Search className="w-6 h-6" />
@@ -340,7 +413,7 @@ export default function CommandPalette({ isOpen, setIsOpen, actions }: Props) {
               ) : (
                 (() => {
                   let currentType = '';
-                  return allFilteredItems.map((item, idx) => {
+                  return displayedItems.map((item, idx) => {
                     const isActive = idx === activeIndex;
                     
                     let categoryHeader = null;
@@ -351,7 +424,7 @@ export default function CommandPalette({ isOpen, setIsOpen, actions }: Props) {
                         item.type === 'patient' ? 'Patienten' : 
                         item.type === 'appointment' ? 'Termine' : 'Rechnungen';
                       categoryHeader = (
-                        <div className="px-3 pt-3.5 pb-1.5 text-[9px] font-extrabold uppercase tracking-widest text-[#003527]/35 text-left">
+                        <div className="px-6 pt-4 pb-2 text-[9px] font-extrabold uppercase tracking-widest text-[#003527]/35 text-left">
                           {typeLabel}
                         </div>
                       );
@@ -364,7 +437,7 @@ export default function CommandPalette({ isOpen, setIsOpen, actions }: Props) {
                         {categoryHeader}
                         
                         <div 
-                          className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl transition-all cursor-pointer border border-transparent select-none relative group overflow-hidden ${
+                          className={`w-full flex items-center justify-between px-6 py-3.5 transition-all cursor-pointer select-none relative group overflow-hidden ${
                             isActive 
                               ? 'bg-[#003527]/5 text-[#003527]' 
                               : 'bg-transparent text-[#043F2D]'
@@ -378,7 +451,7 @@ export default function CommandPalette({ isOpen, setIsOpen, actions }: Props) {
                           <div className="flex items-center min-w-0 flex-1">
                             {/* Initials / Avatar / Icon */}
                             {item.type === 'patient' && item.initials ? (
-                              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-extrabold text-[11px] mr-3 shrink-0 ${
+                              <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-extrabold text-[11px] mr-3 shrink-0 ${
                                 item.initialsColor || 'bg-emerald-50 text-emerald-700'
                               }`}>
                                 {item.initials}
@@ -424,9 +497,10 @@ export default function CommandPalette({ isOpen, setIsOpen, actions }: Props) {
                                     router.push('/dashboard/clients');
                                     setIsOpen(false);
                                   }}
-                                  className="px-2.5 py-1 text-[9px] font-extrabold bg-white text-[#003527] rounded-lg border border-zinc-200/50 hover:bg-zinc-50 active:scale-95 transition-all cursor-pointer"
+                                  className="p-1.5 bg-white hover:bg-zinc-50 border border-zinc-200/60 text-[#003527] rounded-lg cursor-pointer flex items-center justify-center w-7 h-7 transition-all active:scale-95"
+                                  title="Patientenakte öffnen"
                                 >
-                                  Akte öffnen
+                                  <FolderOpen className="w-3.5 h-3.5" />
                                 </button>
                                 <button 
                                   onClick={(e) => {
@@ -439,13 +513,36 @@ export default function CommandPalette({ isOpen, setIsOpen, actions }: Props) {
                                     setIsSheetOpen(true);
                                     setIsOpen(false);
                                   }}
-                                  className="px-2.5 py-1 text-[9px] font-extrabold bg-[#003527] text-white rounded-lg border border-transparent hover:bg-[#0b513d] active:scale-95 transition-all cursor-pointer"
+                                  className="p-1.5 bg-white hover:bg-zinc-50 border border-zinc-200/60 text-[#003527] rounded-lg cursor-pointer flex items-center justify-center w-7 h-7 transition-all active:scale-95"
+                                  title="Neuen Termin vereinbaren"
                                 >
-                                  Termin
+                                  <Calendar className="w-3.5 h-3.5" />
+                                </button>
+                                <button 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const patientId = item.id.replace('patient-', '');
+                                    const patientObj = clients.find(c => c.id === patientId);
+                                    if (patientObj) {
+                                      setSelectedClientId(patientId);
+                                      applyMailTemplate('custom', undefined, undefined, patientObj);
+                                      setIsMailModalOpen(true);
+                                      setIsOpen(false);
+                                    }
+                                  }}
+                                  className="p-1.5 bg-white hover:bg-zinc-50 border border-zinc-200/60 text-[#003527] rounded-lg cursor-pointer flex items-center justify-center w-7 h-7 transition-all active:scale-95"
+                                  title="E-Mail senden"
+                                >
+                                  <Mail className="w-3.5 h-3.5" />
                                 </button>
                               </div>
                             )}
                           </div>
+
+                          {/* Divider line inset to match content area */}
+                          {idx < displayedItems.length - 1 && (
+                            <div className="absolute bottom-0 left-6 right-6 h-px bg-[#bfc9c3]/15 pointer-events-none" />
+                          )}
                         </div>
                       </div>
                     );
@@ -455,7 +552,7 @@ export default function CommandPalette({ isOpen, setIsOpen, actions }: Props) {
             </div>
 
             {/* Footer */}
-            <div className="border-t border-[#bfc9c3]/30 bg-zinc-50 px-6 py-3 flex items-center justify-between text-[10px] text-zinc-400 font-semibold">
+            <div className="border-t border-[#bfc9c3]/20 bg-white px-6 py-3 flex items-center justify-between text-[10px] text-zinc-400 font-semibold">
               <div className="flex items-center gap-4">
                 <span className="flex items-center gap-1">
                   <kbd className="bg-white border border-zinc-200 rounded px-1 py-0.5 shadow-sm text-zinc-500 font-mono">↑</kbd> 

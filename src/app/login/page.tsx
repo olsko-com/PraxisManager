@@ -74,12 +74,12 @@ export default function LoginPage() {
         setActiveMode('signup');
       }
       
-      const stored = localStorage.getItem('completed_onboarding_menu');
+      const stored = localStorage.getItem('completed_onboarding_practice');
       if (stored) {
         try {
           const data = JSON.parse(stored);
-          if (data.restaurantName) {
-            setRestaurantName(data.restaurantName);
+          if (data.practiceName) {
+            setRestaurantName(data.practiceName);
           }
         } catch (e) {
           console.error(e);
@@ -201,6 +201,25 @@ export default function LoginPage() {
 
         if (restError) {
           console.error('Praxis-Eintrag konnte nicht erstellt werden:', restError);
+        }
+
+        // Insert first service from onboarding if it exists in local storage
+        const stored = localStorage.getItem('completed_onboarding_practice');
+        if (stored) {
+          try {
+            const data = JSON.parse(stored);
+            if (data.firstService) {
+              await supabase.from('services').insert({
+                id: crypto.randomUUID(),
+                user_id: user.id,
+                name: data.firstService.name,
+                duration: data.firstService.duration,
+                price: data.firstService.price
+              });
+            }
+          } catch (e) {
+            console.error('Konnte Onboarding-Service nicht anlegen:', e);
+          }
         }
 
         if (signUpData.session) {

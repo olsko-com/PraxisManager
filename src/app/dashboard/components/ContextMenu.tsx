@@ -28,6 +28,7 @@ export default function ContextMenu() {
     applyMailTemplate,
     setIsMailModalOpen,
     setAppointments,
+    deleteAppointment,
     openNewInvoiceSheetWithPrefill,
     showToast
   } = useDashboard();
@@ -50,7 +51,7 @@ export default function ContextMenu() {
       onClick={(e) => e.stopPropagation()}
     >
       <div className="px-3 py-2 text-[10px] text-zinc-400 font-bold uppercase tracking-wider select-none text-left">
-        {contextMenu.appointment.clientName}
+        {contextMenu.appointment.clientName || contextMenu.appointment.serviceName || 'Termin'}
       </div>
 
       <div className="py-1 flex flex-col">
@@ -91,13 +92,13 @@ export default function ContextMenu() {
                 </button>
               </>
             );
-          } else {
+          } else if (contextMenu.appointment.clientId) {
             return (
               <button
                 onClick={() => {
                   setContextMenu(null);
                   openNewInvoiceSheetWithPrefill({
-                    clientId: contextMenu.appointment.clientId,
+                    clientId: contextMenu.appointment.clientId || '',
                     amount: contextMenu.appointment.price,
                     appointmentId: contextMenu.appointment.id,
                     clientName: contextMenu.appointment.clientName,
@@ -111,6 +112,7 @@ export default function ContextMenu() {
               </button>
             );
           }
+          return null;
         })()}
       </div>
 
@@ -128,53 +130,57 @@ export default function ContextMenu() {
           Termin bearbeiten
         </button>
         
-        <button
-          onClick={() => {
-            setContextMenu(null);
-            const client = clients.find(c => c.id === contextMenu.appointment.clientId);
-            if (client) {
-              setSelectedClientId(client.id);
-              createSoapNote(contextMenu.appointment.id, client.id);
-              router.push('/dashboard/clients');
-            }
-          }}
-          className="w-full text-left px-3 py-1.5 rounded-xl hover:bg-[#003527]/5 font-bold transition-all flex items-center gap-2 cursor-pointer border-none bg-transparent"
-        >
-          <Sparkles className="w-3.5 h-3.5" />
-          SOAP-Bericht erstellen
-        </button>
+        {contextMenu.appointment.clientId && (
+          <>
+            <button
+              onClick={() => {
+                setContextMenu(null);
+                const client = clients.find(c => c.id === contextMenu.appointment.clientId);
+                if (client) {
+                  setSelectedClientId(client.id);
+                  createSoapNote(contextMenu.appointment.id, client.id);
+                  router.push('/dashboard/clients');
+                }
+              }}
+              className="w-full text-left px-3 py-1.5 rounded-xl hover:bg-[#003527]/5 font-bold transition-all flex items-center gap-2 cursor-pointer border-none bg-transparent"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              SOAP-Bericht erstellen
+            </button>
 
-        <button
-          onClick={() => {
-            setContextMenu(null);
-            const client = clients.find(c => c.id === contextMenu.appointment.clientId);
-            if (client) {
-              setSelectedClientId(client.id);
-              setSelectedMailAppointmentId(contextMenu.appointment.id);
-              const invoice = invoices.find(inv => inv.appointmentId === contextMenu.appointment.id);
-              if (invoice) {
-                setSelectedMailInvoiceId(invoice.id);
-                applyMailTemplate('rechnung', invoice.id, contextMenu.appointment.id, client);
-              } else {
-                applyMailTemplate('bestaetigung', undefined, contextMenu.appointment.id, client);
-              }
-              setIsMailModalOpen(true);
-            }
-          }}
-          className="w-full text-left px-3 py-1.5 rounded-xl hover:bg-[#003527]/5 font-bold transition-all flex items-center gap-2 cursor-pointer border-none bg-transparent"
-        >
-          <Mail className="w-3.5 h-3.5" />
-          E-Mail schreiben
-        </button>
+            <button
+              onClick={() => {
+                setContextMenu(null);
+                const client = clients.find(c => c.id === contextMenu.appointment.clientId);
+                if (client) {
+                  setSelectedClientId(client.id);
+                  setSelectedMailAppointmentId(contextMenu.appointment.id);
+                  const invoice = invoices.find(inv => inv.appointmentId === contextMenu.appointment.id);
+                  if (invoice) {
+                    setSelectedMailInvoiceId(invoice.id);
+                    applyMailTemplate('rechnung', invoice.id, contextMenu.appointment.id, client);
+                  } else {
+                    applyMailTemplate('bestaetigung', undefined, contextMenu.appointment.id, client);
+                  }
+                  setIsMailModalOpen(true);
+                }
+              }}
+              className="w-full text-left px-3 py-1.5 rounded-xl hover:bg-[#003527]/5 font-bold transition-all flex items-center gap-2 cursor-pointer border-none bg-transparent"
+            >
+              <Mail className="w-3.5 h-3.5" />
+              E-Mail schreiben
+            </button>
+          </>
+        )}
       </div>
 
       <div className="py-1 flex flex-col">
         <button
-          onClick={() => {
+          onClick={async () => {
             setContextMenu(null);
-            if (confirm(`Möchtest du den Termin für ${contextMenu.appointment.clientName} wirklich löschen?`)) {
-              setAppointments(prev => prev.filter(a => a.id !== contextMenu.appointment.id));
-              showToast('Termin gelöscht.', 'info');
+            const displayName = contextMenu.appointment.clientName || contextMenu.appointment.serviceName || 'diesen Termin';
+            if (confirm(`Möchtest du den Termin für "${displayName}" wirklich löschen?`)) {
+              await deleteAppointment(contextMenu.appointment.id);
             }
           }}
           className="w-full text-left px-3 py-1.5 rounded-xl hover:bg-rose-50 text-rose-600 font-bold transition-all flex items-center gap-2 cursor-pointer border-none bg-transparent"

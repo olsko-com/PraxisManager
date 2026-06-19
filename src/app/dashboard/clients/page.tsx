@@ -8,6 +8,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDashboard } from '../context';
 import { Client, SoapNote, Invoice } from '@/lib/types';
+import { supabase } from '@/lib/supabase';
 
 interface ClientListItemProps {
   client: Client;
@@ -159,7 +160,11 @@ function ClientListItem({
 export default function ClientsPage() {
   const {
     clients,
-    setClients,
+    toggleClientFavorite,
+    toggleClientFlag,
+    toggleClientGdpr,
+    deleteClient,
+    therapistId,
     appointments,
     invoices,
     setInvoices,
@@ -207,9 +212,9 @@ export default function ClientsPage() {
   const clientSoapNotes = soapNotes.filter(n => n.clientId === selectedClientId);
 
   return (
-    <div className="flex-grow flex min-h-0 h-screen overflow-hidden relative">
+    <div className="relative flex-grow bg-[#eef0ed] rounded-[24px] border border-[#003527]/10 my-4 mr-4 ml-4 flex p-6 gap-6 h-[calc(100vh-32px)] overflow-hidden shadow-none transition-all duration-300">
       {/* Left Side: Client List as a secondary Sidebar */}
-      <div className="fixed left-64 top-0 bottom-0 w-80 bg-white border-r border-[#bfc9c3]/30 flex flex-col z-40">
+      <div className="w-80 bg-white border border-[#003527]/10 rounded-[20px] flex flex-col z-10 flex-shrink-0 overflow-hidden">
         <div className="p-6 pt-8 space-y-4">
           <div className="flex justify-between items-center">
             {(() => {
@@ -305,6 +310,20 @@ export default function ClientsPage() {
                 return true;
               });
 
+            if (clients.length === 0) {
+              return (
+                <div className="p-6 text-center text-xs text-zinc-400 font-medium space-y-3">
+                  <p>Noch keine Patienten angelegt.</p>
+                  <button
+                    onClick={() => setIsNewClientModalOpen(true)}
+                    className="w-full bg-[#003527]/5 hover:bg-[#003527]/10 text-[#003527] py-2 rounded-xl text-[10px] font-bold transition-all cursor-pointer border border-[#bfc9c3]/30"
+                  >
+                    + Patient anlegen
+                  </button>
+                </div>
+              );
+            }
+
             if (filtered.length === 0) {
               return (
                 <div className="p-6 text-center text-xs text-zinc-400 font-medium">
@@ -328,14 +347,14 @@ export default function ClientsPage() {
                 isSelected={selectedClientId === c.id}
                 onSelect={() => setSelectedClientId(c.id)}
                 onToggleFavorite={() => {
-                  setClients((prev: Client[]) => prev.map(cl => cl.id === c.id ? { ...cl, isFavorite: !cl.isFavorite } : cl));
+                  toggleClientFavorite(c.id);
                 }}
                 onToggleFlag={() => {
-                  setClients((prev: Client[]) => prev.map(cl => cl.id === c.id ? { ...cl, isFlagged: !cl.isFlagged } : cl));
+                  toggleClientFlag(c.id);
                 }}
-                onDelete={() => {
+                onDelete={async () => {
                   if (confirm(`Möchtest du ${c.name} wirklich löschen?`)) {
-                    setClients((prev: Client[]) => prev.filter(cl => cl.id !== c.id));
+                    await deleteClient(c.id);
                     if (selectedClientId === c.id) {
                       const remaining = clients.filter(cl => cl.id !== c.id);
                       setSelectedClientId(remaining.length > 0 ? remaining[0].id : '');
@@ -367,11 +386,11 @@ export default function ClientsPage() {
       </div>
 
       {/* Right Side: Profile Details */}
-      <div className="lg:ml-80 flex-grow flex flex-col min-h-0 h-screen overflow-hidden">
+      <div className="flex-grow flex flex-col min-h-0 overflow-hidden">
         {currentClient ? (
           <div className="flex-grow flex flex-col min-h-0">
             {/* Patient Header */}
-            <div className="border-b border-[#bfc9c3]/30 px-12 py-6 flex justify-between items-center bg-[#f9f9f8]/95 backdrop-blur-xl z-20 flex-shrink-0">
+            <div className="border-b border-[#bfc9c3]/30 px-6 pb-6 flex justify-between items-center bg-transparent z-20 flex-shrink-0">
               <div className="text-left">
                 <h3 className="text-xl font-bold text-[#043F2D]">{currentClient.name}</h3>
                 <p className="text-xs text-zinc-500 mt-1">Registriert seit {new Date(currentClient.createdAt).toLocaleDateString('de-DE')}</p>
@@ -452,18 +471,37 @@ export default function ClientsPage() {
                               if (!isNaN(amount) && amount > 0) {
                                 const num = invoices.length + 1;
                                 const invNum = `RE-2026-${num.toString().padStart(4, '0')}`;
-                                const newInv = {
-                                  id: `i-${Date.now()}`,
-                                  appointmentId: `custom-${Date.now()}`,
-                                  clientId: currentClient.id,
-                                  clientName: currentClient.name,
-                                  invoiceNumber: invNum,
-                                  amount: amount,
-                                  date: new Date().toISOString().slice(0, 10),
-                                  status: 'open' as const
-                                };
-                                setInvoices((prev: Invoice[]) => [...prev, newInv]);
-                                showToast(`Rechnung ${invNum} über ${amount.toFixed(2)} € erstellt!`, 'success');
+                                const invoiceId = crypto.randomUUID();
+                                supabase
+                                  .from('invoices')
+                                  .insert({
+                                    id: invoiceId,
+                                    user_id: therapistId,
+                                    appointment_id: null,
+                                    client_id: currentClient.id,
+                                    invoice_number: invNum,
+                                    amount: amount,
+                                    date: new Date().toISOString().slice(0, 10),
+                                    status: 'open'
+                                  })
+                                  .then(({ error }) => {
+                                    if (error) {
+                                      showToast(`Fehler beim Erstellen der Rechnung: ${error.message}`, 'error');
+                                      return;
+                                    }
+                                    const newInv = {
+                                      id: invoiceId,
+                                      appointmentId: `custom-${Date.now()}`,
+                                      clientId: currentClient.id,
+                                      clientName: currentClient.name,
+                                      invoiceNumber: invNum,
+                                      amount: amount,
+                                      date: new Date().toISOString().slice(0, 10),
+                                      status: 'open' as const
+                                    };
+                                    setInvoices((prev: Invoice[]) => [...prev, newInv]);
+                                    showToast(`Rechnung ${invNum} über ${amount.toFixed(2)} € erstellt!`, 'success');
+                                  });
                               } else {
                                 showToast('Ungültiger Betrag.', 'error');
                               }
@@ -482,7 +520,7 @@ export default function ClientsPage() {
             </div>
 
             {/* Scrollable details content */}
-            <div className="flex-grow overflow-y-auto px-12 py-8 space-y-6">
+            <div className="flex-grow overflow-y-auto px-6 py-6 space-y-6">
               {/* Quick profile info grid (Bento Grid) */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Bento Card 1: Stammdaten */}
@@ -504,6 +542,21 @@ export default function ClientsPage() {
                       <div className="space-y-0.5">
                         <span className="block text-[10px] font-medium text-zinc-400">Mitglied seit</span>
                         <span className="block text-xs font-extrabold text-[#003527]">{new Date(currentClient.createdAt).toLocaleDateString('de-DE')}</span>
+                      </div>
+                      <div className="space-y-0.5">
+                        <span className="block text-[10px] font-medium text-zinc-400">Datenschutz</span>
+                        <div>
+                          <button
+                            onClick={() => toggleClientGdpr(currentClient.id)}
+                            className={`mt-1 text-[10px] font-bold px-2 py-1 rounded-lg border transition-all cursor-pointer inline-flex items-center gap-1 outline-none ${
+                              currentClient.gdprAccepted
+                                ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100'
+                                : 'bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100'
+                            }`}
+                          >
+                            {currentClient.gdprAccepted ? '✓ Erteilt' : '⚠ Ausstehend'}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -736,9 +789,9 @@ export default function ClientsPage() {
                   <p className="text-[11px] text-zinc-400 mt-0.5">Diesen Patienten unwiderruflich aus der Datenbank entfernen.</p>
                 </div>
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     if (confirm('Möchtest du diesen Patienten wirklich löschen?')) {
-                      setClients((prev: Client[]) => prev.filter(c => c.id !== currentClient.id));
+                      await deleteClient(currentClient.id);
                       setSelectedClientId(clients.find(c => c.id !== currentClient.id)?.id || '');
                     }
                   }}
@@ -749,9 +802,33 @@ export default function ClientsPage() {
               </div>
             </div>
           </div>
+        ) : clients.length === 0 ? (
+          <div className="flex-1 flex flex-col items-center justify-center p-12 text-center max-w-xl mx-auto space-y-6">
+            <div className="w-16 h-16 bg-[#003527]/5 rounded-2xl flex items-center justify-center text-[#003527] border border-[#bfc9c3]/20 shadow-sm animate-pulse">
+              <User className="w-8 h-8" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-sm font-bold text-[#003527] uppercase tracking-wider font-mono">Noch keine Patienten angelegt</h3>
+              <p className="text-xs text-[#404944] leading-relaxed max-w-sm">
+                Erstelle deinen ersten Patienten, um Termine zu vergeben, SOAP-Notizen zu führen und Rechnungen zu erstellen.
+              </p>
+            </div>
+            <button
+              onClick={() => setIsNewClientModalOpen(true)}
+              className="bg-[#003527] hover:bg-[#0b513d] text-white px-5 py-3 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 shadow-sm border-none"
+            >
+              <Plus className="w-4 h-4" /> Ersten Patienten anlegen
+            </button>
+          </div>
         ) : (
-          <div className="flex-1 flex items-center justify-center p-12 text-center text-xs text-zinc-400 font-semibold italic">
-            Bitte wähle einen Patienten aus der Liste aus.
+          <div className="flex-grow flex flex-col items-center justify-center p-12 text-center max-w-md mx-auto space-y-4">
+            <div className="w-12 h-12 bg-zinc-50 rounded-xl flex items-center justify-center text-[#003527] border border-zinc-200/40">
+              <Search className="w-6 h-6 text-zinc-400" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-xs font-bold text-[#003527] uppercase tracking-wider font-mono">Patient auswählen</h3>
+              <p className="text-[11px] text-zinc-400">Wähle einen Patienten aus der Liste links aus, um seine Akte zu öffnen.</p>
+            </div>
           </div>
         )}
       </div>

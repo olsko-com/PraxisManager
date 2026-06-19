@@ -130,6 +130,23 @@ export default function OnboardingPage() {
 
       if (userId) {
         localStorage.setItem(`therapist_name_${userId}`, practiceName);
+        
+        // 1. Upsert practice details in Supabase
+        await supabase.from('practices').upsert({
+          user_id: userId,
+          name: practiceName,
+          currency: 'EUR'
+        });
+
+        // 2. Create the first service in Supabase
+        const serviceId = crypto.randomUUID();
+        await supabase.from('services').insert({
+          id: serviceId,
+          user_id: userId,
+          name: finalName,
+          duration: parseInt(serviceDuration),
+          price: finalPrice
+        });
       }
       
       if (userId) {

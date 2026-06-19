@@ -28,6 +28,7 @@ interface DashboardContextProps {
   // Services
   services: Service[];
   setServices: React.Dispatch<React.SetStateAction<Service[]>>;
+  createService: (newSrv: Omit<Service, 'id'>) => Promise<Service | null>;
 
   // Appointments
   appointments: Appointment[];
@@ -169,7 +170,26 @@ interface DashboardContextProps {
 
   // Action methods
   saveSettings: (e: React.FormEvent) => Promise<void>;
-  handleCreateClient: (e: React.FormEvent) => void;
+  handleCreateClient: (
+    salutation: string,
+    firstName: string,
+    lastName: string,
+    birthday: string,
+    email: string,
+    phone: string,
+    emergencyContact: string,
+    notes: string
+  ) => Promise<boolean>;
+  deleteClient: (id: string) => Promise<void>;
+  updateClientName: (id: string, name: string) => Promise<void>;
+  deleteService: (id: string) => Promise<void>;
+  updateService: (id: string, name: string) => Promise<void>;
+  toggleClientFavorite: (id: string) => void;
+  toggleClientFlag: (id: string) => void;
+  toggleClientGdpr: (id: string) => void;
+  addAppointment: (app: Omit<Appointment, 'clientName' | 'serviceName' | 'price'> & { serviceName?: string; price?: number }) => Promise<void>;
+  updateAppointment: (app: Appointment) => Promise<void>;
+  deleteAppointment: (id: string) => Promise<void>;
   openNewInvoiceSheet: () => void;
   openNewInvoiceSheetWithPrefill: (prefill: {
     clientId: string;
@@ -224,9 +244,9 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
   // Client database state
   const [clients, setClients] = useState<Client[]>([
-    { id: 'c1', name: 'Alexander Hoffmann', birthday: '1984-05-12', email: 'alex@hoffmann.de', phone: '+49 176 1234567', emergencyContact: 'Sarah Hoffmann (Ehefrau) - +49 176 7654321', notes: 'Rückenschmerzen im Lendenbereich, Schreibtischtätigkeit.', createdAt: '2026-01-10T10:00:00Z' },
-    { id: 'c2', name: 'Emma Schmidt', birthday: '1992-11-23', email: 'emma.schmidt@gmx.de', phone: '+49 152 9887766', emergencyContact: 'Karl Schmidt (Vater) - +49 30 5551234', notes: 'Migräne-Patientin, wöchentliche Akupunktur.', createdAt: '2026-02-15T11:30:00Z' },
-    { id: 'c3', name: 'Maximilian Müller', birthday: '1978-02-05', email: 'max.mueller@web.de', phone: '+49 171 5554433', emergencyContact: 'Dr. Becker (Hausarzt) - +49 171 1112223', notes: 'Reha nach Knie-OP, physiotherapeutische Betreuung.', createdAt: '2026-03-01T09:00:00Z' }
+    { id: 'c1', name: 'Alexander Hoffmann', salutation: 'Herr', firstName: 'Alexander', lastName: 'Hoffmann', birthday: '1984-05-12', email: 'alex@hoffmann.de', phone: '+49 176 1234567', emergencyContact: 'Sarah Hoffmann (Ehefrau) - +49 176 7654321', notes: 'Rückenschmerzen im Lendenbereich, Schreibtischtätigkeit.', createdAt: '2026-01-10T10:00:00Z', gdprAccepted: true },
+    { id: 'c2', name: 'Emma Schmidt', salutation: 'Frau', firstName: 'Emma', lastName: 'Schmidt', birthday: '1992-11-23', email: 'emma.schmidt@gmx.de', phone: '+49 152 9887766', emergencyContact: 'Karl Schmidt (Vater) - +49 30 5551234', notes: 'Migräne-Patientin, wöchentliche Akupunktur.', createdAt: '2026-02-15T11:30:00Z', gdprAccepted: false },
+    { id: 'c3', name: 'Maximilian Müller', salutation: 'Herr', firstName: 'Maximilian', lastName: 'Müller', birthday: '1978-02-05', email: 'max.mueller@web.de', phone: '+49 171 5554433', emergencyContact: 'Dr. Becker (Hausarzt) - +49 171 1112223', notes: 'Reha nach Knie-OP, physiotherapeutische Betreuung.', createdAt: '2026-03-01T09:00:00Z', gdprAccepted: true }
   ]);
 
   // Available Services
@@ -378,6 +398,210 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     });
   }, [router]);
 
+  // Load data from Supabase once therapistId is set
+  useEffect(() => {
+    if (!therapistId) return;
+
+    const fetchDashboardData = async () => {
+      try {
+        // 1. Fetch practice details
+        const { data: practice } = await supabase
+          .from('practices')
+          .select('*')
+          .eq('user_id', therapistId)
+          .maybeSingle();
+        if (practice) {
+          setTherapistName(practice.name);
+          setCurrency(practice.currency);
+        }
+
+        // 2. Fetch clients
+        const { data: dbClients } = await supabase
+          .from('clients')
+          .select('*')
+          .eq('user_id', therapistId);
+        
+        let loadedClients: Client[] = [];
+        if (dbClients) {
+          // Load favorites and flags from localStorage
+          const favs = JSON.parse(localStorage.getItem(`client_favs_${therapistId}`) || '[]');
+          const flags = JSON.parse(localStorage.getItem(`client_flags_${therapistId}`) || '[]');
+          const gdpr = JSON.parse(localStorage.getItem(`client_gdpr_${therapistId}`) || '[]');
+
+          loadedClients = dbClients.map(c => {
+            let salutation = 'Keine';
+            let firstName = '';
+            let lastName = '';
+            
+            const rawName = c.name || '';
+            if (rawName.includes('|')) {
+              const parts = rawName.split('|');
+              if (parts.length === 3) {
+                salutation = parts[0];
+                firstName = parts[1];
+                lastName = parts[2];
+              } else if (parts.length === 2) {
+                firstName = parts[0];
+                lastName = parts[1];
+              }
+            } else {
+              // Fallback parser for plain names
+              const parts = rawName.trim().split(/\s+/);
+              if (parts.length > 1) {
+                lastName = parts.pop() || '';
+                firstName = parts.join(' ');
+              } else {
+                firstName = rawName;
+                lastName = '';
+              }
+            }
+
+            return {
+              id: c.id,
+              name: `${firstName} ${lastName}`.trim(),
+              salutation,
+              firstName,
+              lastName,
+              birthday: c.birthday,
+              email: c.email,
+              phone: c.phone || '',
+              emergencyContact: c.emergency_contact || '',
+              notes: c.notes || '',
+              createdAt: c.created_at,
+              isFavorite: favs.includes(c.id),
+              isFlagged: flags.includes(c.id),
+              gdprAccepted: gdpr.includes(c.id)
+            };
+          });
+          setClients(loadedClients);
+        }
+
+        // 3. Fetch services
+        const { data: dbServices } = await supabase
+          .from('services')
+          .select('*')
+          .eq('user_id', therapistId);
+        
+        let loadedServices: Service[] = [];
+        if (dbServices) {
+          loadedServices = dbServices.map(s => ({
+            id: s.id,
+            name: s.name,
+            duration: s.duration,
+            price: s.price
+          }));
+          setServices(loadedServices);
+        }
+
+        // 4. Fetch appointments
+        const { data: dbAppointments } = await supabase
+          .from('appointments')
+          .select('*')
+          .eq('user_id', therapistId);
+        
+        if (dbAppointments) {
+          const mappedAppointments = dbAppointments.map(app => {
+            let clientName = 'Gelöschter Patient';
+            let serviceName = 'Gelöschte Leistung';
+            let price = 0;
+            let currentStatus = app.status;
+
+            if (!app.client_id) {
+              clientName = 'Interner Blocker';
+              if (app.status && app.status.startsWith('blocker:')) {
+                const parts = app.status.replace('blocker:', '').split('|');
+                serviceName = parts[0] || 'Interner Termin';
+                currentStatus = parts[1] || 'confirmed';
+              } else {
+                serviceName = 'Interner Termin';
+                currentStatus = 'confirmed';
+              }
+            } else {
+              const client = loadedClients.find(c => c.id === app.client_id);
+              if (client) clientName = client.name;
+
+              if (app.service_id) {
+                const service = loadedServices.find(s => s.id === app.service_id);
+                if (service) {
+                  serviceName = service.name;
+                  price = service.price;
+                }
+              } else if (app.status && app.status.startsWith('custom_service:')) {
+                const parts = app.status.replace('custom_service:', '').split('|');
+                serviceName = parts[0] || 'Freie Behandlung';
+                price = parseFloat(parts[1]) || 0;
+                currentStatus = parts[2] || 'booked';
+              }
+            }
+
+            // Load appointment notes from localStorage
+            const appNotes = localStorage.getItem(`app_notes_${app.id}`) || '';
+            return {
+              id: app.id,
+              clientId: app.client_id,
+              clientName,
+              serviceId: app.service_id,
+              serviceName,
+              price,
+              startTime: app.start_time,
+              endTime: app.end_time,
+              status: currentStatus,
+              notes: appNotes
+            };
+          });
+          setAppointments(mappedAppointments);
+        }
+
+        // 5. Fetch SOAP notes
+        const { data: dbSoapNotes } = await supabase
+          .from('soap_notes')
+          .select('*')
+          .eq('user_id', therapistId);
+        
+        if (dbSoapNotes) {
+          const mappedSoap = dbSoapNotes.map(n => ({
+            id: n.id,
+            appointmentId: n.appointment_id,
+            clientId: n.client_id,
+            date: n.date,
+            subjective: n.subjective || '',
+            objective: n.objective || '',
+            assessment: n.assessment || '',
+            plan: n.plan || ''
+          }));
+          setSoapNotes(mappedSoap);
+        }
+
+        // 6. Fetch Invoices
+        const { data: dbInvoices } = await supabase
+          .from('invoices')
+          .select('*')
+          .eq('user_id', therapistId);
+        
+        if (dbInvoices) {
+          const mappedInvoices = dbInvoices.map(inv => {
+            const client = loadedClients.find(c => c.id === inv.client_id);
+            return {
+              id: inv.id,
+              appointmentId: inv.appointment_id,
+              clientId: inv.client_id,
+              clientName: client ? client.name : 'Gelöschter Patient',
+              invoiceNumber: inv.invoice_number,
+              amount: inv.amount,
+              date: inv.date,
+              status: inv.status
+            };
+          });
+          setInvoices(mappedInvoices);
+        }
+      } catch (err) {
+        console.error('Error fetching data from Supabase:', err);
+      }
+    };
+
+    fetchDashboardData();
+  }, [therapistId]);
+
   // Window resize effect for snapper
   useEffect(() => {
     if (!resizingAppId) return;
@@ -462,6 +686,16 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     setIsSavingSettings(true);
     if (therapistId) {
       localStorage.setItem(`therapist_name_${therapistId}`, therapistName);
+      const { error } = await supabase
+        .from('practices')
+        .upsert({
+          user_id: therapistId,
+          name: therapistName,
+          currency: currency
+        });
+      if (error) {
+        showToast(`Fehler beim Speichern: ${error.message}`, 'error');
+      }
     }
     setTimeout(() => {
       setIsSavingSettings(false);
@@ -472,33 +706,345 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   };
 
   // Creating new Client / Patient
-  const handleCreateClient = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newClientName) return;
+  const handleCreateClient = async (
+    salutation: string,
+    firstName: string,
+    lastName: string,
+    birthday: string,
+    email: string,
+    phone: string,
+    emergencyContact: string,
+    notes: string
+  ): Promise<boolean> => {
+    if (!firstName || !lastName || !therapistId) return false;
 
+    const clientId = crypto.randomUUID();
     const newClient: Client = {
-      id: `c-${Date.now()}`,
-      name: newClientName,
-      birthday: newClientBirthday || '1990-01-01',
-      email: newClientEmail || 'patient@email.de',
-      phone: newClientPhone || '',
-      emergencyContact: newClientEmergency || '',
-      notes: newClientNotes || '',
-      createdAt: new Date().toISOString()
+      id: clientId,
+      name: `${firstName} ${lastName}`.trim(),
+      salutation,
+      firstName,
+      lastName,
+      birthday: birthday || '1990-01-01',
+      email: email || 'patient@email.de',
+      phone: phone || '',
+      emergencyContact: emergencyContact || '',
+      notes: notes || '',
+      createdAt: new Date().toISOString(),
+      isFavorite: false,
+      isFlagged: false,
+      gdprAccepted: false
     };
+
+    const { error } = await supabase
+      .from('clients')
+      .insert({
+        id: clientId,
+        user_id: therapistId,
+        name: `${salutation}|${firstName}|${lastName}`,
+        birthday: birthday || '1990-01-01',
+        email: email || 'patient@email.de',
+        phone: phone || '',
+        emergency_contact: emergencyContact || '',
+        notes: notes || ''
+      });
+
+    if (error) {
+      showToast(`Fehler beim Erstellen des Patienten: ${error.message}`, 'error');
+      return false;
+    }
 
     setClients(prev => [...prev, newClient]);
     setSelectedClientId(newClient.id);
-    setIsNewClientModalOpen(false);
     showToast(`Patient ${newClient.name} wurde erfolgreich angelegt!`, 'success');
+    return true;
+  };
 
-    // reset fields
-    setNewClientName('');
-    setNewClientBirthday('');
-    setNewClientEmail('');
-    setNewClientPhone('');
-    setNewClientEmergency('');
-    setNewClientNotes('');
+  // Deleting Patient
+  const deleteClient = async (id: string) => {
+    if (!therapistId) return;
+    const { error } = await supabase
+      .from('clients')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      showToast(`Fehler beim Löschen des Patienten: ${error.message}`, 'error');
+      return;
+    }
+
+    const favs = JSON.parse(localStorage.getItem(`client_favs_${therapistId}`) || '[]');
+    localStorage.setItem(`client_favs_${therapistId}`, JSON.stringify(favs.filter((f: string) => f !== id)));
+    const flags = JSON.parse(localStorage.getItem(`client_flags_${therapistId}`) || '[]');
+    localStorage.setItem(`client_flags_${therapistId}`, JSON.stringify(flags.filter((f: string) => f !== id)));
+    const gdpr = JSON.parse(localStorage.getItem(`client_gdpr_${therapistId}`) || '[]');
+    localStorage.setItem(`client_gdpr_${therapistId}`, JSON.stringify(gdpr.filter((f: string) => f !== id)));
+
+    setClients(prev => prev.filter(cl => cl.id !== id));
+    showToast('Patient erfolgreich gelöscht.', 'success');
+  };
+
+  // Update Patient Name
+  const updateClientName = async (id: string, newName: string) => {
+    if (!therapistId) return;
+    const client = clients.find(c => c.id === id);
+    if (!client) return;
+
+    const parts = newName.trim().split(/\s+/);
+    let firstName = newName;
+    let lastName = '';
+    if (parts.length > 1) {
+      lastName = parts.pop() || '';
+      firstName = parts.join(' ');
+    }
+
+    const dbName = `${client.salutation || 'Keine'}|${firstName}|${lastName}`;
+    const { error } = await supabase
+      .from('clients')
+      .update({ name: dbName })
+      .eq('id', id);
+
+    if (error) {
+      showToast(`Fehler beim Aktualisieren des Patientennamens: ${error.message}`, 'error');
+      return;
+    }
+
+    setClients(prev => prev.map(c => c.id === id ? { ...c, name: newName.trim(), firstName, lastName } : c));
+    showToast('Patientenname erfolgreich aktualisiert.', 'success');
+  };
+
+  // Toggling Patient Favorite
+  const toggleClientFavorite = (id: string) => {
+    if (!therapistId) return;
+    const favs = JSON.parse(localStorage.getItem(`client_favs_${therapistId}`) || '[]');
+    let newFavs;
+    if (favs.includes(id)) {
+      newFavs = favs.filter((f: string) => f !== id);
+    } else {
+      newFavs = [...favs, id];
+    }
+    localStorage.setItem(`client_favs_${therapistId}`, JSON.stringify(newFavs));
+    setClients(prev => prev.map(cl => cl.id === id ? { ...cl, isFavorite: !cl.isFavorite } : cl));
+  };
+
+  // Toggling Patient Flag
+  const toggleClientFlag = (id: string) => {
+    if (!therapistId) return;
+    const flags = JSON.parse(localStorage.getItem(`client_flags_${therapistId}`) || '[]');
+    let newFlags;
+    if (flags.includes(id)) {
+      newFlags = flags.filter((f: string) => f !== id);
+    } else {
+      newFlags = [...flags, id];
+    }
+    localStorage.setItem(`client_flags_${therapistId}`, JSON.stringify(newFlags));
+    setClients(prev => prev.map(cl => cl.id === id ? { ...cl, isFlagged: !cl.isFlagged } : cl));
+  };
+
+  // Toggling GDPR Consent status
+  const toggleClientGdpr = (id: string) => {
+    if (!therapistId) return;
+    const gdpr = JSON.parse(localStorage.getItem(`client_gdpr_${therapistId}`) || '[]');
+    let newGdpr;
+    if (gdpr.includes(id)) {
+      newGdpr = gdpr.filter((f: string) => f !== id);
+      showToast('DSGVO-Einwilligung widerrufen.', 'info');
+    } else {
+      newGdpr = [...gdpr, id];
+      showToast('DSGVO-Einwilligung erteilt.', 'success');
+    }
+    localStorage.setItem(`client_gdpr_${therapistId}`, JSON.stringify(newGdpr));
+    setClients(prev => prev.map(cl => cl.id === id ? { ...cl, gdprAccepted: !cl.gdprAccepted } : cl));
+  };
+
+  // Create Service
+  const createService = async (newSrv: Omit<Service, 'id'>) => {
+    if (!therapistId) return null;
+    const id = crypto.randomUUID();
+    const { error } = await supabase
+      .from('services')
+      .insert({
+        id,
+        user_id: therapistId,
+        name: newSrv.name,
+        duration: newSrv.duration,
+        price: newSrv.price
+      });
+
+    if (error) {
+      showToast(`Fehler beim Erstellen der Leistung: ${error.message}`, 'error');
+      return null;
+    }
+
+    const created: Service = {
+      id,
+      name: newSrv.name,
+      duration: newSrv.duration,
+      price: newSrv.price
+    };
+
+    setServices(prev => [...prev, created]);
+    showToast('Leistung erfolgreich erstellt.', 'success');
+    return created;
+  };
+
+  // Delete Service
+  const deleteService = async (id: string) => {
+    if (!therapistId) return;
+    const { error } = await supabase
+      .from('services')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      showToast(`Fehler beim Löschen der Leistung: ${error.message}`, 'error');
+      return;
+    }
+
+    setServices(prev => prev.filter(s => s.id !== id));
+    if (newAppServiceId === id) {
+      setNewAppServiceId('');
+    }
+    showToast('Leistung erfolgreich gelöscht.', 'success');
+  };
+
+  // Update Service
+  const updateService = async (id: string, name: string) => {
+    if (!therapistId) return;
+    const { error } = await supabase
+      .from('services')
+      .update({ name })
+      .eq('id', id);
+
+    if (error) {
+      showToast(`Fehler beim Aktualisieren der Leistung: ${error.message}`, 'error');
+      return;
+    }
+
+    setServices(prev => prev.map(s => s.id === id ? { ...s, name } : s));
+    showToast('Leistung erfolgreich aktualisiert.', 'success');
+  };
+
+  // Add Appointment
+  const addAppointment = async (newApp: Omit<Appointment, 'clientName' | 'serviceName' | 'price'> & { serviceName?: string; price?: number }) => {
+    if (!therapistId) return;
+
+    let dbClientId = newApp.clientId || null;
+    let dbServiceId = newApp.serviceId || null;
+    let dbStatus = newApp.status;
+
+    let finalClientName = 'Gelöschter Patient';
+    let finalServiceName = 'Gelöschte Leistung';
+    let finalPrice = 0;
+
+    if (!newApp.clientId) {
+      // Blocker
+      finalClientName = 'Interner Blocker';
+      finalServiceName = newApp.serviceName || 'Interner Termin';
+      finalPrice = 0;
+      dbStatus = `blocker:${finalServiceName}|${newApp.status}`;
+    } else {
+      const cli = clients.find(c => c.id === newApp.clientId);
+      if (cli) finalClientName = cli.name;
+
+      if (newApp.serviceId) {
+        const srv = services.find(s => s.id === newApp.serviceId);
+        if (srv) {
+          finalServiceName = srv.name;
+          finalPrice = srv.price;
+        }
+      } else {
+        // Custom Service
+        finalServiceName = newApp.serviceName || 'Freie Behandlung';
+        finalPrice = newApp.price || 0;
+        dbStatus = `custom_service:${finalServiceName}|${finalPrice}|${newApp.status}`;
+      }
+    }
+
+    const { error } = await supabase
+      .from('appointments')
+      .insert({
+        id: newApp.id,
+        user_id: therapistId,
+        client_id: dbClientId,
+        service_id: dbServiceId,
+        start_time: newApp.startTime,
+        end_time: newApp.endTime,
+        status: dbStatus
+      });
+
+    if (error) {
+      showToast(`Fehler beim Erstellen des Termins: ${error.message}`, 'error');
+      return;
+    }
+
+    const fullApp: Appointment = {
+      ...newApp,
+      clientId: dbClientId,
+      serviceId: dbServiceId,
+      clientName: finalClientName,
+      serviceName: finalServiceName,
+      price: finalPrice,
+      status: newApp.status,
+      notes: newApp.notes || ''
+    };
+
+    if (newApp.notes) {
+      localStorage.setItem(`app_notes_${newApp.id}`, newApp.notes);
+    }
+
+    setAppointments(prev => [...prev, fullApp]);
+    showToast('Termin erfolgreich eingetragen.', 'success');
+  };
+
+  // Update Appointment
+  const updateAppointment = async (updated: Appointment) => {
+    if (!therapistId) return;
+
+    let dbStatus = updated.status;
+    if (!updated.clientId) {
+      dbStatus = `blocker:${updated.serviceName}|${updated.status}`;
+    } else if (!updated.serviceId) {
+      dbStatus = `custom_service:${updated.serviceName}|${updated.price}|${updated.status}`;
+    }
+
+    const { error } = await supabase
+      .from('appointments')
+      .update({
+        start_time: updated.startTime,
+        end_time: updated.endTime,
+        status: dbStatus
+      })
+      .eq('id', updated.id);
+
+    if (error) {
+      showToast(`Fehler beim Aktualisieren des Termins: ${error.message}`, 'error');
+      return;
+    }
+
+    if (updated.notes !== undefined) {
+      localStorage.setItem(`app_notes_${updated.id}`, updated.notes || '');
+    }
+
+    setAppointments(prev => prev.map(a => a.id === updated.id ? updated : a));
+  };
+
+  // Delete Appointment
+  const deleteAppointment = async (id: string) => {
+    if (!therapistId) return;
+    const { error } = await supabase
+      .from('appointments')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      showToast(`Fehler beim Löschen des Termins: ${error.message}`, 'error');
+      return;
+    }
+
+    localStorage.removeItem(`app_notes_${id}`);
+    setAppointments(prev => prev.filter(a => a.id !== id));
+    showToast('Termin erfolgreich gelöscht.', 'success');
   };
 
   // Open the new invoice sheet with pre-populated values
@@ -540,6 +1086,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   // Handle Right Click context menu for calendar cards
   const handleContextMenu = (e: React.MouseEvent, app: Appointment) => {
     e.preventDefault();
+    e.stopPropagation();
     setContextMenu({
       x: e.clientX,
       y: e.clientY,
@@ -548,9 +1095,9 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   };
 
   // Creating new Invoice
-  const handleCreateInvoice = (e: React.FormEvent) => {
+  const handleCreateInvoice = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newInvoiceClientId || !newInvoiceAmount) {
+    if (!newInvoiceClientId || !newInvoiceAmount || !therapistId) {
       showToast('Bitte Patient und Betrag eingeben.', 'error');
       return;
     }
@@ -570,10 +1117,30 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     const num = invoices.length + 1;
     const invNum = newInvoiceNumber.trim() || `RE-2026-${num.toString().padStart(4, '0')}`;
     const dateVal = newInvoiceDate || new Date().toISOString().slice(0, 10);
+    const invoiceId = crypto.randomUUID();
+    const apptId = newInvoiceAppointmentId || null;
+
+    const { error } = await supabase
+      .from('invoices')
+      .insert({
+        id: invoiceId,
+        user_id: therapistId,
+        appointment_id: apptId,
+        client_id: selectedClient.id,
+        invoice_number: invNum,
+        amount: amount,
+        date: dateVal,
+        status: newInvoiceStatus
+      });
+
+    if (error) {
+      showToast(`Fehler beim Erstellen der Rechnung: ${error.message}`, 'error');
+      return;
+    }
 
     const newInv: Invoice = {
-      id: `i-${Date.now()}`,
-      appointmentId: newInvoiceAppointmentId || `custom-${Date.now()}`,
+      id: invoiceId,
+      appointmentId: apptId || `custom-${Date.now()}`,
       clientId: selectedClient.id,
       clientName: selectedClient.name,
       invoiceNumber: invNum,
@@ -607,14 +1174,18 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
     setMailTopic(topic);
     
-    const parts = client.name.trim().split(/\s+/);
-    const lastName = parts[parts.length - 1] || client.name;
-    let salutation = 'Herr/Frau';
-    const firstName = parts[0]?.toLowerCase() || '';
-    if (['emma', 'sarah', 'maria', 'anna', 'julia', 'laura', 'lisa'].includes(firstName)) {
-      salutation = 'Frau';
-    } else if (['alexander', 'maximilian', 'karl', 'tim', 'joe', 'lee'].includes(firstName)) {
-      salutation = 'Herr';
+    let greeting = `Sehr geehrte(r) ${client.name}`;
+    let informalGreeting = `Hallo ${client.firstName || client.name}`;
+
+    if (client.salutation === 'Frau' && client.lastName) {
+      greeting = `Sehr geehrte Frau ${client.lastName}`;
+      informalGreeting = `Hallo Frau ${client.lastName}`;
+    } else if (client.salutation === 'Herr' && client.lastName) {
+      greeting = `Sehr geehrter Herr ${client.lastName}`;
+      informalGreeting = `Hallo Herr ${client.lastName}`;
+    } else if (client.salutation === 'Keine' && client.firstName) {
+      greeting = `Hallo ${client.firstName}`;
+      informalGreeting = `Hallo ${client.firstName}`;
     }
     
     if (topic === 'rechnung') {
@@ -623,21 +1194,21 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       const invNum = inv ? inv.invoiceNumber : 'RE-XXXXX';
       const invAmount = inv ? `${inv.amount.toFixed(2)} €` : 'XX,XX €';
       setMailSubject(`Rechnung zu Ihrer Behandlung - ${invNum}`);
-      setMailBody(`Sehr geehrte(r) ${client.name},\n\nanbei erhalten Sie die Rechnung ${invNum} über den Betrag von ${invAmount} zu Ihrer letzten Behandlung.\n\nBitte überweisen Sie den Betrag innerhalb von 14 Tagen.\n\nMit freundlichen Grüßen,\nIhr Praxis-Team`);
+      setMailBody(`${greeting},\n\nanbei erhalten Sie die Rechnung ${invNum} über den Betrag von ${invAmount} zu Ihrer letzten Behandlung.\n\nBitte überweisen Sie den Betrag innerhalb von 14 Tagen.\n\nMit freundlichen Grüßen,\nIhr Praxis-Team`);
     } else if (topic === 'mahnung') {
       const activeInvoiceId = invoiceId !== undefined ? invoiceId : selectedMailInvoiceId;
       const inv = invoices.find(i => i.id === activeInvoiceId && i.clientId === client.id);
       const invNum = inv ? inv.invoiceNumber : 'RE-XXXXX';
       const invAmount = inv ? `${inv.amount.toFixed(2)} €` : 'XX,XX €';
       setMailSubject(`Zahlungserinnerung: Rechnung ${invNum} ausstehend`);
-      setMailBody(`Sehr geehrte(r) ${client.name},\n\nwir möchten Sie höflich daran erinnern, dass die Rechnung ${invNum} über den Betrag von ${invAmount} fällig war.\n\nBitte überweisen Sie den ausstehenden Betrag baldmöglichst auf das Ihnen bekannte Praxiskonto.\n\nSollten Sie die Überweisung bereits getätigt haben, betrachten Sie dieses Schreiben bitte als gegenstandslos.\n\nMit freundlichen Grüßen,\nIhr Praxis-Team`);
+      setMailBody(`${greeting},\n\nwir möchten Sie höflich daran erinnern, dass die Rechnung ${invNum} über den Betrag von ${invAmount} fällig war.\n\nBitte überweisen Sie den ausstehenden Betrag baldmöglichst auf das Ihnen bekannte Praxiskonto.\n\nSollten Sie die Überweisung bereits getätigt haben, betrachten Sie dieses Schreiben bitte als gegenstandslos.\n\nMit freundlichen Grüßen,\nIhr Praxis-Team`);
     } else if (topic === 'stornierung') {
       const activeAppointmentId = appointmentId !== undefined ? appointmentId : selectedMailAppointmentId;
       const app = appointments.find(a => a.id === activeAppointmentId && a.clientId === client.id);
       const appDateStr = app ? new Date(app.startTime).toLocaleDateString('de-DE') : 'TT.MM.JJJJ';
       const appTimeStr = app ? new Date(app.startTime).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : 'HH:MM';
       setMailSubject(`Absage Ihres Termins am ${appDateStr}`);
-      setMailBody(`Sehr geehrte(r) ${client.name},\n\nhiermit bestätigen wir die Stornierung Ihres Termins am ${appDateStr} um ${appTimeStr} Uhr.\n\nGerne können Sie online oder telefonisch einen neuen Termin vereinbaren.\n\nMit freundlichen Grüßen,\nIhr Praxis-Team`);
+      setMailBody(`${greeting},\n\nhiermit bestätigen wir die Stornierung Ihres Termins am ${appDateStr} um ${appTimeStr} Uhr.\n\nGerne können Sie online oder telefonisch einen neuen Termin vereinbaren.\n\nMit freundlichen Grüßen,\nIhr Praxis-Team`);
     } else if (topic === 'bestaetigung') {
       const activeAppointmentId = appointmentId !== undefined ? appointmentId : selectedMailAppointmentId;
       const app = appointments.find(a => a.id === activeAppointmentId && a.clientId === client.id);
@@ -645,7 +1216,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       const appTimeStr = app ? new Date(app.startTime).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : 'HH:MM';
       const appService = app ? app.serviceName : 'Behandlung';
       setMailSubject(`Terminbestätigung: ${appService} am ${appDateStr}`);
-      setMailBody(`Sehr geehrte(r) ${client.name},\n\nwir freuen uns, Ihren Termin für die Behandlung (${appService}) am ${appDateStr} um ${appTimeStr} Uhr zu bestätigen.\n\nSollten Sie den Termin nicht wahrnehmen können, sagen Sie diesen bitte mindestens 24 Stunden vorher ab.\n\nMit freundlichen Grüßen,\nIhr Praxis-Team`);
+      setMailBody(`${greeting},\n\nwir freuen uns, Ihren Termin für die Behandlung (${appService}) am ${appDateStr} um ${appTimeStr} Uhr zu bestätigen.\n\nSollten Sie den Termin nicht wahrnehmen können, sagen Sie diesen bitte mindestens 24 Stunden vorher ab.\n\nMit freundlichen Grüßen,\nIhr Praxis-Team`);
     } else if (topic === 'erinnerung') {
       const clientAppointments = appointments.filter(a => a.clientId === client.id);
       const futureApps = clientAppointments.filter(a => new Date(a.startTime).getTime() >= new Date('2026-06-01').getTime());
@@ -660,10 +1231,10 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       const appTimeStr = nextApp ? new Date(nextApp.startTime).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : '14:00';
       
       setMailSubject(`Terminerinnerung - Praxis Ruether`);
-      setMailBody(`Hallo ${salutation} ${lastName},\n\nhiermit erinnere ich an Ihren Termin am ${dayName} um ${appTimeStr} Uhr.\n\nMit freundlichen Grüßen,\nIhr Praxis-Team`);
+      setMailBody(`${informalGreeting},\n\nhiermit erinnere ich an Ihren Termin am ${dayName} um ${appTimeStr} Uhr.\n\nMit freundlichen Grüßen,\nIhr Praxis-Team`);
     } else if (topic === 'fragebogen') {
       setMailSubject(`Anamnesebogen / Fragebogen zur Behandlung`);
-      setMailBody(`Hallo ${salutation} ${lastName},\n\nbitte füllen Sie vor unserer ersten Sitzung den digitalen Anamnesebogen aus. Dies hilft mir, mich optimal auf Ihre Behandlung vorzubereiten:\n\nhttps://hmanager.de/anamnese/${client.id}\n\nVielen Dank für Ihre Mithilfe und bis bald!\n\nMit freundlichen Grüßen,\nIhr Praxis-Team`);
+      setMailBody(`${informalGreeting},\n\nbitte füllen Sie vor unserer ersten Sitzung den digitalen Anamnesebogen aus. Dies hilft mir, mich optimal auf Ihre Behandlung vorzubereiten:\n\nhttps://hmanager.de/anamnese/${client.id}\n\nVielen Dank für Ihre Mithilfe und bis bald!\n\nMit freundlichen Grüßen,\nIhr Praxis-Team`);
     } else {
       setMailSubject('');
       setMailBody('');
@@ -688,8 +1259,24 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     setSoapPlan(note.plan);
   };
 
-  const saveSoapNote = () => {
-    if (!soapEditId) return;
+  const saveSoapNote = async () => {
+    if (!soapEditId || !therapistId) return;
+
+    const { error } = await supabase
+      .from('soap_notes')
+      .update({
+        subjective: soapSubjective,
+        objective: soapObjective,
+        assessment: soapAssessment,
+        plan: soapPlan
+      })
+      .eq('id', soapEditId);
+
+    if (error) {
+      showToast(`Fehler beim Speichern: ${error.message}`, 'error');
+      return;
+    }
+
     setSoapNotes(prev => prev.map(note => {
       if (note.id === soapEditId) {
         return {
@@ -706,9 +1293,12 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     showToast('Therapiebericht erfolgreich gespeichert.', 'success');
   };
 
-  const createSoapNote = (appId: string, cliId: string) => {
+  const createSoapNote = async (appId: string, cliId: string) => {
+    if (!therapistId) return;
+
+    const soapId = crypto.randomUUID();
     const newNote: SoapNote = {
-      id: `sn-${Date.now()}`,
+      id: soapId,
       appointmentId: appId,
       clientId: cliId,
       date: new Date().toISOString().slice(0, 10),
@@ -717,19 +1307,60 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       assessment: 'Verdacht auf...',
       plan: 'Therapie fortsetzen...'
     };
+
+    const { error } = await supabase
+      .from('soap_notes')
+      .insert({
+        id: soapId,
+        user_id: therapistId,
+        appointment_id: appId,
+        client_id: cliId,
+        date: newNote.date,
+        subjective: newNote.subjective,
+        objective: newNote.objective,
+        assessment: newNote.assessment,
+        plan: newNote.plan
+      });
+
+    if (error) {
+      showToast(`Fehler beim Erstellen des Berichts: ${error.message}`, 'error');
+      return;
+    }
+
     setSoapNotes(prev => [...prev, newNote]);
     startEditSoap(newNote);
     showToast('Neuer Behandlungsbericht angelegt.', 'success');
   };
 
   // Invoicing preview/actions
-  const createInvoice = (app: Appointment) => {
+  const createInvoice = async (app: Appointment) => {
+    if (!therapistId || !app.clientId) return;
     const num = invoices.length + 1;
     const invNum = `RE-2026-${num.toString().padStart(4, '0')}`;
+    const invoiceId = crypto.randomUUID();
+
+    const { error } = await supabase
+      .from('invoices')
+      .insert({
+        id: invoiceId,
+        user_id: therapistId,
+        appointment_id: app.id,
+        client_id: app.clientId,
+        invoice_number: invNum,
+        amount: app.price,
+        date: new Date().toISOString().slice(0, 10),
+        status: 'open'
+      });
+
+    if (error) {
+      showToast(`Fehler beim Erstellen der Rechnung: ${error.message}`, 'error');
+      return;
+    }
+
     const newInv: Invoice = {
-      id: `i-${Date.now()}`,
+      id: invoiceId,
       appointmentId: app.id,
-      clientId: app.clientId,
+      clientId: app.clientId || '',
       clientName: app.clientName,
       invoiceNumber: invNum,
       amount: app.price,
@@ -743,7 +1374,18 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const markInvoicePaid = (invId: string) => {
+  const markInvoicePaid = async (invId: string) => {
+    if (!therapistId) return;
+    const { error } = await supabase
+      .from('invoices')
+      .update({ status: 'paid' })
+      .eq('id', invId);
+
+    if (error) {
+      showToast(`Fehler beim Aktualisieren der Rechnung: ${error.message}`, 'error');
+      return;
+    }
+
     setInvoices(prev => prev.map(inv => inv.id === invId ? { ...inv, status: 'paid' } : inv));
     showToast('Rechnung als bezahlt markiert.', 'success');
     setActiveInvoiceActionMenuId(null);
@@ -797,8 +1439,19 @@ Vielen Dank fuer Ihr Vertrauen!
     setActiveInvoiceActionMenuId(null);
   };
 
-  const cancelInvoice = (invId: string) => {
+  const cancelInvoice = async (invId: string) => {
+    if (!therapistId) return;
     if (confirm('Möchtest du diese Rechnung wirklich stornieren?')) {
+      const { error } = await supabase
+        .from('invoices')
+        .delete()
+        .eq('id', invId);
+
+      if (error) {
+        showToast(`Fehler beim Stornieren der Rechnung: ${error.message}`, 'error');
+        return;
+      }
+
       setInvoices(prev => prev.filter(inv => inv.id !== invId));
       showToast('Rechnung storniert.', 'info');
     }
@@ -913,7 +1566,7 @@ Vielen Dank fuer Ihr Vertrauen!
       isSavingSettings,
       settingsSuccess,
       clients, setClients,
-      services, setServices,
+      services, setServices, createService,
       appointments, setAppointments,
       soapNotes, setSoapNotes,
       invoices, setInvoices,
@@ -972,10 +1625,20 @@ Vielen Dank fuer Ihr Vertrauen!
       contextMenu, setContextMenu,
       saveSettings,
       handleCreateClient,
+      deleteClient,
+      updateClientName,
+      toggleClientFavorite,
+      toggleClientFlag,
+      toggleClientGdpr,
+      addAppointment,
+      updateAppointment,
+      deleteAppointment,
       openNewInvoiceSheet,
       openNewInvoiceSheetWithPrefill,
       handleContextMenu,
       handleCreateInvoice,
+      deleteService,
+      updateService,
       applyMailTemplate,
       handleSendMail,
       startEditSoap,

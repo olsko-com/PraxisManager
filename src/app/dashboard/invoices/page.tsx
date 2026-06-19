@@ -217,18 +217,14 @@ export default function InvoicesPage() {
     : '';
 
   return (
-    <div className="flex-grow overflow-y-auto px-12 py-8 space-y-6">
-      {/* Header and Sub-Tab Navigation Group */}
-      <div className="space-y-3 flex-shrink-0">
-        {/* Header and top action bar */}
-        <div className="flex justify-between items-center pb-0">
-          <div className="text-left">
-            <h2 className="text-lg font-bold text-[#043F2D]">Abrechnung</h2>
-          </div>
-        </div>
+    <div className="relative flex-grow bg-[#eef0ed] rounded-[24px] border border-[#003527]/10 my-4 mr-4 ml-4 flex flex-col h-[calc(100vh-32px)] overflow-hidden shadow-none transition-all duration-300">
+      {/* Page Title */}
+      <div className="pl-8 pt-10 pb-2 bg-transparent flex-shrink-0 text-left">
+        <h1 className="text-[26px] font-bold text-[#003527] tracking-tight">Abrechnung</h1>
+      </div>
 
-        {/* Sub-Tab Navigation (Outside card, above containers) */}
-        <div className="flex justify-between items-end border-b border-[#bfc9c3]/20 pb-0 select-none -mx-12 px-12 h-[42px]">
+      {/* Sub-Tab Navigation (Sticky tabs inside Card) */}
+      <div className="px-8 bg-transparent flex-shrink-0 flex justify-between items-end border-b border-[#bfc9c3]/20 pb-0 select-none h-[42px]">
         <div className="flex gap-4">
           <button
             onClick={() => setInvoiceSubTab('list')}
@@ -264,9 +260,10 @@ export default function InvoicesPage() {
           </button>
         </div>
       </div>
-    </div>
 
-      {/* Dropdown Backdrop */}
+      {/* Scrollable Content Container */}
+      <div className="flex-grow overflow-y-auto px-8 py-6 space-y-6">
+        {/* Dropdown Backdrop */}
         {activeInvoiceActionMenuId && (
           <div 
             className="fixed inset-0 z-40 bg-transparent" 
@@ -961,5 +958,6 @@ export default function InvoicesPage() {
           </div>
         )}
       </div>
-    );
-  }
+    </div>
+  );
+}

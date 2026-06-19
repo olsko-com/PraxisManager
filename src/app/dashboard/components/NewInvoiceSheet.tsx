@@ -282,7 +282,7 @@ export default function NewInvoiceSheet() {
                               }
                             }}
                             placeholder="Name des Patienten..."
-                            className="w-full bg-transparent border border-transparent hover:border-zinc-200 focus:border-blue-500 focus:bg-blue-50/20 px-2 py-1 outline-none font-extrabold text-sm text-[#003527] transition-all rounded-lg z-10"
+                            className="w-full bg-transparent border border-transparent hover:border-zinc-200 focus:border-[#003527] focus:bg-[#003527]/5 px-2 py-1 outline-none font-extrabold text-sm text-[#003527] transition-all rounded-lg z-10"
                           />
                         </div>
 
@@ -318,7 +318,7 @@ export default function NewInvoiceSheet() {
                                     setNewClientName(canvasClientSearch);
                                     setIsNewClientModalOpen(true);
                                   }}
-                                  className="text-[10.5px] text-blue-600 hover:text-blue-700 font-bold hover:underline cursor-pointer flex items-center gap-1.5 transition-all border-none bg-transparent"
+                                  className="text-[10.5px] text-[#003527] hover:text-[#0b513d] font-bold hover:underline cursor-pointer flex items-center gap-1.5 transition-all border-none bg-transparent"
                                 >
                                   <Plus className="w-3.5 h-3.5" /> "{canvasClientSearch}" als neuen Patienten anlegen
                                 </button>
@@ -344,7 +344,7 @@ export default function NewInvoiceSheet() {
                               required
                               value={newInvoiceNumber}
                               onChange={(e) => setNewInvoiceNumber(e.target.value)}
-                              className="w-32 bg-transparent border border-transparent hover:border-zinc-200 focus:border-blue-500 focus:bg-blue-50/20 px-2 py-1 outline-none font-bold text-xs text-right text-[#003527] transition-all rounded-lg"
+                              className="w-32 bg-transparent border border-transparent hover:border-zinc-200 focus:border-[#003527] focus:bg-[#003527]/5 px-2 py-1 outline-none font-bold text-xs text-right text-[#003527] transition-all rounded-lg"
                             />
                           </div>
                           <div className="flex items-center justify-between gap-4">
@@ -354,7 +354,7 @@ export default function NewInvoiceSheet() {
                               required
                               value={newInvoiceDate}
                               onChange={(e) => setNewInvoiceDate(e.target.value)}
-                              className="w-32 bg-transparent border border-transparent hover:border-zinc-200 focus:border-blue-500 focus:bg-blue-50/20 px-2 py-1 outline-none font-bold text-xs text-right text-[#003527] transition-all rounded-lg animate-none"
+                              className="w-32 bg-transparent border border-transparent hover:border-zinc-200 focus:border-[#003527] focus:bg-[#003527]/5 px-2 py-1 outline-none font-bold text-xs text-right text-[#003527] transition-all rounded-lg animate-none"
                             />
                           </div>
                           <div className="flex items-center justify-between gap-4">
@@ -368,7 +368,7 @@ export default function NewInvoiceSheet() {
                                 required
                                 value={newInvoiceDueDate}
                                 onChange={(e) => setNewInvoiceDueDate(e.target.value)}
-                                className="w-32 bg-transparent border border-transparent hover:border-zinc-200 focus:border-blue-500 focus:bg-blue-50/20 px-2 py-1 outline-none font-bold text-xs text-right text-[#003527] transition-all rounded-lg"
+                                className="w-32 bg-transparent border border-transparent hover:border-zinc-200 focus:border-[#003527] focus:bg-[#003527]/5 px-2 py-1 outline-none font-bold text-xs text-right text-[#003527] transition-all rounded-lg"
                               />
                             </div>
                           </div>
@@ -401,7 +401,7 @@ export default function NewInvoiceSheet() {
                                     const updated = lineItems.map(li => li.id === item.id ? { ...li, description: e.target.value } : li);
                                     setLineItems(updated);
                                   }}
-                                  className="w-full bg-transparent border border-transparent hover:border-zinc-200 focus:border-blue-500 focus:bg-blue-50/20 focus:ring-0 px-2 py-1 outline-none font-bold text-xs text-[#003527] transition-all text-left rounded-lg"
+                                  className="w-full bg-transparent border border-transparent hover:border-zinc-200 focus:border-[#003527] focus:bg-[#003527]/5 focus:ring-0 px-2 py-1 outline-none font-bold text-xs text-[#003527] transition-all text-left rounded-lg"
                                   placeholder="z.B. Osteopathische Behandlung"
                                 />
                               </td>
@@ -417,7 +417,7 @@ export default function NewInvoiceSheet() {
                                       const updated = lineItems.map(li => li.id === item.id ? { ...li, price: val } : li);
                                       setLineItems(updated);
                                     }}
-                                    className="w-20 bg-transparent border border-transparent hover:border-zinc-200 focus:border-blue-500 focus:bg-blue-50/20 focus:ring-0 px-2 py-1 outline-none font-bold text-right text-xs text-[#003527] transition-all rounded-lg"
+                                    className="w-20 bg-transparent border border-transparent hover:border-zinc-200 focus:border-[#003527] focus:bg-[#003527]/5 focus:ring-0 px-2 py-1 outline-none font-bold text-right text-xs text-[#003527] transition-all rounded-lg"
                                     placeholder="0,00"
                                   />
                                   <span className="ml-1 text-zinc-400 font-bold">€</span>
@@ -451,7 +451,7 @@ export default function NewInvoiceSheet() {
                             { id: `li-${Date.now()}`, description: 'Neue Leistung', price: 0 }
                           ]);
                         }}
-                        className="w-full mt-4 border border-dashed border-blue-200 hover:border-blue-400 bg-blue-50/10 hover:bg-blue-50/30 text-blue-600 px-4 py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-[0.99]"
+                        className="w-full mt-4 border border-dashed border-[#003527]/20 hover:border-[#003527]/40 bg-[#003527]/5 hover:bg-[#003527]/10 text-[#003527] px-4 py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-[0.99]"
                       >
                         <Plus className="w-4 h-4" /> Position hinzufügen
                       </button>
@@ -583,19 +583,19 @@ export default function NewInvoiceSheet() {
                                 }}
                                 className={`w-full px-4 py-2.5 flex items-center justify-between text-xs font-bold transition-colors cursor-pointer text-left border-none bg-transparent ${
                                   isSelected 
-                                    ? 'bg-blue-50 text-blue-600' 
-                                    : 'text-[#003527] hover:bg-blue-50/30 hover:text-blue-600'
+                                    ? 'bg-[#003527]/10 text-[#003527]' 
+                                    : 'text-[#003527] hover:bg-[#003527]/5 hover:text-[#003527]'
                                 }`}
                               >
                                 <div className="flex items-center gap-2.5 min-w-0">
                                   <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-extrabold flex-shrink-0 ${
-                                    isSelected ? 'bg-blue-100 text-blue-700' : 'bg-zinc-100 text-zinc-500'
+                                    isSelected ? 'bg-[#003527]/20 text-[#003527]' : 'bg-zinc-100 text-zinc-500'
                                   }`}>
                                     {getInitials(client.name)}
                                   </div>
                                   <span className="truncate">{client.name}</span>
                                 </div>
-                                {isSelected && <Check className="w-4 h-4 text-blue-600 flex-shrink-0 ml-2" />}
+                                {isSelected && <Check className="w-4 h-4 text-[#003527] flex-shrink-0 ml-2" />}
                               </button>
                             );
                           })
@@ -617,7 +617,7 @@ export default function NewInvoiceSheet() {
                             setIsNewClientModalOpen(true);
                             setIsClientDropdownOpen(false);
                           }}
-                          className="w-full py-2 px-3 rounded-lg text-xs font-bold text-blue-600 hover:bg-blue-50/50 hover:text-blue-700 flex items-center justify-center gap-1.5 cursor-pointer transition-colors border-none bg-transparent"
+                          className="w-full py-2 px-3 rounded-lg text-xs font-bold text-[#003527] hover:bg-[#003527]/5 hover:text-[#0b513d] flex items-center justify-center gap-1.5 cursor-pointer transition-colors border-none bg-transparent"
                         >
                           <Plus className="w-3.5 h-3.5" /> Patient hinzufügen
                         </button>

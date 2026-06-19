@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { 
   Calendar as CalendarIcon, Users, FileText, Settings, LogOut, Search, Plus, 
   CheckCircle2, AlertCircle, Clock, LayoutGrid, CreditCard, TrendingUp, Activity, ExternalLink,
-  Globe, ChevronsUpDown, Mail
+  Globe, ChevronsUpDown, Mail, Home
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import CommandPalette from '@/components/CommandPalette';
@@ -153,9 +153,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   }, [isCmdkOpen, setIsCmdkOpen]);
 
   return (
-    <div className="min-h-screen bg-[#f9f9f8] text-[#191c1c] font-sans antialiased overflow-hidden flex">
-      {/* SideNavBar Shell */}
-      <aside className="fixed left-0 top-0 bottom-0 w-64 bg-[#f3f4f3] flex flex-col p-6 z-50 border-r border-[#bfc9c3]/30 justify-between">
+    <div className="min-h-screen bg-white text-[#191c1c] font-sans antialiased overflow-hidden flex">
+      {/* SideNavBar Shell */}      <aside className="fixed left-0 top-0 bottom-0 w-64 bg-white flex flex-col p-6 z-50 justify-between">
         
         {/* TOP SECTION */}
         <div className="flex flex-col flex-grow min-h-0">
@@ -163,9 +162,9 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           <div ref={profileDropdownRef} className="relative mb-4">
             <div 
               onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
-              className="flex items-center gap-3 px-2.5 py-2 hover:bg-white/40 rounded-lg transition-all text-left w-full cursor-pointer group border border-transparent hover:border-[#bfc9c3]/20"
+              className="flex items-center gap-3 px-2.5 py-2 hover:bg-zinc-50 rounded-lg transition-all text-left w-full cursor-pointer group border border-transparent hover:border-zinc-200"
             >
-              <div className="w-8 h-8 rounded-md bg-[#003527] flex items-center justify-center shrink-0 shadow-sm">
+              <div className="w-8 h-8 rounded-md bg-[#003527] flex items-center justify-center shrink-0">
                 <span className="text-[11px] font-extrabold text-white">
                   {therapistName ? getInitials(therapistName) : 'PM'}
                 </span>
@@ -176,15 +175,15 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
               </div>
               <ChevronsUpDown className="w-3.5 h-3.5 text-zinc-400 group-hover:text-[#003527] transition-colors shrink-0" />
             </div>
-
+ 
             {/* Profile Dropdown Menu */}
             {isProfileDropdownOpen && (
-              <div className="absolute left-0 right-0 mt-1 bg-white/95 backdrop-blur-md border border-[#bfc9c3]/30 rounded-lg shadow-lg py-1.5 z-[100] text-left">
+              <div className="absolute left-0 right-0 mt-1 bg-white border border-[#bfc9c3]/30 rounded-lg shadow-lg py-1.5 z-[100] text-left">
                 <div className="px-3 py-1.5 border-b border-[#bfc9c3]/15 mb-1 select-none">
                   <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">Workspace</p>
                   <p className="text-[11px] font-extrabold text-[#003527] truncate mt-0.5">{therapistName}</p>
                 </div>
-
+ 
                 {/* Quick Action: Neuer Termin */}
                 <button
                   type="button"
@@ -202,7 +201,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                   <Plus className="w-3.5 h-3.5 text-[#003527]" />
                   <span>Neuer Termin</span>
                 </button>
-
+ 
                 {/* Settings Quick Link */}
                 <Link
                   href="/dashboard/settings"
@@ -212,9 +211,9 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                   <Settings className="w-3.5 h-3.5 text-[#404944]" />
                   <span>Einstellungen</span>
                 </Link>
-
+ 
                 <div className="h-px bg-[#bfc9c3]/15 my-1" />
-
+ 
                 {/* LogOut Action */}
                 <button
                   type="button"
@@ -230,43 +229,53 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
               </div>
             )}
           </div>
-
+ 
           {/* Primary Navigation */}
           <nav className="space-y-1 text-left flex-shrink-0 mb-4">
+            <Link
+              href="/dashboard"
+              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-xs font-bold transition-all ${
+                pathname === '/dashboard'
+                  ? 'bg-[#003527]/5 text-[#003527]'
+                  : 'text-[#404944] hover:bg-zinc-50 hover:text-[#003527]'
+              }`}
+            >
+              <Home className="w-4 h-4 shrink-0" /> Übersicht
+            </Link>
             <Link
               href="/dashboard/calendar"
               className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-xs font-bold transition-all ${
                 pathname === '/dashboard/calendar'
-                  ? 'bg-white text-[#003527] border border-[#bfc9c3]/30 shadow-[0_1px_3px_rgba(0,0,0,0.02)]'
-                  : 'text-[#404944] hover:bg-white/50 hover:text-[#003527]'
+                  ? 'bg-[#003527]/5 text-[#003527]'
+                  : 'text-[#404944] hover:bg-zinc-50 hover:text-[#003527]'
               }`}
             >
               <CalendarIcon className="w-4 h-4 shrink-0" /> Kalender
             </Link>
-
+ 
             <Link
               href="/dashboard/clients"
               className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-xs font-bold transition-all ${
                 pathname === '/dashboard/clients'
-                  ? 'bg-white text-[#003527] border border-[#bfc9c3]/30 shadow-[0_1px_3px_rgba(0,0,0,0.02)]'
-                  : 'text-[#404944] hover:bg-white/50 hover:text-[#003527]'
+                  ? 'bg-[#003527]/5 text-[#003527]'
+                  : 'text-[#404944] hover:bg-zinc-50 hover:text-[#003527]'
               }`}
             >
               <Users className="w-4 h-4 shrink-0" /> Patienten
             </Link>
-
+ 
             <Link
               href="/dashboard/invoices"
               className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-xs font-bold transition-all ${
                 pathname === '/dashboard/invoices'
-                  ? 'bg-white text-[#003527] border border-[#bfc9c3]/30 shadow-[0_1px_3px_rgba(0,0,0,0.02)]'
-                  : 'text-[#404944] hover:bg-white/50 hover:text-[#003527]'
+                  ? 'bg-[#003527]/5 text-[#003527]'
+                  : 'text-[#404944] hover:bg-zinc-50 hover:text-[#003527]'
               }`}
             >
               <FileText className="w-4 h-4 shrink-0" /> Abrechnung
             </Link>
           </nav>
-
+ 
           {/* Dynamic Active Modules (Add-ons) */}
           {Object.values(activeAddons).some(Boolean) && (
             <div className="pt-5 border-t border-[#bfc9c3]/20 mt-5 space-y-1.5 overflow-y-auto hide-scrollbar flex-grow text-left">
@@ -287,7 +296,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                       onClick={() => {
                         window.dispatchEvent(new CustomEvent('switch-addons-tab', { detail: 'booking-config' }));
                       }}
-                      className="w-full flex items-center justify-between px-4 py-2 rounded-md text-[11px] font-bold text-[#404944] hover:bg-white/50 hover:text-[#003527] transition-all bg-transparent border-none cursor-pointer text-left group"
+                      className="w-full flex items-center justify-between px-4 py-2 rounded-md text-[11px] font-bold text-[#404944] hover:bg-zinc-50 hover:text-[#003527] transition-all bg-transparent border-none cursor-pointer text-left group"
                     >
                       <div className="flex items-center gap-3">
                         <Globe className="w-3.5 h-3.5 text-[#003527]/70 shrink-0" /> 
@@ -308,7 +317,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                     <button
                       type="button"
                       onClick={() => showToast('Die Warteliste läuft im Hintergrund und informiert automatisch Nachrücker.', 'info')}
-                      className="w-full flex items-center gap-3 px-4 py-2 rounded-md text-[11px] font-bold text-[#404944] hover:bg-white/50 hover:text-[#003527] transition-all bg-transparent border-none cursor-pointer text-left"
+                      className="w-full flex items-center gap-3 px-4 py-2 rounded-md text-[11px] font-bold text-[#404944] hover:bg-zinc-50 hover:text-[#003527] transition-all bg-transparent border-none cursor-pointer text-left"
                     >
                       <div className="flex items-center gap-3">
                         <Clock className="w-3.5 h-3.5 text-[#003527]/70 shrink-0" /> 
@@ -328,7 +337,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                     <button
                       type="button"
                       onClick={() => showToast('Digitale Anamnesebögen werden bei neuen Buchungen mitgeschickt.', 'info')}
-                      className="w-full flex items-center gap-3 px-4 py-2 rounded-md text-[11px] font-bold text-[#404944] hover:bg-white/50 hover:text-[#003527] transition-all bg-transparent border-none cursor-pointer text-left"
+                      className="w-full flex items-center gap-3 px-4 py-2 rounded-md text-[11px] font-bold text-[#404944] hover:bg-zinc-50 hover:text-[#003527] transition-all bg-transparent border-none cursor-pointer text-left"
                     >
                       <div className="flex items-center gap-3">
                         <FileText className="w-3.5 h-3.5 text-[#003527]/70 shrink-0" /> 
@@ -348,7 +357,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                     <button
                       type="button"
                       onClick={() => showToast('Stripe Online-Zahlungen und Anzahlungen sind im Buchungsprozess aktiv.', 'info')}
-                      className="w-full flex items-center gap-3 px-4 py-2 rounded-md text-[11px] font-bold text-[#404944] hover:bg-white/50 hover:text-[#003527] transition-all bg-transparent border-none cursor-pointer text-left"
+                      className="w-full flex items-center gap-3 px-4 py-2 rounded-md text-[11px] font-bold text-[#404944] hover:bg-zinc-50 hover:text-[#003527] transition-all bg-transparent border-none cursor-pointer text-left"
                     >
                       <div className="flex items-center gap-3">
                         <CreditCard className="w-3.5 h-3.5 text-[#003527]/70 shrink-0" /> 
@@ -368,7 +377,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                     <button
                       type="button"
                       onClick={() => showToast('10er-Karten & Abonnements stehen Klienten online zur Verfügung.', 'info')}
-                      className="w-full flex items-center gap-3 px-4 py-2 rounded-md text-[11px] font-bold text-[#404944] hover:bg-white/50 hover:text-[#003527] transition-all bg-transparent border-none cursor-pointer text-left"
+                      className="w-full flex items-center gap-3 px-4 py-2 rounded-md text-[11px] font-bold text-[#404944] hover:bg-zinc-50 hover:text-[#003527] transition-all bg-transparent border-none cursor-pointer text-left"
                     >
                       <div className="flex items-center gap-3">
                         <Activity className="w-3.5 h-3.5 text-[#003527]/70 shrink-0" /> 
@@ -388,7 +397,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                     <button
                       type="button"
                       onClick={() => showToast('Google Review Autopilot versendet automatische Anfragen nach dem Ersttermin.', 'info')}
-                      className="w-full flex items-center gap-3 px-4 py-2 rounded-md text-[11px] font-bold text-[#404944] hover:bg-white/50 hover:text-[#003527] transition-all bg-transparent border-none cursor-pointer text-left"
+                      className="w-full flex items-center gap-3 px-4 py-2 rounded-md text-[11px] font-bold text-[#404944] hover:bg-zinc-50 hover:text-[#003527] transition-all bg-transparent border-none cursor-pointer text-left"
                     >
                       <div className="flex items-center gap-3">
                         <TrendingUp className="w-3.5 h-3.5 text-[#003527]/70 shrink-0" /> 
@@ -408,7 +417,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                     <button
                       type="button"
                       onClick={() => showToast('Das Mail Center ist aktiv. Du kannst E-Mails direkt aus der Patientenakte senden.', 'info')}
-                      className="w-full flex items-center gap-3 px-4 py-2 rounded-md text-[11px] font-bold text-[#404944] hover:bg-white/50 hover:text-[#003527] transition-all bg-transparent border-none cursor-pointer text-left"
+                      className="w-full flex items-center gap-3 px-4 py-2 rounded-md text-[11px] font-bold text-[#404944] hover:bg-zinc-50 hover:text-[#003527] transition-all bg-transparent border-none cursor-pointer text-left"
                     >
                       <div className="flex items-center gap-3">
                         <Mail className="w-3.5 h-3.5 text-[#003527]/70 shrink-0" /> 
@@ -428,7 +437,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                     <button
                       type="button"
                       onClick={() => showToast('Zoom-Integration ist aktiv: Links werden automatisch generiert.', 'info')}
-                      className="w-full flex items-center gap-3 px-4 py-2 rounded-md text-[11px] font-bold text-[#404944] hover:bg-white/50 hover:text-[#003527] transition-all bg-transparent border-none cursor-pointer text-left"
+                      className="w-full flex items-center gap-3 px-4 py-2 rounded-md text-[11px] font-bold text-[#404944] hover:bg-zinc-50 hover:text-[#003527] transition-all bg-transparent border-none cursor-pointer text-left"
                     >
                       <div className="flex items-center gap-3">
                         <ExternalLink className="w-3.5 h-3.5 text-[#003527]/70 shrink-0" /> 
@@ -441,45 +450,45 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
             </div>
           )}
         </div>
-
+ 
         {/* BOTTOM SECTION */}
         <div className="pt-4 border-t border-[#bfc9c3]/20 space-y-1.5 flex-shrink-0 text-left">
           {/* Global Search (Command K) */}
           <button 
             onClick={() => setIsCmdkOpen(true)}
-            className="w-full flex items-center justify-between bg-white border border-[#bfc9c3]/20 hover:border-[#bfc9c3]/50 rounded-lg px-4 py-2.5 text-xs font-bold text-zinc-400 hover:text-[#003527] transition-all cursor-pointer group"
+            className="w-full flex items-center justify-between bg-zinc-100/60 hover:bg-zinc-100 border border-transparent rounded-lg px-4 py-2.5 text-xs font-bold text-zinc-400 hover:text-[#003527] transition-all cursor-pointer group"
           >
             <span className="flex items-center gap-2">
               <Search className="w-3.5 h-3.5 text-zinc-400 group-hover:text-[#003527]" /> Suche...
             </span>
             <div className="flex items-center gap-0.5 opacity-70">
-              <kbd className="bg-zinc-100 border border-zinc-200/50 px-1 py-0.5 rounded text-[9px] font-mono font-bold shadow-sm text-zinc-500">⌘</kbd>
-              <kbd className="bg-zinc-100 border border-zinc-200/50 px-1.5 py-0.5 rounded text-[9px] font-mono font-bold shadow-sm text-zinc-500">K</kbd>
+              <kbd className="bg-white border border-zinc-200/50 px-1 py-0.5 rounded text-[9px] font-mono font-bold shadow-sm text-zinc-500">⌘</kbd>
+              <kbd className="bg-white border border-zinc-200/50 px-1.5 py-0.5 rounded text-[9px] font-mono font-bold shadow-sm text-zinc-500">K</kbd>
             </div>
           </button>
-
+ 
           {/* Separator Line */}
           <div className="h-px bg-[#bfc9c3]/20 my-1 mx-2" />
-
+ 
           {/* Erweiterungen */}
           <Link
             href="/dashboard/addons"
             className={`w-full flex items-center gap-3 px-4 py-2 rounded-md text-[11px] font-bold transition-all ${
               pathname === '/dashboard/addons'
-                ? 'bg-white text-[#003527] border border-[#bfc9c3]/30 shadow-[0_1px_3px_rgba(0,0,0,0.02)]'
-                : 'text-[#404944] hover:bg-white/50 hover:text-[#003527]'
+                ? 'bg-[#003527]/5 text-[#003527]'
+                : 'text-[#404944] hover:bg-zinc-50 hover:text-[#003527]'
             }`}
           >
             <LayoutGrid className="w-3.5 h-3.5 shrink-0" /> Erweiterungen
           </Link>
-
+ 
           {/* Einstellungen */}
           <Link
             href="/dashboard/settings"
             className={`w-full flex items-center gap-3 px-4 py-2 rounded-md text-[11px] font-bold transition-all ${
               pathname === '/dashboard/settings'
-                ? 'bg-white text-[#003527] border border-[#bfc9c3]/30 shadow-[0_1px_3px_rgba(0,0,0,0.02)]'
-                : 'text-[#404944] hover:bg-white/50 hover:text-[#003527]'
+                ? 'bg-[#003527]/5 text-[#003527]'
+                : 'text-[#404944] hover:bg-zinc-50 hover:text-[#003527]'
             }`}
           >
             <Settings className="w-3.5 h-3.5 shrink-0" /> Einstellungen
