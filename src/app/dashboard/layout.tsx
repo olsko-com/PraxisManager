@@ -13,12 +13,12 @@ import CommandPalette from '@/components/CommandPalette';
 import { DashboardProvider, useDashboard } from './context';
 import dynamic from 'next/dynamic';
 
-// Lazy-loaded heavy components for better initial load performance
 const AppointmentDetailsSheet = dynamic(() => import('./components/AppointmentDetailsSheet'), { ssr: false });
 const NewClientModal = dynamic(() => import('./components/NewClientModal'), { ssr: false });
 const MailModal = dynamic(() => import('./components/MailModal'), { ssr: false });
 const NewInvoiceSheet = dynamic(() => import('./components/NewInvoiceSheet'), { ssr: false });
 const ContextMenu = dynamic(() => import('./components/ContextMenu'), { ssr: false });
+const GdprConsentModal = dynamic(() => import('./components/GdprConsentModal'), { ssr: false });
 
 const getInitials = (name: string) => {
   if (!name) return '';
@@ -51,7 +51,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     setIsSheetOpen,
     contextMenu,
     showToast,
-    handleSignOut
+    handleSignOut,
+    isGdprModalOpen
   } = useDashboard();
 
   // Local state for active addons
@@ -154,7 +155,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-white text-[#191c1c] font-sans antialiased overflow-hidden flex">
-      {/* SideNavBar Shell */}      <aside className="fixed left-0 top-0 bottom-0 w-64 bg-white flex flex-col p-6 z-50 justify-between">
+      {/* SideNavBar Shell */}      <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-64 bg-white flex-col p-6 z-50 justify-between">
         
         {/* TOP SECTION */}
         <div className="flex flex-col flex-grow min-h-0">
@@ -497,7 +498,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* Main panel */}
-      <div className="flex-1 pl-64 min-h-screen flex flex-col overflow-hidden relative">
+      <div className="flex-grow pl-0 lg:pl-64 pb-20 lg:pb-0 min-h-screen flex flex-col overflow-hidden relative">
         {children}
       </div>
 
@@ -525,6 +526,10 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         {contextMenu && <ContextMenu />}
       </AnimatePresence>
 
+      <AnimatePresence>
+        {isGdprModalOpen && <GdprConsentModal />}
+      </AnimatePresence>
+
       {/* Local Toast Alert */}
       <AnimatePresence>
         {toast && (
@@ -547,6 +552,69 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Mobile Bottom Tab Bar */}
+      <nav className="flex lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-xl border-t border-[#bfc9c3]/20 px-2 py-1 items-center justify-around z-50 select-none pb-safe shadow-[0_-2px_10px_rgba(0,0,0,0.02)]">
+        <Link
+          href="/dashboard"
+          className={`flex flex-col items-center justify-center w-12 h-full text-center transition-all duration-200 ${
+            pathname === '/dashboard'
+              ? 'text-[#003527] scale-105 font-bold'
+              : 'text-zinc-400 hover:text-[#003527]'
+          }`}
+        >
+          <Home className="w-5 h-5 shrink-0" />
+          <span className="text-[9px] tracking-tight mt-0.5 font-bold">Übersicht</span>
+        </Link>
+        
+        <Link
+          href="/dashboard/calendar"
+          className={`flex flex-col items-center justify-center w-12 h-full text-center transition-all duration-200 ${
+            pathname === '/dashboard/calendar'
+              ? 'text-[#003527] scale-105 font-bold'
+              : 'text-zinc-400 hover:text-[#003527]'
+          }`}
+        >
+          <CalendarIcon className="w-5 h-5 shrink-0" />
+          <span className="text-[9px] tracking-tight mt-0.5 font-bold">Kalender</span>
+        </Link>
+
+        <Link
+          href="/dashboard/clients"
+          className={`flex flex-col items-center justify-center w-12 h-full text-center transition-all duration-200 ${
+            pathname === '/dashboard/clients'
+              ? 'text-[#003527] scale-105 font-bold'
+              : 'text-zinc-400 hover:text-[#003527]'
+          }`}
+        >
+          <Users className="w-5 h-5 shrink-0" />
+          <span className="text-[9px] tracking-tight mt-0.5 font-bold">Patienten</span>
+        </Link>
+
+        <Link
+          href="/dashboard/invoices"
+          className={`flex flex-col items-center justify-center w-12 h-full text-center transition-all duration-200 ${
+            pathname === '/dashboard/invoices'
+              ? 'text-[#003527] scale-105 font-bold'
+              : 'text-zinc-400 hover:text-[#003527]'
+          }`}
+        >
+          <FileText className="w-5 h-5 shrink-0" />
+          <span className="text-[9px] tracking-tight mt-0.5 font-bold">Abrechnung</span>
+        </Link>
+
+        <Link
+          href="/dashboard/settings"
+          className={`flex flex-col items-center justify-center w-12 h-full text-center transition-all duration-200 ${
+            pathname === '/dashboard/settings'
+              ? 'text-[#003527] scale-105 font-bold'
+              : 'text-zinc-400 hover:text-[#003527]'
+          }`}
+        >
+          <Settings className="w-5 h-5 shrink-0" />
+          <span className="text-[9px] tracking-tight mt-0.5 font-bold">Einstellungen</span>
+        </Link>
+      </nav>
 
     </div>
   );

@@ -41,6 +41,7 @@ export default function CalendarPage() {
   } = useDashboard();
 
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(true);
+  const [mobileCalendarMode, setMobileCalendarMode] = React.useState<'week' | 'month' | 'year'>('week');
   const [eventSearch, setEventSearch] = React.useState('');
   const [pendingMove, setPendingMove] = React.useState<{
     appId: string;
@@ -186,6 +187,44 @@ export default function CalendarPage() {
     return days;
   };
 
+  const getMobileWeekDays = (date: Date) => {
+    const current = new Date(date);
+    const day = current.getDay();
+    const diff = current.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(current.setDate(diff));
+    const days = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      days.push(d);
+    }
+    return days;
+  };
+
+  const handlePrevMobileStripe = () => {
+    const d = new Date(currentCalendarDate);
+    if (mobileCalendarMode === 'year') {
+      d.setFullYear(d.getFullYear() - 1);
+    } else if (mobileCalendarMode === 'month') {
+      d.setMonth(d.getMonth() - 1);
+    } else {
+      d.setDate(d.getDate() - 7);
+    }
+    setCurrentCalendarDate(d);
+  };
+
+  const handleNextMobileStripe = () => {
+    const d = new Date(currentCalendarDate);
+    if (mobileCalendarMode === 'year') {
+      d.setFullYear(d.getFullYear() + 1);
+    } else if (mobileCalendarMode === 'month') {
+      d.setMonth(d.getMonth() + 1);
+    } else {
+      d.setDate(d.getDate() + 7);
+    }
+    setCurrentCalendarDate(d);
+  };
+
   const getMonthDaysGrid = (date: Date) => {
     const year = date.getFullYear();
     const month = date.getMonth();
@@ -206,6 +245,22 @@ export default function CalendarPage() {
     const nextMonthPadding = totalCells - grid.length;
     for (let i = 1; i <= nextMonthPadding; i++) {
       grid.push({ date: new Date(year, month + 1, i), isCurrentMonth: false });
+    }
+    return grid;
+  };
+
+  const getYearMonthDaysGrid = (year: number, month: number) => {
+    const firstDay = new Date(year, month, 1);
+    let firstDayOfWeek = firstDay.getDay() - 1;
+    if (firstDayOfWeek === -1) firstDayOfWeek = 6;
+
+    const grid = [];
+    for (let i = 0; i < firstDayOfWeek; i++) {
+      grid.push(null);
+    }
+    const currentMonthEnd = new Date(year, month + 1, 0).getDate();
+    for (let i = 1; i <= currentMonthEnd; i++) {
+      grid.push(new Date(year, month, i));
     }
     return grid;
   };
@@ -409,18 +464,30 @@ export default function CalendarPage() {
   };
 
   return (
-    <div className="relative flex-grow bg-[#eef0ed] rounded-[24px] border border-[#003527]/10 my-4 mr-4 ml-4 flex flex-col h-[calc(100vh-32px)] overflow-hidden shadow-none transition-all duration-300">
-      {/* Calendar Title (Sticky Title inside Card) */}
-      <div className={`pl-8 pt-10 pb-5 bg-transparent flex-shrink-0 transition-all duration-300 ${
-        isSidebarOpen ? 'pr-[384px]' : 'pr-8'
-      }`}>
-        <h1 className="text-[26px] font-bold text-[#003527] tracking-tight">Kalender</h1>
+    <div className="relative flex-grow bg-[#eef0ed] rounded-none lg:rounded-[24px] border-0 lg:border border-[#003527]/10 m-0 lg:my-4 lg:mr-4 lg:ml-4 flex flex-col h-[calc(100vh-64px)] lg:h-[calc(100vh-32px)] overflow-hidden shadow-none transition-all duration-300">
+      
+      {/* Desktop Calendar View wrapper */}
+      <div className="hidden lg:flex flex-col flex-grow overflow-hidden relative min-h-0">
+      {/* Header Layout (Dashboard Style) */}
+      <div className="flex justify-between items-start w-full relative pl-6 lg:pl-8 pr-6 lg:pr-8 pt-4 lg:pt-6 mb-4 lg:mb-6">
+        <div className="text-left space-y-1.5 pt-0">
+          <h1 className="text-[28px] font-bold text-[#003527] tracking-tight">Kalender</h1>
+        </div>
+
+        {/* Quick Add Button */}
+        <div className="relative">
+          <button 
+            onClick={handleNewAppointmentClick}
+            className="p-2 rounded-xl border border-[#bfc9c3]/50 bg-white text-[#003527] hover:bg-zinc-50 active:scale-95 transition-all cursor-pointer flex items-center justify-center shadow-none"
+            title="Termin eintragen"
+          >
+            <Plus className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
-      {/* Calendar Controls (Sticky Header inside Card) */}
-      <div className={`flex flex-wrap justify-between items-center gap-4 pl-8 pt-0 pb-3 bg-transparent flex-shrink-0 transition-all duration-300 ${
-        isSidebarOpen ? 'pr-[384px]' : 'pr-8'
-      }`}>
+      {/* Calendar Controls (Sticky Header inside Card) - Full Width */}
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 pl-6 lg:pl-8 pr-6 lg:pr-8 pt-0 pb-3 bg-transparent flex-shrink-0">
         <div className="flex items-center gap-2">
           <div className="flex border border-[#bfc9c3]/50 rounded-xl overflow-hidden bg-white">
             <button 
@@ -468,7 +535,7 @@ export default function CalendarPage() {
 
           <button
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-center ${
+            className={`hidden lg:flex p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-center ${
               isSidebarOpen 
                 ? 'bg-[#003527] border-[#003527] text-white shadow-none' 
                 : 'bg-white border-[#bfc9c3]/50 text-[#003527] hover:bg-zinc-50 shadow-none'
@@ -480,8 +547,10 @@ export default function CalendarPage() {
         </div>
       </div>
 
-      {/* Calendar View Renders */}
-      <AnimatePresence mode="wait">
+      {/* Content Body Layout Wrapper */}
+      <div className="flex-grow flex relative min-h-0 overflow-hidden">
+        {/* Calendar View Renders */}
+        <AnimatePresence mode="wait">
         
         {/* DAY VIEW */}
         {calendarView === 'day' && (
@@ -490,11 +559,11 @@ export default function CalendarPage() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className={`flex-grow flex flex-col pb-6 pt-0 pl-8 transition-all duration-300 min-h-0 ${
-              isSidebarOpen ? 'pr-[384px]' : 'pr-8'
+            className={`flex-grow flex flex-col pb-24 lg:pb-6 pt-0 px-4 lg:pl-8 transition-all duration-300 min-h-0 ${
+              isSidebarOpen ? 'lg:pr-96' : 'lg:pr-8'
             }`}
           >
-            <div className="mt-3 bg-white border border-[#bfc9c3]/40 rounded-2xl flex-grow overflow-y-auto overflow-x-hidden hide-scrollbar pt-0 pb-6 px-0 shadow-none flex flex-col min-h-0">
+            <div className="mt-3 bg-white border border-[#bfc9c3]/40 rounded-2xl flex-grow overflow-y-auto overflow-x-auto lg:overflow-x-hidden hide-scrollbar pt-0 pb-6 px-0 shadow-none flex flex-col min-h-0">
             {/* Header Row */}
             <div className="min-w-[600px] grid grid-cols-[80px_1fr] border-b border-[#bfc9c3]/20 bg-zinc-50/75 backdrop-blur-md rounded-t-2xl py-3 mb-0 sticky top-0 z-30">
               <div className="w-[80px]" />
@@ -730,11 +799,11 @@ export default function CalendarPage() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className={`flex-grow flex flex-col pb-6 pt-0 pl-8 transition-all duration-300 min-h-0 ${
-              isSidebarOpen ? 'pr-[384px]' : 'pr-8'
+            className={`flex-grow flex flex-col pb-24 lg:pb-6 pt-0 px-4 lg:pl-8 transition-all duration-300 min-h-0 ${
+              isSidebarOpen ? 'lg:pr-96' : 'lg:pr-8'
             }`}
           >
-            <div className="mt-3 bg-white border border-[#bfc9c3]/40 rounded-2xl flex-grow overflow-y-auto overflow-x-hidden hide-scrollbar pt-0 pb-6 px-0 shadow-none flex flex-col min-h-0">
+            <div className="mt-3 bg-white border border-[#bfc9c3]/40 rounded-2xl flex-grow overflow-y-auto overflow-x-auto lg:overflow-x-hidden hide-scrollbar pt-0 pb-6 px-0 shadow-none flex flex-col min-h-0">
             {/* Week Header Row */}
             <div className="min-w-[800px] grid grid-cols-[80px_repeat(5,1fr)] divide-x divide-zinc-200/50 border-b border-[#bfc9c3]/20 bg-zinc-50/75 backdrop-blur-md rounded-t-2xl mb-0 sticky top-0 z-30">
               <div className="w-[80px]" />
@@ -998,11 +1067,11 @@ export default function CalendarPage() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className={`flex-grow flex flex-col pb-6 pt-0 pl-8 transition-all duration-300 min-h-0 ${
-              isSidebarOpen ? 'pr-[384px]' : 'pr-8'
+            className={`flex-grow flex flex-col pb-24 lg:pb-6 pt-0 px-4 lg:pl-8 transition-all duration-300 min-h-0 ${
+              isSidebarOpen ? 'lg:pr-96' : 'lg:pr-8'
             }`}
           >
-            <div className="mt-3 bg-zinc-200 border border-zinc-200 rounded-2xl flex-grow overflow-y-auto overflow-x-hidden hide-scrollbar grid grid-cols-7 gap-[1px] min-h-0">
+            <div className="mt-3 bg-zinc-200 border border-zinc-200 rounded-2xl flex-grow overflow-y-auto overflow-x-auto lg:overflow-x-hidden hide-scrollbar grid grid-cols-7 gap-[1px] min-h-0 min-w-[600px] lg:min-w-0">
             {/* Day Headers */}
             {['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map((day) => (
               <div key={day} className="bg-[#f3f4f3] py-2 text-center text-[10px] font-bold text-zinc-400 select-none sticky top-0 z-30">
@@ -1087,7 +1156,7 @@ export default function CalendarPage() {
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: 400, opacity: 0.8 }}
             transition={{ type: 'spring', damping: 26, stiffness: 220 }}
-            className="absolute right-8 top-8 bottom-8 w-80 bg-white border border-[#003527]/10 flex flex-col z-30 shadow-none rounded-[20px] overflow-hidden"
+            className="hidden lg:flex absolute right-8 top-3 bottom-6 w-80 bg-white border border-[#003527]/10 flex-col z-30 shadow-none rounded-[20px] overflow-hidden"
           >
             {/* Sidebar Header (Matches Patients List layout style) */}
             <div className="p-6 pt-8 space-y-4 border-b border-[#bfc9c3]/20 flex-shrink-0 bg-white">
@@ -1202,6 +1271,356 @@ export default function CalendarPage() {
           </motion.aside>
         )}
       </AnimatePresence>
+      </div>
+
+      </div>
+
+      {/* Mobile Calendar Layout */}
+      <div className="flex lg:hidden flex-col flex-grow overflow-hidden relative select-none">
+        
+        {/* Header: Month & Year Navigator */}
+        <div className="px-6 pt-6 pb-4 flex justify-between items-center bg-transparent flex-shrink-0">
+          <div className="flex items-center gap-3 text-left">
+            <h1 
+              onClick={() => {
+                if (mobileCalendarMode === 'week') setMobileCalendarMode('month');
+                else if (mobileCalendarMode === 'month') setMobileCalendarMode('year');
+                else setMobileCalendarMode('month');
+              }}
+              className="text-xl font-bold text-[#003527] tracking-tight cursor-pointer hover:opacity-80 transition-opacity"
+            >
+              {mobileCalendarMode === 'year' 
+                ? currentCalendarDate.getFullYear() 
+                : currentCalendarDate.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' })}
+            </h1>
+            
+            {/* Dynamic month/year navigation arrows - hidden in month mode */}
+            {mobileCalendarMode !== 'month' && (
+              <div className="flex items-center gap-1 bg-white border border-[#bfc9c3]/30 rounded-lg p-0.5 shadow-none select-none">
+                <button 
+                  onClick={handlePrevMobileStripe}
+                  className="p-1 text-[#003527] hover:bg-[#003527]/5 rounded-md transition-colors cursor-pointer"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                </button>
+                <button 
+                  onClick={handleToday}
+                  className="px-2 py-0.5 text-[9px] font-bold text-[#003527] hover:bg-[#003527]/5 rounded-md transition-colors cursor-pointer border-l border-r border-[#bfc9c3]/20"
+                >
+                  Heute
+                </button>
+                <button 
+                  onClick={handleNextMobileStripe}
+                  className="p-1 text-[#003527] hover:bg-[#003527]/5 rounded-md transition-colors cursor-pointer"
+                >
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+          </div>
+          
+          {/* Calendar Icon Button toggling expanded monthly/yearly stripe */}
+          <button 
+            onClick={() => {
+              if (mobileCalendarMode === 'week') setMobileCalendarMode('month');
+              else if (mobileCalendarMode === 'month') setMobileCalendarMode('year');
+              else setMobileCalendarMode('week');
+            }}
+            className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-center shadow-none ${
+              mobileCalendarMode !== 'week' 
+                ? 'bg-[#003527] border-[#003527] text-white' 
+                : 'bg-white border-[#bfc9c3]/50 text-[#003527] hover:bg-zinc-50'
+            }`}
+            title="Kalenderansicht wechseln"
+          >
+            <CalendarIcon className="w-4 h-4" />
+          </button>
+        </div>
+
+        {mobileCalendarMode !== 'year' ? (
+          <>
+            {/* Weekly/Monthly Stripe Picker */}
+            <motion.div 
+              layout
+              className="px-6 pb-4 border-b border-[#bfc9c3]/20 flex-shrink-0 overflow-hidden"
+              transition={{ type: 'spring', damping: 28, stiffness: 220 }}
+            >
+              {/* Static Weekday Headers - Always Visible & Highlighted Selected */}
+              <div className="grid grid-cols-7 text-center mb-1">
+                {['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map((day) => {
+                  const selectedIndex = (currentCalendarDate.getDay() + 6) % 7;
+                  const isSelectedDay = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'][selectedIndex] === day;
+                  return (
+                    <span key={day} className={`text-[9px] uppercase tracking-wider font-extrabold py-1 transition-colors duration-200 ${
+                      isSelectedDay ? 'text-[#003527] font-extrabold' : 'text-zinc-400'
+                    }`}>
+                      {day}
+                    </span>
+                  );
+                })}
+              </div>
+
+              {/* Week Stripe View */}
+              <motion.div
+                initial={false}
+                animate={{
+                  height: mobileCalendarMode === 'week' ? 'auto' : 0,
+                  opacity: mobileCalendarMode === 'week' ? 1 : 0
+                }}
+                transition={{ type: 'spring', damping: 28, stiffness: 220 }}
+                className="overflow-hidden"
+              >
+                <div className="grid grid-cols-7 gap-1 text-center py-1">
+                  {getMobileWeekDays(currentCalendarDate).map((dayDate) => {
+                    const isSelected = dayDate.toDateString() === currentCalendarDate.toDateString();
+                    const isToday = new Date().toDateString() === dayDate.toDateString();
+                    const hasEvents = appointments.some(app => isSameDay(dayDate, app.startTime));
+
+                    return (
+                      <button
+                        key={dayDate.toISOString()}
+                        onClick={() => {
+                          if (isSelected) {
+                            setMobileCalendarMode('month');
+                          } else {
+                            setCurrentCalendarDate(dayDate);
+                          }
+                        }}
+                        className="flex flex-col items-center justify-center py-1 transition-all cursor-pointer relative"
+                      >
+                        <span className={`text-xs font-bold flex items-center justify-center w-7 h-7 rounded-full transition-all ${
+                          isSelected 
+                            ? 'bg-[#003527] text-white shadow-sm font-extrabold' 
+                            : isToday 
+                            ? 'text-red-500 font-extrabold' 
+                            : 'text-[#003527]'
+                        }`}>
+                          {dayDate.getDate()}
+                        </span>
+
+                        {/* Dot indicator for events on this day (hidden when selected) */}
+                        {hasEvents && !isSelected && (
+                          <span className="absolute bottom-0.5 w-1.5 h-1.5 rounded-full bg-[#003527]/30" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </motion.div>
+
+              {/* Month Grid View */}
+              <motion.div
+                initial={false}
+                animate={{
+                  height: mobileCalendarMode === 'month' ? 'auto' : 0,
+                  opacity: mobileCalendarMode === 'month' ? 1 : 0
+                }}
+                transition={{ type: 'spring', damping: 28, stiffness: 220 }}
+                className="overflow-hidden"
+              >
+                {/* Monthly Grid Numbers */}
+                <div className="grid grid-cols-7 gap-y-2 gap-x-1 text-center py-1">
+                  {getMonthDaysGrid(currentCalendarDate).map(({ date: dayDate, isCurrentMonth }, idx) => {
+                    const isSelected = dayDate.toDateString() === currentCalendarDate.toDateString();
+                    const isToday = new Date().toDateString() === dayDate.toDateString();
+                    const hasEvents = appointments.some(app => isSameDay(dayDate, app.startTime));
+
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => {
+                          setCurrentCalendarDate(dayDate);
+                          setMobileCalendarMode('week');
+                        }}
+                        className="flex flex-col items-center justify-center py-1 transition-all cursor-pointer relative"
+                      >
+                        <span className={`text-xs font-bold flex items-center justify-center w-7 h-7 rounded-full transition-all ${
+                          isSelected 
+                            ? 'bg-[#003527] text-white shadow-sm font-extrabold' 
+                            : isToday 
+                            ? 'text-red-500 font-extrabold border border-red-200' 
+                            : isCurrentMonth 
+                            ? 'text-[#003527]' 
+                            : 'text-zinc-300 font-normal'
+                        }`}>
+                          {dayDate.getDate()}
+                        </span>
+
+                        {/* Dot indicator for events on this day (hidden when selected) */}
+                        {hasEvents && !isSelected && (
+                          <span className="absolute bottom-0 w-1.5 h-1.5 rounded-full bg-[#003527]/30" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            </motion.div>
+
+            {/* Agenda List Area */}
+            <div className="flex-grow overflow-y-auto px-6 py-4 space-y-3 pb-24">
+              {(() => {
+                const dayAppointments = appointments
+                  .filter(app => isSameDay(currentCalendarDate, app.startTime))
+                  .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+
+                if (dayAppointments.length === 0) {
+                  return (
+                    <div className="flex flex-col items-center justify-center py-16 px-4 text-center bg-white border border-[#bfc9c3]/30 rounded-[20px] shadow-[0_2px_10px_rgba(0,0,0,0.01)] animate-fade-in">
+                      <div className="w-10 h-10 rounded-full bg-zinc-50 border border-zinc-100 flex items-center justify-center text-zinc-300 mb-3">
+                        <CalendarIcon className="w-5 h-5" />
+                      </div>
+                      <p className="text-xs font-bold text-[#003527]">Keine Termine für diesen Tag</p>
+                      <p className="text-[9px] text-zinc-400 font-semibold mt-1 max-w-[200px] leading-relaxed">
+                        Hier werden anstehende Termine für diesen Tag angezeigt.
+                      </p>
+                    </div>
+                  );
+                }
+
+                return dayAppointments.map((app) => {
+                  const start = new Date(app.startTime);
+                  const end = new Date(app.endTime);
+                  const duration = Math.round((end.getTime() - start.getTime()) / 60000);
+                  
+                  return (
+                    <div
+                      key={app.id}
+                      onClick={() => {
+                        setSelectedAppointment(app);
+                        setSheetMode('edit');
+                        setIsSheetOpen(true);
+                      }}
+                      onContextMenu={(e) => handleContextMenu(e, app)}
+                      className={`bg-white border border-[#bfc9c3]/30 rounded-2xl p-4 flex items-center justify-between shadow-[0_2px_8px_rgba(0,0,0,0.01)] active:scale-[0.99] transition-all cursor-pointer text-left relative overflow-hidden group border-l-4 ${
+                        !app.clientId
+                          ? 'border-l-zinc-400'
+                          : app.status === 'booked' 
+                          ? 'border-l-amber-400' 
+                          : app.status === 'confirmed' 
+                          ? 'border-l-blue-400'
+                          : app.status === 'noshow' 
+                          ? 'border-l-emerald-400' 
+                          : 'border-l-rose-400'
+                      }`}
+                    >
+                      <div className="min-w-0 flex-grow pr-3">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[10px] font-extrabold text-[#003527]">
+                            {start.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} - {end.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                          <span className="text-[9px] font-bold text-zinc-400">({duration} Min.)</span>
+                        </div>
+                        
+                        <h4 className="font-extrabold text-xs text-[#003527] mt-1 leading-snug truncate">{app.serviceName}</h4>
+                        {app.clientId && (
+                          <p className="text-[10px] font-bold text-zinc-400 mt-0.5 truncate">{app.clientName}</p>
+                        )}
+                      </div>
+
+                      {/* Status indicator badge */}
+                      <div className="flex-shrink-0 flex items-center gap-2">
+                        <span className={`text-[8px] font-extrabold px-2 py-0.5 rounded-md uppercase tracking-wider border ${
+                          !app.clientId
+                            ? 'bg-zinc-50 border-zinc-200 text-zinc-500'
+                            : app.status === 'booked'
+                            ? 'bg-amber-50 border-amber-200 text-amber-800'
+                            : app.status === 'confirmed'
+                            ? 'bg-blue-50 border-blue-200 text-blue-800'
+                            : app.status === 'noshow'
+                            ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                            : 'bg-rose-50 border-rose-200 text-rose-800'
+                        }`}>
+                          {!app.clientId
+                            ? 'Privat'
+                            : app.status === 'booked'
+                            ? 'Gebucht'
+                            : app.status === 'confirmed'
+                            ? 'Bestätigt'
+                            : app.status === 'noshow'
+                            ? 'Erledigt'
+                            : 'Absage'}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+          </>
+        ) : (
+          /* Year Grid View - 2 Columns of 12 Months */
+          <div className="flex-grow overflow-y-auto px-3 pb-24 pt-2">
+            <div className="grid grid-cols-2 gap-x-2.5 gap-y-4">
+              {[
+                'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
+                'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'
+              ].map((monthName, monthIndex) => {
+                const year = currentCalendarDate.getFullYear();
+                const monthDays = getYearMonthDaysGrid(year, monthIndex);
+                const isSelectedMonth = currentCalendarDate.getMonth() === monthIndex && currentCalendarDate.getFullYear() === year;
+
+                return (
+                  <button
+                    key={monthIndex}
+                    onClick={() => {
+                      const newDate = new Date(currentCalendarDate);
+                      newDate.setDate(1);
+                      newDate.setMonth(monthIndex);
+                      
+                      const today = new Date();
+                      if (today.getFullYear() === year && today.getMonth() === monthIndex) {
+                        newDate.setDate(today.getDate());
+                      } else {
+                        newDate.setDate(1);
+                      }
+
+                      setCurrentCalendarDate(newDate);
+                      setMobileCalendarMode('month');
+                    }}
+                    className="flex flex-col text-left p-1 rounded-xl hover:bg-[#003527]/5 transition-colors border border-transparent active:border-[#bfc9c3]/30 cursor-pointer"
+                  >
+                    <span className={`text-[10px] font-extrabold tracking-tight mb-1.5 transition-colors ${
+                      isSelectedMonth ? 'text-red-500 font-extrabold' : 'text-[#003527]'
+                    }`}>
+                      {monthName}
+                    </span>
+
+                    <div className="grid grid-cols-7 gap-y-0.5 text-center w-full">
+                      {monthDays.map((dayDate, idx) => {
+                        if (!dayDate) {
+                          return <span key={`empty-${idx}`} className="w-3.5 h-3.5" />;
+                        }
+
+                        const isToday = new Date().toDateString() === dayDate.toDateString();
+                        const isSelected = dayDate.toDateString() === currentCalendarDate.toDateString();
+
+                        return (
+                          <span
+                            key={idx}
+                            className={`text-[8.5px] font-bold flex items-center justify-center w-3.5 h-3.5 rounded-full transition-all ${
+                              isSelected
+                                ? 'bg-[#003527] text-white font-extrabold'
+                                : isToday
+                                ? 'text-red-500 font-extrabold'
+                                : 'text-zinc-500'
+                            }`}
+                          >
+                            {dayDate.getDate()}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+
+
+      </div>
 
       {/* Apple-Style Toast Banner for Rescheduling Notification & Undo */}
       <AnimatePresence>

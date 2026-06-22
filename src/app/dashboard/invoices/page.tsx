@@ -217,14 +217,14 @@ export default function InvoicesPage() {
     : '';
 
   return (
-    <div className="relative flex-grow bg-[#eef0ed] rounded-[24px] border border-[#003527]/10 my-4 mr-4 ml-4 flex flex-col h-[calc(100vh-32px)] overflow-hidden shadow-none transition-all duration-300">
+    <div className="relative flex-grow bg-[#eef0ed] rounded-none lg:rounded-[24px] border-0 lg:border border-[#003527]/10 m-0 lg:my-4 lg:mr-4 lg:ml-4 flex flex-col h-[calc(100vh-64px)] lg:h-[calc(100vh-32px)] overflow-hidden shadow-none transition-all duration-300">
       {/* Page Title */}
-      <div className="pl-8 pt-10 pb-2 bg-transparent flex-shrink-0 text-left">
+      <div className="pl-6 lg:pl-8 pt-6 lg:pt-10 pb-2 bg-transparent flex-shrink-0 text-left">
         <h1 className="text-[26px] font-bold text-[#003527] tracking-tight">Abrechnung</h1>
       </div>
 
       {/* Sub-Tab Navigation (Sticky tabs inside Card) */}
-      <div className="px-8 bg-transparent flex-shrink-0 flex justify-between items-end border-b border-[#bfc9c3]/20 pb-0 select-none h-[42px]">
+      <div className="px-6 lg:px-8 bg-transparent flex-shrink-0 flex justify-between items-end border-b border-[#bfc9c3]/20 pb-0 select-none h-[42px] overflow-x-auto hide-scrollbar whitespace-nowrap">
         <div className="flex gap-4">
           <button
             onClick={() => setInvoiceSubTab('list')}
@@ -262,7 +262,7 @@ export default function InvoicesPage() {
       </div>
 
       {/* Scrollable Content Container */}
-      <div className="flex-grow overflow-y-auto px-8 py-6 space-y-6">
+      <div className="flex-grow overflow-y-auto px-4 lg:px-8 py-6 space-y-6 pb-24 lg:pb-6">
         {/* Dropdown Backdrop */}
         {activeInvoiceActionMenuId && (
           <div 
@@ -273,9 +273,9 @@ export default function InvoicesPage() {
 
       {invoiceSubTab === 'list' ? (
         /* Rechnungsliste tab content wrapper with white container styling */
-        <div className="bg-white border border-[#bfc9c3]/50 rounded-2xl p-8 shadow-none space-y-6 relative">
+        <div className="bg-white border border-[#bfc9c3]/50 rounded-2xl p-4 lg:p-8 shadow-none space-y-6 relative">
           {/* Financial Status Summary */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-x-6 gap-y-3 text-xs border-b border-[#bfc9c3]/20 pb-3.5 -mx-8 px-8">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-x-6 gap-y-3 text-xs border-b border-[#bfc9c3]/20 pb-3.5 -mx-4 lg:-mx-8 px-4 lg:px-8">
             <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
               <div className="flex items-center gap-2">
                 <span className="text-[#003527]/70 font-semibold">Bezahlt</span>

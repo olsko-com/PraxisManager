@@ -3,7 +3,7 @@
 import React from 'react';
 import { 
   Plus, Search, Mail, Calendar as CalendarIcon, Paperclip, FileText, 
-  Edit2, Trash2, Star, Flag, ChevronRight, MoreVertical, User, Phone, Heart
+  Edit2, Trash2, Star, Flag, ChevronLeft, ChevronRight, MoreVertical, User, Phone, Heart, Info
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDashboard } from '../context';
@@ -165,6 +165,7 @@ export default function ClientsPage() {
     toggleClientFavorite,
     toggleClientFlag,
     toggleClientGdpr,
+    openGdprModal,
     handleClientContextMenu,
     deleteClient,
     therapistId,
@@ -210,14 +211,16 @@ export default function ClientsPage() {
   } = useDashboard();
 
   const [isDetailsMenuOpen, setIsDetailsMenuOpen] = React.useState(false);
+  const [mobileView, setMobileView] = React.useState<'list' | 'detail'>('list');
+  const [showGdprTooltip, setShowGdprTooltip] = React.useState(false);
 
   const currentClient = clients.find(c => c.id === selectedClientId);
   const clientSoapNotes = soapNotes.filter(n => n.clientId === selectedClientId);
 
   return (
-    <div className="relative flex-grow bg-[#eef0ed] rounded-[24px] border border-[#003527]/10 my-4 mr-4 ml-4 flex p-6 gap-6 h-[calc(100vh-32px)] overflow-hidden shadow-none transition-all duration-300">
+    <div className="relative flex-grow bg-[#eef0ed] rounded-none lg:rounded-[24px] border-0 lg:border border-[#003527]/10 m-0 lg:my-4 lg:mr-4 lg:ml-4 flex p-4 lg:p-6 gap-0 lg:gap-6 h-[calc(100vh-64px)] lg:h-[calc(100vh-32px)] overflow-hidden shadow-none transition-all duration-300">
       {/* Left Side: Client List as a secondary Sidebar */}
-      <div className="w-80 bg-white border border-[#003527]/10 rounded-[20px] flex flex-col z-10 flex-shrink-0 overflow-hidden">
+      <div className={`w-full lg:w-80 bg-white border border-[#003527]/10 rounded-[20px] flex flex-col z-10 flex-shrink-0 overflow-hidden ${mobileView === 'list' || clients.length === 0 ? 'flex' : 'hidden lg:flex'}`}>
         <div className="p-6 pt-8 space-y-4">
           <div className="flex justify-between items-center">
             {(() => {
@@ -348,7 +351,10 @@ export default function ClientsPage() {
                 key={c.id}
                 client={c}
                 isSelected={selectedClientId === c.id}
-                onSelect={() => setSelectedClientId(c.id)}
+                onSelect={() => {
+                  setSelectedClientId(c.id);
+                  setMobileView('detail');
+                }}
                 onToggleFavorite={() => {
                   toggleClientFavorite(c.id);
                 }}
@@ -392,14 +398,23 @@ export default function ClientsPage() {
       </div>
 
       {/* Right Side: Profile Details */}
-      <div className="flex-grow flex flex-col min-h-0 overflow-hidden">
+      <div className={`flex-grow flex flex-col min-h-0 overflow-hidden ${mobileView === 'detail' ? 'flex' : 'hidden lg:flex'}`}>
         {currentClient ? (
           <div className="flex-grow flex flex-col min-h-0">
             {/* Patient Header */}
-            <div className="border-b border-[#bfc9c3]/30 px-6 pb-6 flex justify-between items-center bg-transparent z-20 flex-shrink-0">
-              <div className="text-left">
-                <h3 className="text-xl font-bold text-[#043F2D]">{currentClient.name}</h3>
-                <p className="text-xs text-zinc-500 mt-1">Registriert seit {new Date(currentClient.createdAt).toLocaleDateString('de-DE')}</p>
+            <div className="border-b border-[#bfc9c3]/30 px-4 lg:px-6 pb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-transparent z-20 flex-shrink-0 text-left">
+              <div className="flex flex-col text-left">
+                {/* Mobile Back Button */}
+                <button
+                  onClick={() => setMobileView('list')}
+                  className="lg:hidden inline-flex items-center gap-1 text-xs font-bold text-[#003527]/70 hover:text-[#003527] cursor-pointer bg-transparent border-none p-0 outline-none mb-3 self-start"
+                >
+                  <ChevronLeft className="w-4 h-4" /> Patientenliste
+                </button>
+                <div className="text-left">
+                  <h3 className="text-xl font-bold text-[#043F2D]">{currentClient.name}</h3>
+                  <p className="text-xs text-zinc-500 mt-1">Registriert seit {new Date(currentClient.createdAt).toLocaleDateString('de-DE')}</p>
+                </div>
               </div>
               
               <div className="flex items-center gap-2">
@@ -526,11 +541,11 @@ export default function ClientsPage() {
             </div>
 
             {/* Scrollable details content */}
-            <div className="flex-grow overflow-y-auto px-6 py-6 space-y-6">
+            <div className="flex-grow overflow-y-auto px-4 lg:px-6 py-6 space-y-6 pb-24 lg:pb-6">
               {/* Quick profile info grid (Bento Grid) */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Bento Card 1: Stammdaten */}
-                <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 flex flex-col justify-between transition-all duration-300 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)] relative group overflow-hidden">
+                <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 flex flex-col justify-between transition-all duration-300 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)] relative group">
                   <div className="space-y-4">
                     <div className="flex justify-between items-start">
                       <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200/40 text-emerald-700">
@@ -549,11 +564,37 @@ export default function ClientsPage() {
                         <span className="block text-[10px] font-medium text-zinc-400">Mitglied seit</span>
                         <span className="block text-xs font-extrabold text-[#003527]">{new Date(currentClient.createdAt).toLocaleDateString('de-DE')}</span>
                       </div>
-                      <div className="space-y-0.5">
-                        <span className="block text-[10px] font-medium text-zinc-400">Datenschutz</span>
+                      <div className="space-y-0.5 relative">
+                        <span 
+                          className="inline-flex items-center gap-1 text-[10px] font-medium text-zinc-400 cursor-help select-none"
+                          onMouseEnter={() => setShowGdprTooltip(true)}
+                          onMouseLeave={() => setShowGdprTooltip(false)}
+                        >
+                          Datenschutz
+                          <Info className="w-3 h-3 text-zinc-400 hover:text-[#003527] transition-colors" />
+                        </span>
+                        
+                        {/* Styled HTML Tooltip */}
+                        {showGdprTooltip && (
+                          <div className="absolute bottom-full left-0 mb-2 w-72 bg-white text-zinc-700 text-[10px] leading-relaxed p-3.5 rounded-xl shadow-xl z-50 normal-case font-medium border border-[#bfc9c3]/30 pointer-events-none select-none animate-fade-in">
+                            <p className="font-bold mb-1 text-[11px] text-[#003527]">DSGVO-Status</p>
+                            <p className="text-zinc-500 font-semibold leading-relaxed">
+                              Dokumentiert, ob der Patient der Verarbeitung seiner Gesundheitsdaten (gemäß Art. 9 DSGVO) zugestimmt hat. Diese ausdrückliche Einwilligung ist rechtlich erforderlich, um Behandlungsdaten speichern zu dürfen.
+                            </p>
+                            {/* Arrow pointing down */}
+                            <div className="absolute top-full left-6 border-4 border-transparent border-t-white" />
+                            <div className="absolute top-full left-6 border-4 border-transparent border-t-[#bfc9c3]/30 -z-10" style={{ transform: 'translateY(1.5px)' }} />
+                          </div>
+                        )}
                         <div>
                           <button
-                            onClick={() => toggleClientGdpr(currentClient.id)}
+                            onClick={() => {
+                              if (currentClient.gdprAccepted) {
+                                toggleClientGdpr(currentClient.id);
+                              } else {
+                                openGdprModal(currentClient.id);
+                              }
+                            }}
                             className={`mt-1 text-[10px] font-bold px-2 py-1 rounded-lg border transition-all cursor-pointer inline-flex items-center gap-1 outline-none ${
                               currentClient.gdprAccepted
                                 ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100'

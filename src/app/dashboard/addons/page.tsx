@@ -279,11 +279,11 @@ export default function AddonsPage() {
   return (
     <div 
       ref={containerRef}
-      className="flex-grow overflow-y-auto px-12 py-8 space-y-6 text-left font-sans select-none relative scroll-smooth hide-scrollbar"
+      className="flex-grow overflow-y-auto px-4 lg:px-12 py-6 lg:py-8 space-y-6 text-left font-sans select-none relative scroll-smooth hide-scrollbar pb-24 lg:pb-8"
     >
       
       {/* Sticky Header Group */}
-      <div className="space-y-3 flex-shrink-0 bg-[#f9f9f8]/95 backdrop-blur-md sticky top-0 -mx-12 px-12 pt-1 pb-4 z-30">
+      <div className="space-y-3 flex-shrink-0 bg-[#f9f9f8]/95 backdrop-blur-md sticky top-0 -mx-4 lg:-mx-12 px-4 lg:px-12 pt-1 pb-4 z-30">
         <div className="flex justify-between items-center">
           <div className="text-left">
             <h2 className="text-lg font-bold text-[#043F2D] flex items-center gap-2">
@@ -294,7 +294,7 @@ export default function AddonsPage() {
         </div>
 
         {/* Sub-Tab Navigation (Matches Abrechnung header tabs design exactly) */}
-        <div className="flex justify-between items-end border-b border-[#bfc9c3]/20 pb-0 select-none -mx-12 px-12 h-[42px]">
+        <div className="flex justify-between items-end border-b border-[#bfc9c3]/20 pb-0 select-none -mx-4 lg:-mx-12 px-4 lg:px-12 h-[42px] overflow-x-auto hide-scrollbar whitespace-nowrap">
           <div className="flex gap-6">
             <button
               onClick={() => setAddonsSubTab('catalog')}
@@ -333,7 +333,7 @@ export default function AddonsPage() {
 
         {/* Category Anchor Navigation (Only shown when catalog is selected) */}
         {addonsSubTab === 'catalog' && (
-          <div className="flex gap-6 border-b border-[#bfc9c3]/10 pt-3 pb-3 select-none overflow-x-auto scrollbar-none">
+          <div className="flex gap-6 border-b border-[#bfc9c3]/10 pt-3 pb-3 select-none overflow-x-auto hide-scrollbar whitespace-nowrap">
             {categories.map(cat => (
               <button
                 key={cat.id}
@@ -359,7 +359,7 @@ export default function AddonsPage() {
 
       {addonsSubTab === 'catalog' ? (
         /* Bento Grid Content */
-        <div className="space-y-12 max-w-6xl pt-2 pb-24 animate-fade-in">
+        <div className="space-y-12 max-w-6xl pt-2 pb-6 lg:pb-24 animate-fade-in">
           {groupedCategories.map((catName) => {
             const catAddons = addons.filter(a => a.category === catName);
             const catId = catIdMap[catName];
@@ -384,7 +384,7 @@ export default function AddonsPage() {
                     return (
                       <div 
                         key={addon.id} 
-                        className={`bg-white rounded-2xl border p-5 flex flex-col justify-between transition-all duration-300 relative group overflow-hidden ${
+                        className={`bg-white rounded-2xl border p-4 lg:p-5 flex flex-col justify-between transition-all duration-300 relative group overflow-hidden ${
                           isActive 
                             ? 'border-[#003527]/30 shadow-[0_4px_20px_rgba(0,53,39,0.02)]' 
                             : 'border-[#bfc9c3]/30 hover:border-[#bfc9c3]/60'

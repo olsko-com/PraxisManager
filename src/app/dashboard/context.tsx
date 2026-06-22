@@ -76,6 +76,11 @@ interface DashboardContextProps {
   setIsNewInvoiceSheetOpen: (open: boolean) => void;
   isSheetOpen: boolean;
   setIsSheetOpen: (open: boolean) => void;
+  isGdprModalOpen: boolean;
+  setIsGdprModalOpen: (open: boolean) => void;
+  gdprClientId: string | null;
+  setGdprClientId: (id: string | null) => void;
+  openGdprModal: (clientId: string) => void;
 
   // Selected Profile/Appt/Mail references
   selectedAppointment: Appointment | null;
@@ -337,6 +342,15 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const [newClientPhone, setNewClientPhone] = useState('');
   const [newClientEmergency, setNewClientEmergency] = useState('');
   const [newClientNotes, setNewClientNotes] = useState('');
+
+  // GDPR Consent Modal state
+  const [isGdprModalOpen, setIsGdprModalOpen] = useState(false);
+  const [gdprClientId, setGdprClientId] = useState<string | null>(null);
+
+  const openGdprModal = (clientId: string) => {
+    setGdprClientId(clientId);
+    setIsGdprModalOpen(true);
+  };
 
   // Email sending modal states
   const [isMailModalOpen, setIsMailModalOpen] = useState(false);
@@ -1603,6 +1617,9 @@ Vielen Dank fuer Ihr Vertrauen!
       newAppHour, setNewAppHour,
       newAppClientId, setNewAppClientId,
       newAppServiceId, setNewAppServiceId,
+      isGdprModalOpen, setIsGdprModalOpen,
+      gdprClientId, setGdprClientId,
+      openGdprModal,
       selectedClientId, setSelectedClientId,
       clientSearch, setClientSearch,
       clientFilter, setClientFilter,

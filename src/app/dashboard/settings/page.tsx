@@ -192,7 +192,7 @@ export default function SettingsPage() {
   const isPasswordButtonDisabled = isSavingPassword || !currentPassword || !newPassword || !confirmNewPassword || (newPassword !== confirmNewPassword) || !checkPasswordStrength(newPassword).isValid;
 
   return (
-    <div className="flex-grow overflow-y-auto px-12 py-8 space-y-6 text-left font-sans select-none">
+    <div className="flex-grow overflow-y-auto px-4 lg:px-12 py-6 lg:py-8 space-y-6 text-left font-sans select-none pb-24 lg:pb-8">
       
       {/* Header and Tab Navigation Group */}
       <div className="space-y-3 flex-shrink-0">
@@ -203,7 +203,7 @@ export default function SettingsPage() {
         </div>
 
         {/* Tab Navigation (Apple style, matches Abrechnungen tab styles) */}
-        <div className="flex justify-between items-end border-b border-[#bfc9c3]/20 pb-0 select-none -mx-12 px-12 h-[42px] mb-8">
+        <div className="flex justify-between items-end border-b border-[#bfc9c3]/20 pb-0 select-none -mx-4 lg:-mx-12 px-4 lg:px-12 h-[42px] mb-8 overflow-x-auto hide-scrollbar whitespace-nowrap">
           <div className="flex gap-6">
             {tabs.map(tab => {
               const Icon = tab.icon;
@@ -249,7 +249,7 @@ export default function SettingsPage() {
               <form onSubmit={saveSettings} className="space-y-6">
                 
                 {/* Stammdaten */}
-                <div className="bg-white border border-[#bfc9c3]/30 rounded-2xl p-6 space-y-6 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)] transition-all duration-300 relative group overflow-hidden">
+                <div className="bg-white border border-[#bfc9c3]/30 rounded-2xl p-4 lg:p-6 space-y-6 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)] transition-all duration-300 relative group overflow-hidden">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200/40 shrink-0">
                       <User className="w-4 h-4 text-emerald-700" />
@@ -312,7 +312,7 @@ export default function SettingsPage() {
                 </div>
 
                 {/* Buchungslink */}
-                <div className="bg-white border border-[#bfc9c3]/30 rounded-2xl p-6 space-y-4 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)] transition-all duration-300 relative group overflow-hidden">
+                <div className="bg-white border border-[#bfc9c3]/30 rounded-2xl p-4 lg:p-6 space-y-4 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)] transition-all duration-300 relative group overflow-hidden">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-xl bg-blue-50 border border-blue-200/40 shrink-0">
                       <Globe className="w-4 h-4 text-blue-700" />
@@ -348,7 +348,7 @@ export default function SettingsPage() {
                 </div>
 
                 {/* Kalender & No-Show Schutz */}
-                <div className="bg-white border border-[#bfc9c3]/30 rounded-2xl p-6 space-y-5 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)] transition-all duration-300 relative group overflow-hidden">
+                <div className="bg-white border border-[#bfc9c3]/30 rounded-2xl p-4 lg:p-6 space-y-5 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)] transition-all duration-300 relative group overflow-hidden">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-xl bg-purple-50 border border-purple-200/40 shrink-0">
                       <Activity className="w-4 h-4 text-purple-700" />
@@ -456,7 +456,7 @@ export default function SettingsPage() {
             >
               <form onSubmit={handleSaveLegal} className="space-y-6">
                       {/* Impressum */}
-                <div className="bg-white border border-[#bfc9c3]/30 rounded-2xl p-6 space-y-4 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)] transition-all duration-300 relative group overflow-hidden">
+                <div className="bg-white border border-[#bfc9c3]/30 rounded-2xl p-4 lg:p-6 space-y-4 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)] transition-all duration-300 relative group overflow-hidden">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-xl bg-amber-50 border border-amber-200/40 shrink-0">
                       <Scale className="w-4 h-4 text-amber-700" />
@@ -536,7 +536,7 @@ export default function SettingsPage() {
                 </div>
 
                 {/* Datenschutz */}
-                <div className="bg-white border border-[#bfc9c3]/30 rounded-2xl p-6 space-y-4 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)] transition-all duration-300 relative group overflow-hidden">
+                <div className="bg-white border border-[#bfc9c3]/30 rounded-2xl p-4 lg:p-6 space-y-4 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)] transition-all duration-300 relative group overflow-hidden">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-xl bg-rose-50 border border-rose-200/40 shrink-0">
                       <Shield className="w-4 h-4 text-rose-700" />
@@ -646,7 +646,7 @@ export default function SettingsPage() {
               className="space-y-6"
             >
               {/* Passwort ändern */}
-              <div className="bg-white border border-[#bfc9c3]/30 rounded-2xl p-6 space-y-6 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)] transition-all duration-300 relative group overflow-hidden">
+              <div className="bg-white border border-[#bfc9c3]/30 rounded-2xl p-4 lg:p-6 space-y-6 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)] transition-all duration-300 relative group overflow-hidden">
                 <div className="flex items-center gap-3">
                   <div className="p-2 rounded-xl bg-rose-50 border border-rose-200/40 shrink-0">
                     <Lock className="w-4 h-4 text-rose-700" />
@@ -785,7 +785,7 @@ export default function SettingsPage() {
               </div>
 
               {/* Zwei-Faktor-Authentifizierung */}
-              <div className="bg-white border border-[#bfc9c3]/30 rounded-2xl p-6 space-y-4 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)] transition-all duration-300 relative group overflow-hidden">
+              <div className="bg-white border border-[#bfc9c3]/30 rounded-2xl p-4 lg:p-6 space-y-4 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)] transition-all duration-300 relative group overflow-hidden">
                 <div className="flex justify-between items-start">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-xl bg-teal-50 border border-teal-200/40 shrink-0">
