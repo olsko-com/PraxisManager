@@ -211,13 +211,13 @@ export default function ClientsPage() {
   } = useDashboard();
 
   const [isDetailsMenuOpen, setIsDetailsMenuOpen] = React.useState(false);
-  const [mobileView, setMobileView] = React.useState<'list' | 'detail'>('list');
+  const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
   const [showGdprTooltip, setShowGdprTooltip] = React.useState(false);
 
-  // Auto-switch to detail view when a client is selected, especially on mobile/tablet redirects
+  // Auto-close sidebar when selected client changes
   React.useEffect(() => {
     if (selectedClientId) {
-      setMobileView('detail');
+      setIsSidebarOpen(false);
     }
   }, [selectedClientId]);
 
@@ -225,9 +225,15 @@ export default function ClientsPage() {
   const clientSoapNotes = soapNotes.filter(n => n.clientId === selectedClientId);
 
   return (
-    <div className="relative flex-grow bg-[#eef0ed] rounded-none md:rounded-[24px] border-0 md:border border-[#003527]/10 m-0 md:my-4 md:mr-4 md:ml-4 flex p-4 md:p-6 gap-0 md:gap-6 h-[calc(100vh-64px)] md:h-[calc(100vh-32px)] overflow-hidden shadow-none transition-all duration-300">
+    <div className="relative flex-grow bg-[#eef0ed] rounded-none lg:rounded-[24px] border-0 lg:border border-[#003527]/10 m-0 lg:my-4 lg:mr-4 lg:ml-4 flex p-0 lg:p-6 gap-0 lg:gap-6 h-[calc(100vh-64px)] lg:h-[calc(100vh-32px)] overflow-hidden shadow-none transition-all duration-300">
       {/* Left Side: Client List as a secondary Sidebar */}
-      <div className={`w-full md:w-72 lg:w-80 bg-white border border-[#003527]/10 rounded-[20px] flex flex-col z-10 flex-shrink-0 overflow-hidden ${mobileView === 'list' || clients.length === 0 ? 'flex' : 'hidden md:flex'}`}>
+      <div className={`absolute lg:relative top-0 bottom-0 left-0 z-45 w-80 max-w-[85vw] lg:w-80 lg:max-w-none bg-white border-r lg:border border-[#003527]/10 rounded-r-[20px] lg:rounded-[20px] flex flex-col flex-shrink-0 overflow-hidden h-full transition-transform duration-300 ease-in-out lg:translate-x-0 lg:flex ${
+        !currentClient
+          ? 'translate-x-0 w-full rounded-[20px]'
+          : isSidebarOpen
+            ? 'translate-x-0 shadow-2xl'
+            : '-translate-x-full lg:translate-x-0'
+      }`}>
         <div className="p-6 pt-8 space-y-4">
           <div className="flex justify-between items-center">
             {(() => {
@@ -360,7 +366,7 @@ export default function ClientsPage() {
                 isSelected={selectedClientId === c.id}
                 onSelect={() => {
                   setSelectedClientId(c.id);
-                  setMobileView('detail');
+                  setIsSidebarOpen(false);
                 }}
                 onToggleFavorite={() => {
                   toggleClientFavorite(c.id);
@@ -404,8 +410,16 @@ export default function ClientsPage() {
         </div>
       </div>
 
+      {/* Backdrop for sliding sidebar on mobile/tablet */}
+      {isSidebarOpen && currentClient && (
+        <div 
+          className="fixed inset-0 bg-[#003527]/20 backdrop-blur-sm z-40 lg:hidden cursor-pointer"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       {/* Right Side: Profile Details */}
-      <div className={`flex-grow flex flex-col min-h-0 overflow-hidden ${mobileView === 'detail' ? 'flex' : 'hidden md:flex'}`}>
+      <div className={`flex-grow flex flex-col min-h-0 overflow-hidden ${currentClient ? 'flex' : 'hidden lg:flex'}`}>
         {currentClient ? (
           <div className="flex-grow flex flex-col min-h-0">
             {/* Patient Header */}
@@ -413,8 +427,8 @@ export default function ClientsPage() {
               <div className="flex flex-col text-left">
                 {/* Mobile Back Button */}
                 <button
-                  onClick={() => setMobileView('list')}
-                  className="md:hidden inline-flex items-center gap-1 text-xs font-bold text-[#003527]/70 hover:text-[#003527] cursor-pointer bg-transparent border-none p-0 outline-none mb-3 self-start"
+                  onClick={() => setIsSidebarOpen(true)}
+                  className="lg:hidden inline-flex items-center gap-1 text-xs font-bold text-[#003527]/70 hover:text-[#003527] cursor-pointer bg-transparent border-none p-0 outline-none mb-3 self-start"
                 >
                   <ChevronLeft className="w-4 h-4" /> Patientenliste
                 </button>
