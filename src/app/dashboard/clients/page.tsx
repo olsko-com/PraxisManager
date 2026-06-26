@@ -4,7 +4,7 @@ import React from 'react';
 import { 
   Plus, Search, Mail, Calendar as CalendarIcon, Paperclip, FileText, 
   Edit2, Trash2, Star, Flag, ChevronLeft, ChevronRight, MoreVertical, User, Phone, Heart, Info,
-  Check, Printer, Download, Briefcase, MapPin, Smile, ChevronDown, ChevronUp
+  Check, Printer, Download, Briefcase, MapPin, Smile, ChevronDown, ChevronUp, Archive, RotateCcw, ShieldAlert
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDashboard } from '../context';
@@ -191,6 +191,106 @@ function ClientListItem({
   );
 }
 
+interface DeleteClientConfirmationModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => Promise<void>;
+  clientName: string;
+}
+
+function DeleteClientConfirmationModal({ isOpen, onClose, onConfirm, clientName }: DeleteClientConfirmationModalProps) {
+  const [checked1, setChecked1] = React.useState(false);
+  const [checked2, setChecked2] = React.useState(false);
+  const [isDeleting, setIsDeleting] = React.useState(false);
+
+  if (!isOpen) return null;
+
+  const handleConfirm = async () => {
+    if (!checked1 || !checked2) return;
+    setIsDeleting(true);
+    await onConfirm();
+    setIsDeleting(false);
+    onClose();
+  };
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        onClick={onClose}
+        className="fixed inset-0 bg-black/35 backdrop-blur-sm z-[200] pointer-events-auto"
+      />
+
+      {/* Modal */}
+      <div className="fixed inset-0 z-[210] flex items-center justify-center p-4 pointer-events-none">
+        <div className="bg-white border border-[#bfc9c3]/30 w-full max-w-md rounded-2xl shadow-xl p-6 pointer-events-auto flex flex-col text-left space-y-5">
+          {/* Header */}
+          <div className="flex items-start gap-3">
+            <div className="p-2 bg-rose-50 rounded-xl text-rose-600">
+              <ShieldAlert className="w-5 h-5" />
+            </div>
+            <div className="space-y-1 text-left">
+              <h3 className="text-sm font-bold text-zinc-900">Patient endgültig löschen?</h3>
+              <p className="text-[10px] text-zinc-400 font-semibold leading-relaxed">
+                Sie sind im Begriff, die Akte von <span className="text-[#003527] font-bold">{clientName}</span> unwiderruflich zu löschen.
+              </p>
+            </div>
+          </div>
+
+          {/* Warning Message */}
+          <div className="bg-rose-50/50 border border-rose-100 rounded-xl p-4 text-[11px] text-rose-800 leading-relaxed font-semibold">
+            Bitte beachten Sie die gesetzlichen Aufbewahrungsfristen. Alternativ können Sie die Akte auch einfach archiviert belassen.
+          </div>
+
+          {/* Checkboxes */}
+          <div className="space-y-3 pt-1">
+            <label className="flex items-start gap-3 cursor-pointer select-none group text-left">
+              <input
+                type="checkbox"
+                checked={checked1}
+                onChange={(e) => setChecked1(e.target.checked)}
+                className="mt-0.5 rounded border-[#bfc9c3]/50 text-[#003527] focus:ring-[#003527] w-4 h-4 cursor-pointer"
+              />
+              <span className="text-[10.5px] text-zinc-600 font-semibold leading-relaxed group-hover:text-zinc-800 transition-colors">
+                Ich bestätige, dass die gesetzliche Aufbewahrungsfrist von 10 Jahren (§ 630f BGB & § 147 AO) für diesen Patienten abgelaufen ist.
+              </span>
+            </label>
+
+            <label className="flex items-start gap-3 cursor-pointer select-none group text-left">
+              <input
+                type="checkbox"
+                checked={checked2}
+                onChange={(e) => setChecked2(e.target.checked)}
+                className="mt-0.5 rounded border-[#bfc9c3]/50 text-[#003527] focus:ring-[#003527] w-4 h-4 cursor-pointer"
+              />
+              <span className="text-[10.5px] text-zinc-600 font-semibold leading-relaxed group-hover:text-zinc-800 transition-colors">
+                Mir ist bewusst, dass alle Notizen, Termine und Dokumente permanent gelöscht werden und dies nicht rückgängig gemacht werden kann.
+              </span>
+            </label>
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-2.5 pt-2">
+            <button
+              onClick={onClose}
+              className="flex-1 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer active:scale-[0.99] border-none outline-none text-center"
+            >
+              Abbrechen
+            </button>
+            <button
+              onClick={handleConfirm}
+              disabled={!checked1 || !checked2 || isDeleting}
+              className="flex-1 bg-rose-600 hover:bg-rose-700 disabled:opacity-40 text-white py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer active:scale-[0.99] border-none outline-none text-center shadow-md shadow-rose-600/10 flex items-center justify-center gap-1.5"
+            >
+              {isDeleting ? 'Lösche...' : 'Endgültig löschen'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
 export default function ClientsPage() {
   const {
     clients,
@@ -200,6 +300,8 @@ export default function ClientsPage() {
     openGdprModal,
     handleClientContextMenu,
     deleteClient,
+    archiveClient,
+    restoreClient,
     updateClientDetails,
     markInvoicePaid,
     sendInvoiceEmail,
@@ -250,6 +352,15 @@ export default function ClientsPage() {
 
   const [isDetailsMenuOpen, setIsDetailsMenuOpen] = React.useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = React.useState(false);
+  const [clientToDelete, setClientToDelete] = React.useState<Client | null>(null);
+
+  const handleConfirmDelete = async () => {
+    if (clientToDelete) {
+      await deleteClient(clientToDelete.id);
+      setClientToDelete(null);
+    }
+  };
   const [showGdprTooltip, setShowGdprTooltip] = React.useState(false);
   const [activeTab, setActiveTab] = React.useState<'overview' | 'anamnesis' | 'soap' | 'billing'>('overview');
 
@@ -385,15 +496,20 @@ export default function ClientsPage() {
         <div className="p-6 pt-8 space-y-4">
           <div className="flex justify-between items-center">
             {(() => {
-              const count = clients.filter(c => {
-                if (clientFilter === 'upcoming') {
-                  return appointments.some(a => a.clientId === c.id && new Date(a.startTime) >= new Date(new Date().setHours(0,0,0,0)));
-                }
-                if (clientFilter === 'invoices') {
-                  return invoices.some(i => i.clientId === c.id && (i.status === 'open' || i.status === 'overdue'));
-                }
-                return true;
-              }).length;
+              const count = clients
+                .filter(c => {
+                  if (clientFilter === 'archived') return c.isArchived;
+                  return !c.isArchived;
+                })
+                .filter(c => {
+                  if (clientFilter === 'upcoming') {
+                    return appointments.some(a => a.clientId === c.id && new Date(a.startTime) >= new Date(new Date().setHours(0,0,0,0)));
+                  }
+                  if (clientFilter === 'invoices') {
+                    return invoices.some(i => i.clientId === c.id && (i.status === 'open' || i.status === 'overdue'));
+                  }
+                  return true;
+                }).length;
               return <h3 className="text-sm font-bold text-[#003527]">Klienten ({count})</h3>;
             })()}
             <div className="flex items-center gap-1">
@@ -466,6 +582,16 @@ export default function ClientsPage() {
                   >
                     Offene Abrechnungen
                   </button>
+                  <button
+                    onClick={() => setClientFilter('archived')}
+                    className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                      clientFilter === 'archived'
+                        ? 'bg-[#003527] text-white'
+                        : 'bg-[#f3f4f3] text-[#404944] hover:bg-[#003527]/5 hover:text-[#003527]'
+                    }`}
+                  >
+                    Archiv
+                  </button>
                 </div>
               </motion.div>
             )}
@@ -476,6 +602,12 @@ export default function ClientsPage() {
           {(() => {
             const filtered = clients
               .filter(c => c.name.toLowerCase().includes(clientSearch.toLowerCase()))
+              .filter(c => {
+                if (clientFilter === 'archived') {
+                  return c.isArchived;
+                }
+                return !c.isArchived;
+              })
               .filter(c => {
                 if (clientFilter === 'upcoming') {
                   return appointments.some(a => a.clientId === c.id && new Date(a.startTime) >= new Date(new Date().setHours(0,0,0,0)));
@@ -535,11 +667,12 @@ export default function ClientsPage() {
                   handleClientContextMenu(e, c);
                 }}
                 onDelete={async () => {
-                  if (confirm(`Möchtest du ${c.name} wirklich löschen?`)) {
-                    await deleteClient(c.id);
-                    if (selectedClientId === c.id) {
-                      const remaining = clients.filter(cl => cl.id !== c.id);
-                      setSelectedClientId(remaining.length > 0 ? remaining[0].id : '');
+                  if (c.isArchived) {
+                    setClientToDelete(c);
+                    setIsDeleteConfirmOpen(true);
+                  } else {
+                    if (confirm(`Möchtest du ${c.name} wirklich archivieren?`)) {
+                      await archiveClient(c.id);
                     }
                   }
                 }}
@@ -1121,23 +1254,50 @@ export default function ClientsPage() {
                   )}
 
                   {/* Danger Zone */}
-                  <div className="pt-6 border-t border-rose-200/30 flex justify-between items-center text-left">
-                    <div>
-                      <h4 className="text-[10px] font-bold text-rose-800 uppercase tracking-widest">Gefahrenbereich</h4>
-                      <p className="text-[11px] text-zinc-400 mt-0.5">Diesen Klienten unwiderruflich aus der Datenbank entfernen.</p>
+                  {currentClient.isArchived ? (
+                    <div className="pt-6 border-t border-rose-200/30 flex flex-col sm:flex-row gap-4 justify-between sm:items-center text-left">
+                      <div>
+                        <h4 className="text-[10px] font-bold text-rose-800 uppercase tracking-widest font-mono">Gefahrenbereich</h4>
+                        <p className="text-[11px] text-zinc-400 mt-0.5">Diesen Klienten wiederherstellen oder endgültig aus der Datenbank entfernen.</p>
+                      </div>
+                      <div className="flex gap-2.5">
+                        <button
+                          onClick={async () => {
+                            await restoreClient(currentClient.id);
+                          }}
+                          className="bg-zinc-50 hover:bg-zinc-100 text-zinc-700 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer border border-zinc-200 shadow-sm"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" /> Wiederherstellen
+                        </button>
+                        <button
+                          onClick={() => {
+                            setClientToDelete(currentClient);
+                            setIsDeleteConfirmOpen(true);
+                          }}
+                          className="bg-rose-50 hover:bg-rose-100 text-rose-600 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer border border-rose-200/30 shadow-sm"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" /> Endgültig löschen
+                        </button>
+                      </div>
                     </div>
-                    <button
-                      onClick={async () => {
-                        if (confirm('Möchtest du diesen Klienten wirklich löschen?')) {
-                          await deleteClient(currentClient.id);
-                          setSelectedClientId(clients.find(c => c.id !== currentClient.id)?.id || '');
-                        }
-                      }}
-                      className="bg-rose-50 hover:bg-rose-100 text-rose-600 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer border border-rose-200/30 shadow-sm"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" /> Klient löschen
-                    </button>
-                  </div>
+                  ) : (
+                    <div className="pt-6 border-t border-rose-200/30 flex justify-between items-center text-left">
+                      <div>
+                        <h4 className="text-[10px] font-bold text-[#003527] uppercase tracking-widest font-mono">Klient archivieren</h4>
+                        <p className="text-[11px] text-zinc-400 mt-0.5">Verschiebe diesen Klienten ins Archiv. Er kann dort jederzeit wiederhergestellt werden.</p>
+                      </div>
+                      <button
+                        onClick={async () => {
+                          if (confirm('Möchtest du diesen Klienten wirklich archivieren?')) {
+                            await archiveClient(currentClient.id);
+                          }
+                        }}
+                        className="bg-zinc-50 hover:bg-zinc-100 text-zinc-700 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer border border-zinc-200 shadow-sm"
+                      >
+                        <Archive className="w-3.5 h-3.5 text-zinc-500" /> Archivieren
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -1679,6 +1839,18 @@ export default function ClientsPage() {
           </div>
         )}
       </div>
+
+      {clientToDelete && (
+        <DeleteClientConfirmationModal
+          isOpen={isDeleteConfirmOpen}
+          onClose={() => {
+            setIsDeleteConfirmOpen(false);
+            setClientToDelete(null);
+          }}
+          onConfirm={handleConfirmDelete}
+          clientName={clientToDelete.name}
+        />
+      )}
     </div>
   );
 }

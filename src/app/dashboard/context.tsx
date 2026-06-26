@@ -99,8 +99,8 @@ interface DashboardContextProps {
   setSelectedClientId: (id: string) => void;
   clientSearch: string;
   setClientSearch: (search: string) => void;
-  clientFilter: 'all' | 'upcoming' | 'invoices';
-  setClientFilter: (filter: 'all' | 'upcoming' | 'invoices') => void;
+  clientFilter: 'all' | 'upcoming' | 'invoices' | 'archived';
+  setClientFilter: (filter: 'all' | 'upcoming' | 'invoices' | 'archived') => void;
   isFilterMenuOpen: boolean;
   setIsFilterMenuOpen: (open: boolean) => void;
 
@@ -193,6 +193,8 @@ interface DashboardContextProps {
     city?: string
   ) => Promise<boolean>;
   deleteClient: (id: string) => Promise<void>;
+  archiveClient: (id: string) => Promise<void>;
+  restoreClient: (id: string) => Promise<void>;
   updateClientName: (id: string, name: string) => Promise<void>;
   updateClientDetails: (id: string, updatedFields: Partial<Client>) => Promise<boolean>;
   deleteService: (id: string) => Promise<void>;
@@ -336,7 +338,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   // Selected client profile values (under CRM tab)
   const [selectedClientId, setSelectedClientId] = useState<string>('c1');
   const [clientSearch, setClientSearch] = useState('');
-  const [clientFilter, setClientFilter] = useState<'all' | 'upcoming' | 'invoices'>('all');
+  const [clientFilter, setClientFilter] = useState<'all' | 'upcoming' | 'invoices' | 'archived'>('all');
   const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
   const [soapEditId, setSoapEditId] = useState<string | null>(null);
   const [soapSubjective, setSoapSubjective] = useState('');
@@ -453,6 +455,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
           const favs = JSON.parse(localStorage.getItem(`client_favs_${therapistId}`) || '[]');
           const flags = JSON.parse(localStorage.getItem(`client_flags_${therapistId}`) || '[]');
           const gdpr = JSON.parse(localStorage.getItem(`client_gdpr_${therapistId}`) || '[]');
+          const archived = JSON.parse(localStorage.getItem(`client_archived_${therapistId}`) || '[]');
 
           loadedClients = dbClients.map(c => {
             let salutation = 'Keine';
@@ -496,6 +499,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
               createdAt: c.created_at,
               isFavorite: favs.includes(c.id),
               isFlagged: flags.includes(c.id),
+              isArchived: archived.includes(c.id),
               gdprAccepted: c.gdpr_accepted || gdpr.includes(c.id),
               gdprToken: c.gdpr_token,
               gdprTokenExpiresAt: c.gdpr_token_expires_at,
@@ -826,7 +830,39 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     return true;
   };
 
-  // Deleting Patient
+  // Archiving Patient
+  const archiveClient = async (id: string) => {
+    if (!therapistId) return;
+    const archived = JSON.parse(localStorage.getItem(`client_archived_${therapistId}`) || '[]');
+    if (!archived.includes(id)) {
+      const newArchived = [...archived, id];
+      localStorage.setItem(`client_archived_${therapistId}`, JSON.stringify(newArchived));
+      setClients(prev => prev.map(cl => cl.id === id ? { ...cl, isArchived: true } : cl));
+      
+      // Select another client if the currently selected one was archived
+      setSelectedClientId(prev => {
+        if (prev === id) {
+          const remaining = clients.filter(c => c.id !== id && !JSON.parse(localStorage.getItem(`client_archived_${therapistId}`) || '[]').includes(c.id));
+          return remaining.length > 0 ? remaining[0].id : '';
+        }
+        return prev;
+      });
+      
+      showToast('Klient erfolgreich archiviert.', 'success');
+    }
+  };
+
+  // Restoring Patient from Archive
+  const restoreClient = async (id: string) => {
+    if (!therapistId) return;
+    const archived = JSON.parse(localStorage.getItem(`client_archived_${therapistId}`) || '[]');
+    const newArchived = archived.filter((f: string) => f !== id);
+    localStorage.setItem(`client_archived_${therapistId}`, JSON.stringify(newArchived));
+    setClients(prev => prev.map(cl => cl.id === id ? { ...cl, isArchived: false } : cl));
+    showToast('Klient erfolgreich wiederhergestellt.', 'success');
+  };
+
+  // Deleting Patient Permanently
   const deleteClient = async (id: string) => {
     if (!therapistId) return;
     const { error } = await supabase
@@ -845,9 +881,11 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(`client_flags_${therapistId}`, JSON.stringify(flags.filter((f: string) => f !== id)));
     const gdpr = JSON.parse(localStorage.getItem(`client_gdpr_${therapistId}`) || '[]');
     localStorage.setItem(`client_gdpr_${therapistId}`, JSON.stringify(gdpr.filter((f: string) => f !== id)));
+    const archived = JSON.parse(localStorage.getItem(`client_archived_${therapistId}`) || '[]');
+    localStorage.setItem(`client_archived_${therapistId}`, JSON.stringify(archived.filter((f: string) => f !== id)));
 
     setClients(prev => prev.filter(cl => cl.id !== id));
-    showToast('Klient erfolgreich gelöscht.', 'success');
+    showToast('Klient endgültig gelöscht.', 'success');
   };
 
   // Update Patient Name
@@ -1831,6 +1869,8 @@ Vielen Dank fuer Ihr Vertrauen!
       saveSettings,
       handleCreateClient,
       deleteClient,
+      archiveClient,
+      restoreClient,
       updateClientName,
       updateClientDetails,
       toggleClientFavorite,

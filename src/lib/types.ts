@@ -12,6 +12,7 @@ export interface Client {
   createdAt: string;
   isFavorite?: boolean;
   isFlagged?: boolean;
+  isArchived?: boolean;
   gdprAccepted?: boolean;
   gdprToken?: string | null;
   gdprTokenExpiresAt?: string | null;

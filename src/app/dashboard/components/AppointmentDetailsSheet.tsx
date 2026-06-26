@@ -42,6 +42,7 @@ export default function AppointmentDetailsSheet() {
     deleteService,
     updateService,
     deleteClient,
+    archiveClient,
     updateClientName,
     setIsNewClientModalOpen,
     setNewClientName,
@@ -894,11 +895,13 @@ export default function AppointmentDetailsSheet() {
           <div className="py-1 flex flex-col">
             <button
               type="button"
-              onClick={() => {
-                if (confirm(`Möchtest du "${dropdownContextMenu.name}" wirklich unwiderruflich löschen?`)) {
-                  if (dropdownContextMenu.type === 'client') {
-                    deleteClient(dropdownContextMenu.id);
-                  } else {
+              onClick={async () => {
+                if (dropdownContextMenu.type === 'client') {
+                  if (confirm(`Möchtest du "${dropdownContextMenu.name}" wirklich archivieren?`)) {
+                    await archiveClient(dropdownContextMenu.id);
+                  }
+                } else {
+                  if (confirm(`Möchtest du "${dropdownContextMenu.name}" wirklich unwiderruflich löschen?`)) {
                     deleteService(dropdownContextMenu.id);
                   }
                 }
@@ -907,7 +910,7 @@ export default function AppointmentDetailsSheet() {
               className="w-full text-left px-3 py-2 rounded-xl hover:bg-rose-50 text-rose-600 font-bold transition-all flex items-center gap-2 cursor-pointer border-none bg-transparent"
             >
               <Trash2 className="w-3.5 h-3.5 text-rose-600" />
-              Löschen
+              {dropdownContextMenu.type === 'client' ? 'Archivieren' : 'Löschen'}
             </button>
           </div>
         </div>
