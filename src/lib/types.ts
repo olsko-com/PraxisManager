@@ -18,6 +18,10 @@ export interface Client {
   gdprSignature?: string | null;
   gdprSignedAt?: string | null;
   address?: string;
+  street?: string;
+  houseNumber?: string;
+  zipCode?: string;
+  city?: string;
   occupation?: string;
   maritalStatus?: string;
 }

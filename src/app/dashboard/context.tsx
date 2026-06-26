@@ -186,7 +186,11 @@ interface DashboardContextProps {
     notes: string,
     address?: string,
     occupation?: string,
-    maritalStatus?: string
+    maritalStatus?: string,
+    street?: string,
+    houseNumber?: string,
+    zipCode?: string,
+    city?: string
   ) => Promise<boolean>;
   deleteClient: (id: string) => Promise<void>;
   updateClientName: (id: string, name: string) => Promise<void>;
@@ -498,6 +502,10 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
               gdprSignature: c.gdpr_signature,
               gdprSignedAt: c.gdpr_signed_at,
               address: c.address || '',
+              street: c.street || '',
+              houseNumber: c.house_number || '',
+              zipCode: c.zip_code || '',
+              city: c.city || '',
               occupation: c.occupation || '',
               maritalStatus: c.marital_status || ''
             };
@@ -754,7 +762,11 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     notes: string,
     address: string = '',
     occupation: string = '',
-    maritalStatus: string = ''
+    maritalStatus: string = '',
+    street: string = '',
+    houseNumber: string = '',
+    zipCode: string = '',
+    city: string = ''
   ): Promise<boolean> => {
     if (!firstName || !lastName || !therapistId) return false;
 
@@ -775,6 +787,10 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       isFlagged: false,
       gdprAccepted: false,
       address,
+      street,
+      houseNumber,
+      zipCode,
+      city,
       occupation,
       maritalStatus
     };
@@ -791,6 +807,10 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         emergency_contact: emergencyContact || '',
         notes: notes || '',
         address,
+        street,
+        house_number: houseNumber,
+        zip_code: zipCode,
+        city,
         occupation,
         marital_status: maritalStatus
       });
@@ -878,6 +898,10 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     if (updatedFields.emergencyContact !== undefined) dbUpdate.emergency_contact = updatedFields.emergencyContact;
     if (updatedFields.notes !== undefined) dbUpdate.notes = updatedFields.notes;
     if (updatedFields.address !== undefined) dbUpdate.address = updatedFields.address;
+    if (updatedFields.street !== undefined) dbUpdate.street = updatedFields.street;
+    if (updatedFields.houseNumber !== undefined) dbUpdate.house_number = updatedFields.houseNumber;
+    if (updatedFields.zipCode !== undefined) dbUpdate.zip_code = updatedFields.zipCode;
+    if (updatedFields.city !== undefined) dbUpdate.city = updatedFields.city;
     if (updatedFields.occupation !== undefined) dbUpdate.occupation = updatedFields.occupation;
     if (updatedFields.maritalStatus !== undefined) dbUpdate.marital_status = updatedFields.maritalStatus;
     if (updatedFields.gdprAccepted !== undefined) dbUpdate.gdpr_accepted = updatedFields.gdprAccepted;

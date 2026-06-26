@@ -233,6 +233,10 @@ export default function ClientsPage() {
   const [editPhone, setEditPhone] = React.useState('');
   const [editEmail, setEditEmail] = React.useState('');
   const [editAddress, setEditAddress] = React.useState('');
+  const [editStreet, setEditStreet] = React.useState('');
+  const [editHouseNumber, setEditHouseNumber] = React.useState('');
+  const [editZipCode, setEditZipCode] = React.useState('');
+  const [editCity, setEditCity] = React.useState('');
   const [editOccupation, setEditOccupation] = React.useState('');
   const [editMaritalStatus, setEditMaritalStatus] = React.useState('');
   const [editNotes, setEditNotes] = React.useState('');
@@ -258,6 +262,10 @@ export default function ClientsPage() {
     setEditPhone(currentClient.phone || '');
     setEditEmail(currentClient.email || '');
     setEditAddress(currentClient.address || '');
+    setEditStreet(currentClient.street || '');
+    setEditHouseNumber(currentClient.houseNumber || '');
+    setEditZipCode(currentClient.zipCode || '');
+    setEditCity(currentClient.city || '');
     setEditOccupation(currentClient.occupation || '');
     setEditMaritalStatus(currentClient.maritalStatus || '');
     setEditNotes(currentClient.notes || '');
@@ -273,7 +281,11 @@ export default function ClientsPage() {
       birthday: editBirthday,
       email: editEmail,
       phone: editPhone,
-      address: editAddress,
+      address: '', // clear legacy address text field
+      street: editStreet,
+      houseNumber: editHouseNumber,
+      zipCode: editZipCode,
+      city: editCity,
       occupation: editOccupation,
       maritalStatus: editMaritalStatus,
       notes: editNotes
@@ -838,15 +850,48 @@ export default function ClientsPage() {
                               />
                             </div>
 
-                            {/* Anschrift */}
-                            <div className="space-y-1">
-                              <label className="block text-[10px] font-semibold text-zinc-500">Anschrift</label>
-                              <input
-                                type="text"
-                                value={editAddress}
-                                onChange={(e) => setEditAddress(e.target.value)}
-                                className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-semibold text-xs text-[#003527] outline-none transition-all"
-                              />
+                            {/* Straße & Hausnummer */}
+                            <div className="grid grid-cols-3 gap-3">
+                              <div className="col-span-2 space-y-1">
+                                <label className="block text-[10px] font-semibold text-zinc-500">Straße</label>
+                                <input
+                                  type="text"
+                                  value={editStreet}
+                                  onChange={(e) => setEditStreet(e.target.value)}
+                                  className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-semibold text-xs text-[#003527] outline-none transition-all"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <label className="block text-[10px] font-semibold text-zinc-500">Hausnr.</label>
+                                <input
+                                  type="text"
+                                  value={editHouseNumber}
+                                  onChange={(e) => setEditHouseNumber(e.target.value)}
+                                  className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-semibold text-xs text-[#003527] outline-none transition-all"
+                                />
+                              </div>
+                            </div>
+
+                            {/* PLZ & Ort */}
+                            <div className="grid grid-cols-3 gap-3">
+                              <div className="space-y-1">
+                                <label className="block text-[10px] font-semibold text-zinc-500">PLZ</label>
+                                <input
+                                  type="text"
+                                  value={editZipCode}
+                                  onChange={(e) => setEditZipCode(e.target.value)}
+                                  className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-semibold text-xs text-[#003527] outline-none transition-all"
+                                />
+                              </div>
+                              <div className="col-span-2 space-y-1">
+                                <label className="block text-[10px] font-semibold text-zinc-500">Ort</label>
+                                <input
+                                  type="text"
+                                  value={editCity}
+                                  onChange={(e) => setEditCity(e.target.value)}
+                                  className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-semibold text-xs text-[#003527] outline-none transition-all"
+                                />
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -962,7 +1007,15 @@ export default function ClientsPage() {
                               <div className="space-y-0.5">
                                 <span className="block text-[10px] font-medium text-zinc-400">Anschrift</span>
                                 <span className="block text-xs font-extrabold text-[#003527]">
-                                  {currentClient.address || 'Keine Anschrift hinterlegt'}
+                                  {currentClient.street || currentClient.city ? (
+                                    <>
+                                      {currentClient.street} {currentClient.houseNumber}
+                                      {(currentClient.street || currentClient.houseNumber) && (currentClient.zipCode || currentClient.city) ? ', ' : ''}
+                                      {currentClient.zipCode} {currentClient.city}
+                                    </>
+                                  ) : (
+                                    currentClient.address || 'Keine Anschrift hinterlegt'
+                                  )}
                                 </span>
                               </div>
                             </div>

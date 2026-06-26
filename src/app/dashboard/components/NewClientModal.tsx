@@ -19,7 +19,10 @@ export default function NewClientModal() {
   const [birthday, setBirthday] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
-  const [address, setAddress] = useState('');
+  const [street, setStreet] = useState('');
+  const [houseNumber, setHouseNumber] = useState('');
+  const [zipCode, setZipCode] = useState('');
+  const [city, setCity] = useState('');
   const [occupation, setOccupation] = useState('');
   const [maritalStatus, setMaritalStatus] = useState('');
   const [notes, setNotes] = useState('');
@@ -41,9 +44,13 @@ export default function NewClientModal() {
       phone,
       '', // emergency contact is blank
       notes,
-      address,
+      '', // address (legacy field)
       occupation,
-      maritalStatus
+      maritalStatus,
+      street.trim(),
+      houseNumber.trim(),
+      zipCode.trim(),
+      city.trim()
     );
 
     setIsSubmitting(false);
@@ -55,7 +62,10 @@ export default function NewClientModal() {
       setBirthday('');
       setPhone('');
       setEmail('');
-      setAddress('');
+      setStreet('');
+      setHouseNumber('');
+      setZipCode('');
+      setCity('');
       setOccupation('');
       setMaritalStatus('');
       setNotes('');
@@ -212,16 +222,52 @@ export default function NewClientModal() {
                   </div>
                 </div>
 
-                {/* Anschrift */}
-                <div className="space-y-1.5 text-left">
-                  <label className="block text-[10px] font-semibold text-zinc-500">Anschrift</label>
-                  <input
-                    type="text"
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    placeholder="Straße, Hausnummer, PLZ & Ort"
-                    className="w-full bg-zinc-100/60 border border-transparent focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3.5 py-2.5 font-semibold text-xs text-[#003527] outline-none transition-all placeholder-zinc-400/70"
-                  />
+                {/* Straße & Hausnummer */}
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="col-span-2 space-y-1.5 text-left">
+                    <label className="block text-[10px] font-semibold text-zinc-500">Straße</label>
+                    <input
+                      type="text"
+                      value={street}
+                      onChange={(e) => setStreet(e.target.value)}
+                      placeholder="z.B. Hauptstraße"
+                      className="w-full bg-zinc-100/60 border border-transparent focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3.5 py-2.5 font-semibold text-xs text-[#003527] outline-none transition-all placeholder-zinc-400/70"
+                    />
+                  </div>
+                  <div className="space-y-1.5 text-left">
+                    <label className="block text-[10px] font-semibold text-zinc-500">Hausnr.</label>
+                    <input
+                      type="text"
+                      value={houseNumber}
+                      onChange={(e) => setHouseNumber(e.target.value)}
+                      placeholder="z.B. 12"
+                      className="w-full bg-zinc-100/60 border border-transparent focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3.5 py-2.5 font-semibold text-xs text-[#003527] outline-none transition-all placeholder-zinc-400/70"
+                    />
+                  </div>
+                </div>
+
+                {/* PLZ & Ort */}
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-1.5 text-left">
+                    <label className="block text-[10px] font-semibold text-zinc-500">PLZ</label>
+                    <input
+                      type="text"
+                      value={zipCode}
+                      onChange={(e) => setZipCode(e.target.value)}
+                      placeholder="z.B. 10117"
+                      className="w-full bg-zinc-100/60 border border-transparent focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3.5 py-2.5 font-semibold text-xs text-[#003527] outline-none transition-all placeholder-zinc-400/70"
+                    />
+                  </div>
+                  <div className="col-span-2 space-y-1.5 text-left">
+                    <label className="block text-[10px] font-semibold text-zinc-500">Ort</label>
+                    <input
+                      type="text"
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                      placeholder="z.B. Berlin"
+                      className="w-full bg-zinc-100/60 border border-transparent focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3.5 py-2.5 font-semibold text-xs text-[#003527] outline-none transition-all placeholder-zinc-400/70"
+                    />
+                  </div>
                 </div>
 
                 {/* Derzeitige Beschäftigung */}
