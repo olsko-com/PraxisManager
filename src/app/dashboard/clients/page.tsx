@@ -564,7 +564,7 @@ export default function ClientsPage() {
         {currentClient ? (
           <div className="flex-grow flex flex-col min-h-0">
             {/* Klient Header */}
-            <div className="border-b border-[#bfc9c3]/30 px-4 md:px-6 pt-6 pb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-transparent z-20 flex-shrink-0 text-left">
+            <div className="border-b border-[#bfc9c3]/30 mx-4 md:mx-6 pt-6 pb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-transparent z-20 flex-shrink-0 text-left px-0">
               <div className="flex flex-col text-left">
                 <div className="text-left">
                   <h3 className="text-xl font-bold text-[#043F2D]">
@@ -723,12 +723,14 @@ export default function ClientsPage() {
             </div>
 
             {/* Sub-tab navigation */}
-            <div className="flex border-b border-[#bfc9c3]/30 px-4 md:px-6 bg-transparent select-none z-20 flex-shrink-0">
-              {(['overview', 'anamnesis', 'soap', 'billing'] as const).map((tab) => (
+            <div className="flex border-b border-[#bfc9c3]/30 mx-4 md:mx-6 bg-transparent select-none z-20 flex-shrink-0 px-0">
+              {(['overview', 'anamnesis', 'soap', 'billing'] as const).map((tab, idx) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`py-3.5 px-4 text-xs font-bold transition-all relative border-b-2 -mb-[2px] cursor-pointer outline-none bg-transparent ${
+                  className={`py-3.5 pr-4 text-xs font-bold transition-all relative border-b-2 -mb-[2px] cursor-pointer outline-none bg-transparent ${
+                    idx === 0 ? 'pl-0' : 'pl-4'
+                  } ${
                     activeTab === tab
                       ? 'border-[#003527] text-[#003527]'
                       : 'border-transparent text-zinc-400 hover:text-[#003527]'
