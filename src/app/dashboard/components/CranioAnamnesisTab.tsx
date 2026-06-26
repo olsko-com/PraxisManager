@@ -376,7 +376,7 @@ export default function CranioAnamnesisTab({ clientId }: CranioAnamnesisTabProps
                 ))}
                 
                 <div className="pt-3 border-t border-zinc-100 space-y-1 text-left">
-                  <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Behandlungsziel / Positiver Wunsch</label>
+                  <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Behandlungswunsch</label>
                   <textarea
                     rows={2}
                     value={data.treatmentGoal}
@@ -416,7 +416,7 @@ export default function CranioAnamnesisTab({ clientId }: CranioAnamnesisTabProps
                 )}
                 
                 <div className="space-y-0.5 sm:col-span-2 border-t border-zinc-100 pt-2.5">
-                  <span className="block text-[10px] font-medium text-zinc-400">Behandlungsziel / Positiver Wunsch</span>
+                  <span className="block text-[10px] font-medium text-zinc-400">Behandlungswunsch</span>
                   <span className="block text-xs font-extrabold text-[#003527] whitespace-pre-wrap leading-relaxed">
                     {data.treatmentGoal.trim() ? data.treatmentGoal : 'Keine Angabe'}
                   </span>

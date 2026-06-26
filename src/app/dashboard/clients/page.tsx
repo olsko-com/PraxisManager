@@ -12,6 +12,33 @@ import { Client, SoapNote, Invoice } from '@/lib/types';
 import { supabase } from '@/lib/supabase';
 import CranioAnamnesisTab from '../components/CranioAnamnesisTab';
 
+interface SoapSubjectiveData {
+  text: string;
+  complaints: Array<{ description: string; painLevel: number }>;
+}
+
+function parseSoapSubjective(raw: string): SoapSubjectiveData {
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === 'object' && ('text' in parsed || 'complaints' in parsed)) {
+      return {
+        text: parsed.text || '',
+        complaints: Array.isArray(parsed.complaints) ? parsed.complaints : []
+      };
+    }
+  } catch (e) {
+    // legacy text
+  }
+  return {
+    text: raw || '',
+    complaints: []
+  };
+}
+
+function serializeSoapSubjective(text: string, complaints: Array<{ description: string; painLevel: number }>): string {
+  return JSON.stringify({ text, complaints });
+}
+
 interface ClientListItemProps {
   client: Client;
   isSelected: boolean;
@@ -1214,45 +1241,160 @@ export default function ClientsPage() {
                               <div className="p-5 border-t border-zinc-100/50 bg-white animate-fade-in">
                                 {soapEditId === note.id ? (
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-left">
-                                    <div className="space-y-1.5">
-                                      <label className="block text-[10px] font-bold uppercase tracking-widest text-[#003527]/70">Befinden & Symptome</label>
-                                      <textarea 
-                                        value={soapSubjective} 
-                                        onChange={(e) => setSoapSubjective(e.target.value)} 
-                                        className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-xl p-3 text-xs text-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all resize-y min-h-[70px]" 
-                                      />
+                                    <div className="space-y-3">
+                                      <div className="flex justify-between items-center pb-1 border-b border-zinc-100/50">
+                                        <label className="block text-[10px] font-bold uppercase tracking-widest text-[#003527]/70">Befinden & Symptome</label>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const sub = parseSoapSubjective(soapSubjective);
+                                            const updated = [...sub.complaints, { description: '', painLevel: 5 }];
+                                            setSoapSubjective(serializeSoapSubjective(sub.text, updated));
+                                          }}
+                                          className="text-[9px] font-extrabold text-[#003527] hover:text-[#0b513d] bg-zinc-100 hover:bg-[#003527]/5 border border-transparent rounded px-2.5 py-1.5 transition-colors cursor-pointer active:scale-95 flex items-center gap-1"
+                                        >
+                                          <Plus className="w-3 h-3" /> Beschwerde
+                                        </button>
+                                      </div>
+                                      
+                                      {(() => {
+                                        const sub = parseSoapSubjective(soapSubjective);
+                                        return (
+                                          <div className="space-y-3.5">
+                                            {sub.complaints.map((complaint, cIdx) => (
+                                              <div 
+                                                key={cIdx} 
+                                                className="p-3 bg-[#f9f9f8] rounded-xl border border-zinc-200/40 relative group/item hover:border-zinc-300/60 transition-all space-y-2.5"
+                                              >
+                                                <div className="flex items-center justify-between gap-2">
+                                                  <input
+                                                    type="text"
+                                                    value={complaint.description}
+                                                    onChange={(e) => {
+                                                      const updated = sub.complaints.map((c, i) => i === cIdx ? { ...c, description: e.target.value } : c);
+                                                      setSoapSubjective(serializeSoapSubjective(sub.text, updated));
+                                                    }}
+                                                    placeholder="z.B. Nackenschmerzen / Verspannung..."
+                                                    className="w-full bg-transparent border-none p-0 text-xs font-extrabold text-[#003527] focus:ring-0 placeholder-zinc-400 outline-none"
+                                                  />
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                      const updated = sub.complaints.filter((_, i) => i !== cIdx);
+                                                      setSoapSubjective(serializeSoapSubjective(sub.text, updated));
+                                                    }}
+                                                    className="text-zinc-400 hover:text-rose-500 p-0.5 rounded transition-colors cursor-pointer border-none bg-transparent"
+                                                    title="Beschwerde entfernen"
+                                                  >
+                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                  </button>
+                                                </div>
+                                                
+                                                <div className="flex items-center gap-4 bg-white border border-zinc-200/40 p-2.5 rounded-lg">
+                                                  <span className="text-[10px] font-bold text-zinc-400 w-24">Schmerz (0-10):</span>
+                                                  <input
+                                                    type="range"
+                                                    min="0"
+                                                    max="10"
+                                                    value={complaint.painLevel}
+                                                    onChange={(e) => {
+                                                      const updated = sub.complaints.map((c, i) => i === cIdx ? { ...c, painLevel: parseInt(e.target.value) } : c);
+                                                      setSoapSubjective(serializeSoapSubjective(sub.text, updated));
+                                                    }}
+                                                    className="flex-grow accent-[#003527] h-1.5 bg-zinc-100 rounded-lg cursor-pointer"
+                                                  />
+                                                  <span className="text-xs font-extrabold text-rose-600 w-6 text-right select-none">
+                                                    {complaint.painLevel}
+                                                  </span>
+                                                </div>
+                                              </div>
+                                            ))}
+                                            
+                                            <div className="space-y-1">
+                                              <label className="block text-[9px] font-bold uppercase tracking-widest text-[#003527]/50">Weitere Anmerkungen</label>
+                                              <textarea 
+                                                value={sub.text} 
+                                                onChange={(e) => {
+                                                  setSoapSubjective(serializeSoapSubjective(e.target.value, sub.complaints));
+                                                }} 
+                                                placeholder="Weitere Details zum Befinden des Klienten..."
+                                                className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-xl p-3 text-xs text-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all resize-y min-h-[60px]" 
+                                              />
+                                            </div>
+                                          </div>
+                                        );
+                                      })()}
                                     </div>
-                                    <div className="space-y-1.5">
-                                      <label className="block text-[10px] font-bold uppercase tracking-widest text-[#003527]/70">Beobachtung & Befund</label>
-                                      <textarea 
-                                        value={soapObjective} 
-                                        onChange={(e) => setSoapObjective(e.target.value)} 
-                                        className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-xl p-3 text-xs text-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all resize-y min-h-[70px]" 
-                                      />
-                                    </div>
-                                    <div className="space-y-1.5">
-                                      <label className="block text-[10px] font-bold uppercase tracking-widest text-[#003527]/70">Einschätzung</label>
-                                      <textarea 
-                                        value={soapAssessment} 
-                                        onChange={(e) => setSoapAssessment(e.target.value)} 
-                                        className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-xl p-3 text-xs text-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all resize-y min-h-[70px]" 
-                                      />
-                                    </div>
-                                    <div className="space-y-1.5">
-                                      <label className="block text-[10px] font-bold uppercase tracking-widest text-[#003527]/70">Ausblick & Empfehlung</label>
-                                      <textarea 
-                                        value={soapPlan} 
-                                        onChange={(e) => setSoapPlan(e.target.value)} 
-                                        className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-xl p-3 text-xs text-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all resize-y min-h-[70px]" 
-                                      />
+                                    
+                                    <div className="space-y-3.5">
+                                      <div className="space-y-1.5">
+                                        <label className="block text-[10px] font-bold uppercase tracking-widest text-[#003527]/70">Beobachtung & Befund</label>
+                                        <textarea 
+                                          value={soapObjective} 
+                                          onChange={(e) => setSoapObjective(e.target.value)} 
+                                          className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-xl p-3 text-xs text-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all resize-y min-h-[70px]" 
+                                        />
+                                      </div>
+                                      <div className="space-y-1.5">
+                                        <label className="block text-[10px] font-bold uppercase tracking-widest text-[#003527]/70">Einschätzung</label>
+                                        <textarea 
+                                          value={soapAssessment} 
+                                          onChange={(e) => setSoapAssessment(e.target.value)} 
+                                          className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-xl p-3 text-xs text-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all resize-y min-h-[70px]" 
+                                        />
+                                      </div>
+                                      <div className="space-y-1.5">
+                                        <label className="block text-[10px] font-bold uppercase tracking-widest text-[#003527]/70">Ausblick & Empfehlung</label>
+                                        <textarea 
+                                          value={soapPlan} 
+                                          onChange={(e) => setSoapPlan(e.target.value)} 
+                                          className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-xl p-3 text-xs text-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all resize-y min-h-[70px]" 
+                                        />
+                                      </div>
                                     </div>
                                   </div>
                                 ) : (
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="border border-[#bfc9c3]/20 rounded-xl p-4 space-y-2 text-left bg-amber-50/5 hover:bg-amber-50/10 transition-colors">
-                                      <span className="block text-[10px] font-extrabold tracking-widest text-[#003527]/60 uppercase">Befinden & Symptome</span>
-                                      <p className="text-xs font-extrabold text-[#003527] leading-relaxed whitespace-pre-wrap italic">{note.subjective || 'Keine Angabe'}</p>
-                                    </div>
+                                    {(() => {
+                                      const sub = parseSoapSubjective(note.subjective);
+                                      return (
+                                        <div className="border border-[#bfc9c3]/20 rounded-xl p-4 space-y-3 text-left bg-amber-50/5 hover:bg-amber-50/10 transition-colors flex flex-col justify-between">
+                                          <div className="space-y-2.5 w-full">
+                                            <span className="block text-[10px] font-extrabold tracking-widest text-[#003527]/60 uppercase border-b border-zinc-100 pb-1.5">Befinden & Symptome</span>
+                                            
+                                            {/* Complaints tags */}
+                                            {sub.complaints.length > 0 && (
+                                              <div className="flex flex-wrap gap-1.5">
+                                                {sub.complaints.map((complaint, cIdx) => (
+                                                  <div key={cIdx} className="flex items-center gap-1.5 bg-white border border-[#bfc9c3]/30 px-2.5 py-1 rounded-xl text-[10px]">
+                                                    <span className="font-bold text-[#003527]">{complaint.description || 'Beschwerde'}</span>
+                                                    <span className={`text-[8px] font-extrabold px-1 py-0.5 rounded-md border whitespace-nowrap ${
+                                                      complaint.painLevel >= 8 
+                                                        ? 'bg-rose-50 border-rose-200/50 text-rose-800' 
+                                                        : complaint.painLevel >= 4 
+                                                          ? 'bg-amber-50 border-amber-200/50 text-amber-800' 
+                                                          : 'bg-emerald-50 border-emerald-200/50 text-emerald-800'
+                                                    }`}>
+                                                      {complaint.painLevel}/10
+                                                    </span>
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            )}
+
+                                            {sub.text.trim() && (
+                                              <p className="text-xs font-extrabold text-[#003527] leading-relaxed whitespace-pre-wrap italic">
+                                                {sub.text}
+                                              </p>
+                                            )}
+
+                                            {!sub.text.trim() && sub.complaints.length === 0 && (
+                                              <p className="text-xs font-extrabold text-zinc-400 italic">Keine Angaben.</p>
+                                            )}
+                                          </div>
+                                        </div>
+                                      );
+                                    })()}
                                     
                                     <div className="border border-[#bfc9c3]/20 rounded-xl p-4 space-y-2 text-left bg-blue-50/5 hover:bg-blue-50/10 transition-colors">
                                       <span className="block text-[10px] font-extrabold tracking-widest text-[#003527]/60 uppercase">Beobachtung & Befund</span>
