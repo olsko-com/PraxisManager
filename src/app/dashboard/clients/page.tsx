@@ -484,9 +484,9 @@ export default function ClientsPage() {
   const clientSoapNotes = soapNotes.filter(n => n.clientId === selectedClientId);
 
   return (
-    <div className="relative flex-grow bg-[#eef0ed] rounded-none lg:rounded-[24px] border-0 lg:border border-[#003527]/10 m-0 lg:my-4 lg:mr-4 lg:ml-4 flex p-0 lg:p-6 gap-0 lg:gap-6 h-[calc(100vh-64px)] lg:h-[calc(100vh-32px)] overflow-hidden shadow-none transition-all duration-300">
+    <div className="relative flex-grow bg-[#eef0ed] rounded-none lg:rounded-[24px] border-0 lg:border border-[#003527]/10 m-0 lg:my-4 lg:mr-4 lg:ml-4 flex p-0 gap-0 h-[calc(100vh-64px)] lg:h-[calc(100vh-32px)] overflow-hidden shadow-none transition-all duration-300">
       {/* Left Side: Client List as a secondary Sidebar */}
-      <div className={`absolute lg:relative top-0 bottom-0 left-0 z-45 w-full md:w-80 bg-white border-r lg:border border-[#003527]/10 rounded-r-[20px] lg:rounded-[20px] flex flex-col flex-shrink-0 overflow-hidden h-full transition-transform duration-300 ease-in-out lg:translate-x-0 lg:flex ${
+      <div className={`absolute lg:relative top-0 bottom-0 left-0 z-45 w-full md:w-80 bg-white border-r border-[#003527]/10 rounded-r-[20px] lg:rounded-none flex flex-col flex-shrink-0 overflow-hidden h-full transition-transform duration-300 ease-in-out lg:translate-x-0 lg:flex ${
         !currentClient
           ? 'translate-x-0'
           : isSidebarOpen
@@ -720,7 +720,7 @@ export default function ClientsPage() {
       )}
 
       {/* Right Side: Profile Details */}
-      <div className={`flex-grow flex flex-col min-h-0 overflow-hidden ${currentClient ? 'flex' : 'hidden lg:flex'}`}>
+      <div className={`flex-grow flex flex-col min-h-0 overflow-hidden bg-white ${currentClient ? 'flex' : 'hidden lg:flex'}`}>
         {currentClient ? (
           <div className="flex-grow flex flex-col min-h-0">
             {/* Klient Header */}
@@ -760,22 +760,6 @@ export default function ClientsPage() {
               </div>
               
               <div className="flex items-center gap-2">
-                <button
-                  onClick={() => {
-                    const clientInvoices = invoices.filter(i => i.clientId === currentClient.id);
-                    const clientAppointments = appointments.filter(a => a.clientId === currentClient.id);
-                    const firstInvId = clientInvoices.length > 0 ? clientInvoices[0].id : '';
-                    const firstAppId = clientAppointments.length > 0 ? clientAppointments[0].id : '';
-                    setSelectedMailInvoiceId(firstInvId);
-                    setSelectedMailAppointmentId(firstAppId);
-                    applyMailTemplate('custom', firstInvId, firstAppId, currentClient);
-                    setIsMailModalOpen(true);
-                  }}
-                  className="bg-[#003527] hover:bg-[#0b513d] text-white px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
-                >
-                  <Mail className="w-3.5 h-3.5" /> Mail schreiben
-                </button>
-
                 <div className="relative">
                   <button
                     onClick={() => setIsDetailsMenuOpen(!isDetailsMenuOpen)}
@@ -806,6 +790,23 @@ export default function ClientsPage() {
                         >
                           <CalendarIcon className="w-3.5 h-3.5 text-[#003527]/70" />
                           Termin hinzufügen
+                        </button>
+                        <button
+                          onClick={() => {
+                            setIsDetailsMenuOpen(false);
+                            const clientInvoices = invoices.filter(i => i.clientId === currentClient.id);
+                            const clientAppointments = appointments.filter(a => a.clientId === currentClient.id);
+                            const firstInvId = clientInvoices.length > 0 ? clientInvoices[0].id : '';
+                            const firstAppId = clientAppointments.length > 0 ? clientAppointments[0].id : '';
+                            setSelectedMailInvoiceId(firstInvId);
+                            setSelectedMailAppointmentId(firstAppId);
+                            applyMailTemplate('custom', firstInvId, firstAppId, currentClient);
+                            setIsMailModalOpen(true);
+                          }}
+                          className="px-4 py-2.5 text-xs text-[#003527] hover:bg-[#f3f4f3] font-bold text-left flex items-center gap-2.5 transition-colors cursor-pointer border-t border-zinc-100/80"
+                        >
+                          <Mail className="w-3.5 h-3.5 text-[#003527]/70" />
+                          E-Mail senden
                         </button>
                         <button
                           onClick={() => {
