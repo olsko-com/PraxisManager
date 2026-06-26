@@ -443,8 +443,8 @@ export default function ClientsPage() {
         {currentClient ? (
           <div className="flex-grow flex flex-col min-h-0">
             {/* Patient Header */}
-            <div className="border-b border-[#bfc9c3]/30 px-4 md:px-6 pb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-transparent z-20 flex-shrink-0 text-left">
-              <div className="flex flex-col text-left pt-2 lg:pt-0">
+            <div className="border-b border-[#bfc9c3]/30 px-4 md:px-6 pt-6 pb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-transparent z-20 flex-shrink-0 text-left">
+              <div className="flex flex-col text-left">
                 <div className="text-left">
                   <h3 className="text-xl font-bold text-[#043F2D]">{currentClient.name}</h3>
                   <p className="text-xs text-zinc-500 mt-1">Registriert seit {new Date(currentClient.createdAt).toLocaleDateString('de-DE')}</p>
