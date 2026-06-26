@@ -214,13 +214,20 @@ export default function ClientsPage() {
   const [mobileView, setMobileView] = React.useState<'list' | 'detail'>('list');
   const [showGdprTooltip, setShowGdprTooltip] = React.useState(false);
 
+  // Auto-switch to detail view when a client is selected, especially on mobile/tablet redirects
+  React.useEffect(() => {
+    if (selectedClientId) {
+      setMobileView('detail');
+    }
+  }, [selectedClientId]);
+
   const currentClient = clients.find(c => c.id === selectedClientId);
   const clientSoapNotes = soapNotes.filter(n => n.clientId === selectedClientId);
 
   return (
-    <div className="relative flex-grow bg-[#eef0ed] rounded-none lg:rounded-[24px] border-0 lg:border border-[#003527]/10 m-0 lg:my-4 lg:mr-4 lg:ml-4 flex p-4 lg:p-6 gap-0 lg:gap-6 h-[calc(100vh-64px)] lg:h-[calc(100vh-32px)] overflow-hidden shadow-none transition-all duration-300">
+    <div className="relative flex-grow bg-[#eef0ed] rounded-none md:rounded-[24px] border-0 md:border border-[#003527]/10 m-0 md:my-4 md:mr-4 md:ml-4 flex p-4 md:p-6 gap-0 md:gap-6 h-[calc(100vh-64px)] md:h-[calc(100vh-32px)] overflow-hidden shadow-none transition-all duration-300">
       {/* Left Side: Client List as a secondary Sidebar */}
-      <div className={`w-full lg:w-80 bg-white border border-[#003527]/10 rounded-[20px] flex flex-col z-10 flex-shrink-0 overflow-hidden ${mobileView === 'list' || clients.length === 0 ? 'flex' : 'hidden lg:flex'}`}>
+      <div className={`w-full md:w-72 lg:w-80 bg-white border border-[#003527]/10 rounded-[20px] flex flex-col z-10 flex-shrink-0 overflow-hidden ${mobileView === 'list' || clients.length === 0 ? 'flex' : 'hidden md:flex'}`}>
         <div className="p-6 pt-8 space-y-4">
           <div className="flex justify-between items-center">
             {(() => {
@@ -398,16 +405,16 @@ export default function ClientsPage() {
       </div>
 
       {/* Right Side: Profile Details */}
-      <div className={`flex-grow flex flex-col min-h-0 overflow-hidden ${mobileView === 'detail' ? 'flex' : 'hidden lg:flex'}`}>
+      <div className={`flex-grow flex flex-col min-h-0 overflow-hidden ${mobileView === 'detail' ? 'flex' : 'hidden md:flex'}`}>
         {currentClient ? (
           <div className="flex-grow flex flex-col min-h-0">
             {/* Patient Header */}
-            <div className="border-b border-[#bfc9c3]/30 px-4 lg:px-6 pb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-transparent z-20 flex-shrink-0 text-left">
+            <div className="border-b border-[#bfc9c3]/30 px-4 md:px-6 pb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-transparent z-20 flex-shrink-0 text-left">
               <div className="flex flex-col text-left">
                 {/* Mobile Back Button */}
                 <button
                   onClick={() => setMobileView('list')}
-                  className="lg:hidden inline-flex items-center gap-1 text-xs font-bold text-[#003527]/70 hover:text-[#003527] cursor-pointer bg-transparent border-none p-0 outline-none mb-3 self-start"
+                  className="md:hidden inline-flex items-center gap-1 text-xs font-bold text-[#003527]/70 hover:text-[#003527] cursor-pointer bg-transparent border-none p-0 outline-none mb-3 self-start"
                 >
                   <ChevronLeft className="w-4 h-4" /> Patientenliste
                 </button>
@@ -541,7 +548,7 @@ export default function ClientsPage() {
             </div>
 
             {/* Scrollable details content */}
-            <div className="flex-grow overflow-y-auto px-4 lg:px-6 py-6 space-y-6 pb-24 lg:pb-6">
+            <div className="flex-grow overflow-y-auto px-4 md:px-6 py-6 space-y-6 pb-24 md:pb-6">
               {/* Quick profile info grid (Bento Grid) */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Bento Card 1: Stammdaten */}
