@@ -496,6 +496,14 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
             };
           });
           setClients(loadedClients);
+          if (loadedClients.length > 0) {
+            setSelectedClientId(prev => {
+              const hasSelected = loadedClients.some(cl => cl.id === prev);
+              return (!hasSelected || prev === 'c1') ? loadedClients[0].id : prev;
+            });
+          } else {
+            setSelectedClientId('');
+          }
         }
 
         // 3. Fetch services
