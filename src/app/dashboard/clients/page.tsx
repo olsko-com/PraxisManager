@@ -919,21 +919,21 @@ export default function ClientsPage() {
                     {!isEditingClient ? (
                       <button 
                         onClick={startEditing}
-                        className="bg-white hover:bg-zinc-50 text-[#003527] border border-[#bfc9c3]/50 px-3.5 py-1.5 rounded-xl text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                        className="bg-white hover:bg-zinc-50 text-[#003527] border border-[#bfc9c3]/40 px-3.5 py-1.5 rounded-xl text-[10px] font-extrabold transition-all cursor-pointer flex items-center gap-1.5 shadow-sm active:scale-95"
                       >
-                        <Edit2 className="w-3 h-3" /> Akte bearbeiten
+                        <Edit2 className="w-3.5 h-3.5" /> Akte bearbeiten
                       </button>
                     ) : (
                       <div className="flex gap-2">
                         <button 
                           onClick={() => setIsEditingClient(false)}
-                          className="bg-zinc-100 hover:bg-zinc-200/80 text-[#003527] px-3.5 py-1.5 rounded-xl text-[10px] font-bold transition-all cursor-pointer border-none"
+                          className="bg-white hover:bg-zinc-50 text-zinc-500 hover:text-zinc-700 px-3.5 py-1.5 rounded-xl text-[10px] font-extrabold transition-all cursor-pointer border border-[#bfc9c3]/40 shadow-sm active:scale-95"
                         >
                           Abbrechen
                         </button>
                         <button 
                           onClick={saveEditing}
-                          className="bg-[#003527] hover:bg-[#0b513d] text-white px-3.5 py-1.5 rounded-xl text-[10px] font-bold transition-all cursor-pointer border-none"
+                          className="bg-[#003527] hover:bg-[#0b513d] text-white px-3.5 py-1.5 rounded-xl text-[10px] font-extrabold transition-all cursor-pointer border-none shadow-sm active:scale-95"
                         >
                           Speichern
                         </button>
@@ -947,21 +947,29 @@ export default function ClientsPage() {
                       {/* Linke Spalte Formular */}
                       <div className="space-y-6">
                         {/* Karte 1 Formular: Stammdaten */}
-                        <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 shadow-sm">
-                          <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Stammdaten</h4>
+                        <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5.5 space-y-4 shadow-[0_4px_20px_rgba(0,53,39,0.02)]">
+                          <div className="flex items-center gap-3 pb-3 border-b border-zinc-100/60">
+                            <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200/40 text-emerald-700">
+                              <User className="w-4 h-4" />
+                            </div>
+                            <div className="text-left">
+                              <h4 className="font-extrabold text-xs text-[#003527] uppercase tracking-wider">Stammdaten</h4>
+                              <p className="text-[10px] text-zinc-400 font-medium mt-0.5">Basisangaben zur Person</p>
+                            </div>
+                          </div>
                           
                           <div className="space-y-3.5">
                             {/* Salutation */}
-                            <div className="space-y-1 text-left">
-                              <label className="block text-[10px] font-semibold text-zinc-500">Anrede</label>
-                              <div className="bg-zinc-100/60 p-0.5 rounded-xl border border-transparent flex relative overflow-hidden">
+                            <div className="space-y-1.5 text-left">
+                              <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400">Anrede</label>
+                              <div className="bg-zinc-100/80 p-0.5 rounded-xl border border-transparent flex relative overflow-hidden">
                                 {(['Keine', 'Frau', 'Herr'] as const).map((opt) => (
                                   <button
                                     key={opt}
                                     type="button"
                                     onClick={() => setEditSalutation(opt)}
                                     className={`flex-1 py-1.5 text-xs font-bold rounded-lg relative z-10 transition-colors cursor-pointer bg-transparent border-none ${
-                                      editSalutation === opt ? 'text-[#003527]' : 'text-zinc-400 hover:text-zinc-500'
+                                      editSalutation === opt ? 'text-[#003527]' : 'text-zinc-400 hover:text-zinc-505'
                                     }`}
                                   >
                                     {opt}
@@ -980,7 +988,7 @@ export default function ClientsPage() {
                             {/* Vorname & Nachname */}
                             <div className="grid grid-cols-2 gap-3">
                               <div className="space-y-1">
-                                <label className="block text-[10px] font-semibold text-zinc-500">Vorname</label>
+                                <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400">Vorname</label>
                                 <input
                                   type="text"
                                   value={editFirstName}
@@ -989,7 +997,7 @@ export default function ClientsPage() {
                                 />
                               </div>
                               <div className="space-y-1">
-                                <label className="block text-[10px] font-semibold text-zinc-500">Nachname</label>
+                                <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400">Nachname</label>
                                 <input
                                   type="text"
                                   value={editLastName}
@@ -1001,18 +1009,18 @@ export default function ClientsPage() {
 
                             {/* Geburtstag */}
                             <div className="space-y-1">
-                              <label className="block text-[10px] font-semibold text-zinc-500">Geburtstag</label>
+                              <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400">Geburtstag</label>
                               <input
                                 type="date"
                                 value={editBirthday}
                                 onChange={(e) => setEditBirthday(e.target.value)}
-                                className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-semibold text-xs text-[#003527] outline-none transition-all"
+                                className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-bold text-xs text-[#003527] outline-none transition-all cursor-pointer"
                               />
                             </div>
 
                             {/* Familienstand */}
                             <div className="space-y-1">
-                              <label className="block text-[10px] font-semibold text-zinc-500">Familienstand</label>
+                              <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400">Familienstand</label>
                               <input
                                 type="text"
                                 value={editMaritalStatus}
@@ -1024,13 +1032,21 @@ export default function ClientsPage() {
                         </div>
 
                         {/* Karte 2 Formular: Kontakt & Anschrift */}
-                        <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 shadow-sm">
-                          <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Kontakt & Anschrift</h4>
+                        <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5.5 space-y-4 shadow-[0_4px_20px_rgba(0,53,39,0.02)]">
+                          <div className="flex items-center gap-3 pb-3 border-b border-zinc-100/60">
+                            <div className="p-2 rounded-xl bg-blue-50 border border-blue-200/40 text-blue-700">
+                              <Phone className="w-4 h-4" />
+                            </div>
+                            <div className="text-left">
+                              <h4 className="font-extrabold text-xs text-[#003527] uppercase tracking-wider">Kontakt & Anschrift</h4>
+                              <p className="text-[10px] text-zinc-400 font-medium mt-0.5">Erreichbarkeit und Wohnort</p>
+                            </div>
+                          </div>
                           
                           <div className="space-y-3.5">
                             {/* Telefon */}
                             <div className="space-y-1">
-                              <label className="block text-[10px] font-semibold text-zinc-500">Telefon</label>
+                              <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400">Telefon</label>
                               <input
                                 type="tel"
                                 value={editPhone}
@@ -1041,7 +1057,7 @@ export default function ClientsPage() {
 
                             {/* E-Mail */}
                             <div className="space-y-1">
-                              <label className="block text-[10px] font-semibold text-zinc-500">E-Mail</label>
+                              <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400">E-Mail</label>
                               <input
                                 type="email"
                                 value={editEmail}
@@ -1053,7 +1069,7 @@ export default function ClientsPage() {
                             {/* Straße & Hausnummer */}
                             <div className="grid grid-cols-3 gap-3">
                               <div className="col-span-2 space-y-1">
-                                <label className="block text-[10px] font-semibold text-zinc-500">Straße</label>
+                                <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400">Straße</label>
                                 <input
                                   type="text"
                                   value={editStreet}
@@ -1062,7 +1078,7 @@ export default function ClientsPage() {
                                 />
                               </div>
                               <div className="space-y-1">
-                                <label className="block text-[10px] font-semibold text-zinc-500">Hausnr.</label>
+                                <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400">Hausnr.</label>
                                 <input
                                   type="text"
                                   value={editHouseNumber}
@@ -1075,7 +1091,7 @@ export default function ClientsPage() {
                             {/* PLZ & Ort */}
                             <div className="grid grid-cols-3 gap-3">
                               <div className="space-y-1">
-                                <label className="block text-[10px] font-semibold text-zinc-500">PLZ</label>
+                                <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400">PLZ</label>
                                 <input
                                   type="text"
                                   value={editZipCode}
@@ -1084,7 +1100,7 @@ export default function ClientsPage() {
                                 />
                               </div>
                               <div className="col-span-2 space-y-1">
-                                <label className="block text-[10px] font-semibold text-zinc-500">Ort</label>
+                                <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400">Ort</label>
                                 <input
                                   type="text"
                                   value={editCity}
@@ -1098,13 +1114,21 @@ export default function ClientsPage() {
                       </div>
 
                       {/* Rechte Spalte Formular: Lebensumstände & Anamnese */}
-                      <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 shadow-sm flex flex-col justify-between">
-                        <div className="space-y-4">
-                          <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Lebensumstände & Anamnese</h4>
+                      <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5.5 space-y-4 shadow-[0_4px_20px_rgba(0,53,39,0.02)] flex flex-col justify-between h-full">
+                        <div className="space-y-4 w-full">
+                          <div className="flex items-center gap-3 pb-3 border-b border-zinc-100/60">
+                            <div className="p-2 rounded-xl bg-purple-50 border border-purple-200/40 text-purple-700">
+                              <Briefcase className="w-4 h-4" />
+                            </div>
+                            <div className="text-left">
+                              <h4 className="font-extrabold text-xs text-[#003527] uppercase tracking-wider">Lebensumstände & Anamnese</h4>
+                              <p className="text-[10px] text-zinc-400 font-medium mt-0.5">Berufliches und medizinische Notizen</p>
+                            </div>
+                          </div>
                           
                           {/* Beschäftigung */}
                           <div className="space-y-1">
-                            <label className="block text-[10px] font-semibold text-zinc-500">Derzeitige Beschäftigung</label>
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400">Derzeitige Beschäftigung</label>
                             <input
                               type="text"
                               value={editOccupation}
@@ -1114,13 +1138,13 @@ export default function ClientsPage() {
                           </div>
 
                           {/* Medizinische Notizen */}
-                          <div className="space-y-1">
-                            <label className="block text-[10px] font-semibold text-zinc-500">Praxisnotizen & Anamnese</label>
+                          <div className="space-y-1.5">
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400">Praxisnotizen & Anamnese</label>
                             <textarea
-                              rows={8}
+                              rows={10}
                               value={editNotes}
                               onChange={(e) => setEditNotes(e.target.value)}
-                              className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2.5 font-semibold text-xs text-[#003527] outline-none resize-none transition-all min-h-[180px]"
+                              className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2.5 font-semibold text-xs text-[#003527] outline-none resize-y transition-all min-h-[220px]"
                             />
                           </div>
                         </div>
@@ -1132,14 +1156,17 @@ export default function ClientsPage() {
                       {/* Linke Spalte: Stammdaten und Kontakt gestapelt */}
                       <div className="space-y-6">
                         {/* Karte 1: Stammdaten */}
-                        <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)] transition-all duration-300 relative group shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
-                          <div className="flex justify-between items-start">
-                            <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200/40 text-emerald-700">
-                              <User className="w-4 h-4" />
+                        <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5.5 space-y-4 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)] transition-all duration-300 relative group shadow-[0_4px_20px_rgba(0,53,39,0.02)]">
+                          <div className="flex justify-between items-start pb-3 border-b border-zinc-100/60">
+                            <div className="flex items-center gap-3">
+                              <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200/40 text-emerald-700">
+                                <User className="w-4 h-4" />
+                              </div>
+                              <div className="text-left">
+                                <h4 className="font-extrabold text-xs text-[#003527] uppercase tracking-wider">Stammdaten</h4>
+                                <p className="text-[10px] text-zinc-400 font-medium mt-0.5">Basisangaben zur Person</p>
+                              </div>
                             </div>
-                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-500">
-                              Stammdaten
-                            </span>
                           </div>
                           
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3.5 pt-1">
@@ -1169,14 +1196,17 @@ export default function ClientsPage() {
                         </div>
 
                         {/* Karte 2: Kontakt & Anschrift */}
-                        <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)] transition-all duration-300 relative group shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
-                          <div className="flex justify-between items-start">
-                            <div className="p-2 rounded-xl bg-blue-50 border border-blue-200/40 text-blue-700">
-                              <Phone className="w-4 h-4" />
+                        <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5.5 space-y-4 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)] transition-all duration-300 relative group shadow-[0_4px_20px_rgba(0,53,39,0.02)]">
+                          <div className="flex justify-between items-start pb-3 border-b border-zinc-100/60">
+                            <div className="flex items-center gap-3">
+                              <div className="p-2 rounded-xl bg-blue-50 border border-blue-200/40 text-blue-700">
+                                <Phone className="w-4 h-4" />
+                              </div>
+                              <div className="text-left">
+                                <h4 className="font-extrabold text-xs text-[#003527] uppercase tracking-wider">Kontakt & Anschrift</h4>
+                                <p className="text-[10px] text-zinc-400 font-medium mt-0.5">Erreichbarkeit und Wohnort</p>
+                              </div>
                             </div>
-                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-500">
-                              Kontakt & Anschrift
-                            </span>
                           </div>
 
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3.5 pt-1">
@@ -1224,15 +1254,18 @@ export default function ClientsPage() {
                       </div>
 
                       {/* Rechte Spalte: Lebensumstände & Anamnese */}
-                      <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 flex flex-col justify-between transition-all duration-300 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)] relative group overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
-                        <div className="space-y-4">
-                          <div className="flex justify-between items-start">
-                            <div className="p-2 rounded-xl bg-purple-50 border border-purple-200/40 text-purple-700">
-                              <Briefcase className="w-4 h-4" />
+                      <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5.5 flex flex-col justify-between transition-all duration-300 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)] relative group overflow-hidden shadow-[0_4px_20px_rgba(0,53,39,0.02)] h-full">
+                        <div className="space-y-4 w-full">
+                          <div className="flex justify-between items-start pb-3 border-b border-zinc-100/60">
+                            <div className="flex items-center gap-3">
+                              <div className="p-2 rounded-xl bg-purple-50 border border-purple-200/40 text-purple-700">
+                                <Briefcase className="w-4 h-4" />
+                              </div>
+                              <div className="text-left">
+                                <h4 className="font-extrabold text-xs text-[#003527] uppercase tracking-wider">Lebensumstände & Anamnese</h4>
+                                <p className="text-[10px] text-zinc-400 font-medium mt-0.5">Berufliches und medizinische Notizen</p>
+                              </div>
                             </div>
-                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-500">
-                              Lebensumstände & Anamnese
-                            </span>
                           </div>
 
                           <div className="grid grid-cols-1 gap-y-3.5 pt-1">
@@ -1244,8 +1277,8 @@ export default function ClientsPage() {
                             </div>
 
                             <div className="space-y-0.5 border-t border-zinc-100 pt-2.5">
-                              <span className="block text-[10px] font-medium text-zinc-400">Praxisnotizen & Anamnese</span>
-                              <p className="text-xs font-semibold leading-relaxed text-[#404944] mt-1 whitespace-pre-wrap">
+                              <span className="block text-[10px] font-medium text-zinc-400 mb-1">Praxisnotizen & Anamnese</span>
+                              <p className="text-xs font-semibold text-[#003527] border-l-2 border-[#003527]/20 pl-3 leading-relaxed whitespace-pre-wrap italic mt-1.5">
                                 {currentClient.notes || 'Keine medizinischen Notizen hinterlegt.'}
                               </p>
                             </div>
@@ -1254,7 +1287,7 @@ export default function ClientsPage() {
                       </div>
                     </div>
                   )}
-
+                  
                   {/* Danger Zone */}
                   {currentClient.isArchived ? (
                     <div className="pt-6 border-t border-rose-200/30 flex flex-col sm:flex-row gap-4 justify-between sm:items-center text-left">
