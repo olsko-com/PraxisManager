@@ -314,7 +314,7 @@ export default function CranioAnamnesisTab({ clientId }: CranioAnamnesisTabProps
           
           {/* BOX 1: Aktuelle Beschwerden & Behandlungsziel (Col span 2) */}
           <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 shadow-sm hover:border-[#bfc9c3]/60 transition-all duration-300 relative group overflow-hidden md:col-span-2 shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center pb-1 border-b border-zinc-100/50">
               <div className="flex items-center gap-2">
                 <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200/40 text-emerald-700">
                   <Target className="w-4 h-4" />
@@ -374,93 +374,89 @@ export default function CranioAnamnesisTab({ clientId }: CranioAnamnesisTabProps
                     </div>
                   </div>
                 ))}
+                
+                <div className="pt-3 border-t border-zinc-100 space-y-1 text-left">
+                  <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Behandlungsziel / Positiver Wunsch</label>
+                  <textarea
+                    rows={2}
+                    value={data.treatmentGoal}
+                    onChange={(e) => updateField('treatmentGoal', e.target.value)}
+                    placeholder="z.B. 'Ich möchte meinen Nacken wieder frei bewegen können' anstatt 'Ich will keine Schmerzen mehr'"
+                    className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3.5 py-2.5 font-semibold text-xs text-[#003527] outline-none transition-all resize-none min-h-[60px]"
+                  />
+                </div>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3.5 pt-1">
                 {data.complaints.filter(c => c.description.trim() !== '').length === 0 ? (
-                  <p className="text-xs text-zinc-400 italic">Keine aktuellen Beschwerden angegeben.</p>
+                  <div className="space-y-0.5 sm:col-span-2">
+                    <span className="block text-[10px] font-medium text-zinc-400">Aktuelle Beschwerden</span>
+                    <span className="block text-xs font-extrabold text-zinc-400 italic">Keine aktuellen Beschwerden angegeben.</span>
+                  </div>
                 ) : (
                   data.complaints
                     .filter(c => c.description.trim() !== '')
                     .map((complaint, index) => (
-                      <div key={index} className="flex items-center justify-between p-3.5 bg-[#f9f9f8] rounded-xl border border-zinc-200/40">
-                        <span className="text-xs font-bold text-[#003527]">{complaint.description}</span>
-                        <span className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full border ${
-                          complaint.painLevel >= 8 
-                            ? 'bg-rose-50 border-rose-200 text-rose-700' 
-                            : complaint.painLevel >= 4 
-                              ? 'bg-amber-50 border-amber-200 text-amber-700' 
-                              : 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                        }`}>
-                          Schmerz: {complaint.painLevel}/10
+                      <div key={index} className="space-y-0.5">
+                        <span className="block text-[10px] font-medium text-zinc-400">Beschwerde {index + 1}</span>
+                        <span className="block text-xs font-extrabold text-[#003527] flex items-center gap-1.5">
+                          {complaint.description}
+                          <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-[#003527]/5 text-[#003527]">
+                            Intensität: {complaint.painLevel}/10
+                          </span>
                         </span>
                       </div>
                     ))
                 )}
+                
+                <div className="space-y-0.5 sm:col-span-2 border-t border-zinc-100 pt-2.5">
+                  <span className="block text-[10px] font-medium text-zinc-400">Behandlungsziel / Positiver Wunsch</span>
+                  <span className="block text-xs font-extrabold text-[#003527] whitespace-pre-wrap leading-relaxed">
+                    {data.treatmentGoal.trim() ? data.treatmentGoal : 'Keine Angabe'}
+                  </span>
+                </div>
               </div>
             )}
-
-            <div className="pt-3 border-t border-zinc-100 space-y-1 text-left">
-              <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Behandlungsziel / Positiver Wunsch</label>
-              {isEditing ? (
-                <textarea
-                  rows={2}
-                  value={data.treatmentGoal}
-                  onChange={(e) => updateField('treatmentGoal', e.target.value)}
-                  placeholder="z.B. 'Ich möchte meinen Nacken wieder frei bewegen können' anstatt 'Ich will keine Schmerzen mehr'"
-                  className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3.5 py-2.5 font-semibold text-xs text-[#003527] outline-none transition-all resize-none min-h-[60px]"
-                />
-              ) : (
-                data.treatmentGoal.trim() ? (
-                  <p className="text-xs font-medium text-[#003527] italic pl-3 border-l-2 border-emerald-600/30 py-1 bg-[#f9f9f8] pr-2 rounded-r-lg">
-                    „{data.treatmentGoal}“
-                  </p>
-                ) : (
-                  <p className="text-xs text-zinc-400 italic">Kein Behandlungsziel angegeben.</p>
-                )
-              )}
-            </div>
           </div>
 
           {/* BOX 2: Ressourcen */}
           <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 shadow-sm hover:border-[#bfc9c3]/60 transition-all duration-300 relative group overflow-hidden flex flex-col justify-between shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
             <div className="space-y-4 w-full">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 pb-1 border-b border-zinc-100/50">
                 <div className="p-2 rounded-xl bg-rose-50 border border-rose-200/40 text-rose-700">
                   <Heart className="w-4 h-4" />
                 </div>
                 <h4 className="text-xs font-bold text-[#003527] uppercase tracking-wider">Ressourcen</h4>
               </div>
               
-              <div className="space-y-1 text-left">
-                <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Was hilft Ihnen, sich wohlzufühlen?</label>
-                {isEditing ? (
-                  <>
-                    <p className="text-[10px] text-zinc-400 italic">Natur, Hobbies, Familie, Tiere, spirituelle Praxis...</p>
-                    <textarea
-                      rows={5}
-                      value={data.resources}
-                      onChange={(e) => updateField('resources', e.target.value)}
-                      placeholder="z.B. Meine Kraftquellen sind Spaziergänge im Wald, Musikhören..."
-                      className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3.5 py-2.5 font-semibold text-xs text-[#003527] outline-none transition-all resize-none min-h-[120px]"
-                    />
-                  </>
-                ) : (
-                  data.resources.trim() ? (
-                    <p className="text-xs font-medium text-[#003527] leading-relaxed whitespace-pre-wrap bg-[#f9f9f8] p-3 rounded-xl border border-zinc-200/30">
-                      {data.resources}
-                    </p>
-                  ) : (
-                    <p className="text-xs text-zinc-400 italic">Keine Ressourcen angegeben.</p>
-                  )
-                )}
-              </div>
+              {isEditing ? (
+                <div className="space-y-1 text-left">
+                  <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Was hilft Ihnen, sich wohlzufühlen?</label>
+                  <p className="text-[10px] text-zinc-400 italic">Natur, Hobbies, Familie, Tiere, spirituelle Praxis...</p>
+                  <textarea
+                    rows={5}
+                    value={data.resources}
+                    onChange={(e) => updateField('resources', e.target.value)}
+                    placeholder="z.B. Meine Kraftquellen sind Spaziergänge im Wald, Musikhören..."
+                    className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3.5 py-2.5 font-semibold text-xs text-[#003527] outline-none transition-all resize-none min-h-[120px]"
+                  />
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-y-3.5 pt-1">
+                  <div className="space-y-0.5 text-left">
+                    <span className="block text-[10px] font-medium text-zinc-400">Was hilft Ihnen, sich wohlzufühlen? (Kraftquellen)</span>
+                    <span className="block text-xs font-extrabold text-[#003527] whitespace-pre-wrap leading-relaxed">
+                      {data.resources.trim() ? data.resources : 'Keine Angabe'}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
           {/* BOX 3: Spezifische Vorerkrankungen (Full Width - Col Span 3) */}
           <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 shadow-sm hover:border-[#bfc9c3]/60 transition-all duration-300 relative group overflow-hidden xl:col-span-3 shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center pb-1 border-b border-zinc-100/50">
               <div className="flex items-center gap-2">
                 <div className="p-2 rounded-xl bg-indigo-50 border border-indigo-200/40 text-indigo-700">
                   <Activity className="w-4 h-4" />
@@ -533,35 +529,35 @@ export default function CranioAnamnesisTab({ clientId }: CranioAnamnesisTabProps
                 </div>
               </>
             ) : (
-              <div className="space-y-3 text-left">
-                {data.diseases.length === 0 && !data.otherDiseases.trim() ? (
-                  <p className="text-xs text-zinc-400 italic">Keine spezifischen Vorerkrankungen angegeben.</p>
-                ) : (
-                  <>
-                    {data.diseases.length > 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {data.diseases.map(disease => (
-                          <span key={disease} className="px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200/40 text-emerald-800 text-[11px] font-bold">
-                            {disease}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                    {data.otherDiseases.trim() && (
-                      <div className="p-3 bg-[#f9f9f8] rounded-xl border border-zinc-200/30">
-                        <span className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1">Sonstige Erkrankungen</span>
-                        <p className="text-xs font-semibold text-[#003527]">{data.otherDiseases}</p>
-                      </div>
-                    )}
-                  </>
-                )}
+              <div className="grid grid-cols-1 gap-y-3.5 pt-1 text-left">
+                <div className="space-y-1.5">
+                  <span className="block text-[10px] font-medium text-zinc-400">Ausgewählte Vorerkrankungen</span>
+                  {data.diseases.length === 0 ? (
+                    <span className="block text-xs font-extrabold text-zinc-400 italic">Keine spezifischen Vorerkrankungen ausgewählt</span>
+                  ) : (
+                    <div className="flex flex-wrap gap-1.5">
+                      {data.diseases.map(disease => (
+                        <span key={disease} className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-[#003527]/5 text-[#003527]">
+                          {disease}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                
+                <div className="space-y-0.5 border-t border-zinc-100 pt-2.5">
+                  <span className="block text-[10px] font-medium text-zinc-400">Andere/Sonstige Vorerkrankungen</span>
+                  <span className="block text-xs font-extrabold text-[#003527]">
+                    {data.otherDiseases.trim() ? data.otherDiseases : 'Keine Angabe'}
+                  </span>
+                </div>
               </div>
             )}
           </div>
 
           {/* BOX 4: Unfälle & Einschneidende Ereignisse (Col span 2) */}
           <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 shadow-sm hover:border-[#bfc9c3]/60 transition-all duration-300 relative group overflow-hidden md:col-span-2 shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 pb-1 border-b border-zinc-100/50">
               <div className="p-2 rounded-xl bg-orange-50 border border-orange-200/40 text-orange-700">
                 <AlertTriangle className="w-4 h-4" />
               </div>
@@ -643,41 +639,40 @@ export default function CranioAnamnesisTab({ clientId }: CranioAnamnesisTabProps
                 </div>
               </>
             ) : (
-              <div className="space-y-4 text-xs text-[#003527] font-medium text-left">
-                {(!data.accidents.trim() && !data.otherIllnesses.trim() && !data.eventfulEvents.trim() && data.surgeries.filter(s => s.trim() !== '').length === 0) ? (
-                  <p className="text-xs text-zinc-400 italic">Keine Angaben zu Unfällen, OPs oder Ereignissen.</p>
-                ) : (
-                  <div className="space-y-3.5">
-                    {data.accidents.trim() && (
-                      <div>
-                        <span className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1">Unfälle im Leben</span>
-                        <p className="bg-[#f9f9f8] p-3 rounded-xl border border-zinc-200/30 whitespace-pre-wrap">{data.accidents}</p>
-                      </div>
-                    )}
-                    {data.otherIllnesses.trim() && (
-                      <div>
-                        <span className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1">Andere schwere Krankheiten</span>
-                        <p className="bg-[#f9f9f8] p-3 rounded-xl border border-zinc-200/30 whitespace-pre-wrap">{data.otherIllnesses}</p>
-                      </div>
-                    )}
-                    {data.eventfulEvents.trim() && (
-                      <div>
-                        <span className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1">Einschneidende Ereignisse</span>
-                        <p className="bg-[#f9f9f8] p-3 rounded-xl border border-zinc-200/30 whitespace-pre-wrap">{data.eventfulEvents}</p>
-                      </div>
-                    )}
-                    {data.surgeries.filter(s => s.trim() !== '').length > 0 && (
-                      <div>
-                        <span className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5">OPs mit Vollnarkose</span>
-                        <ul className="list-disc pl-4 space-y-1 text-xs">
-                          {data.surgeries.filter(s => s.trim() !== '').map((op, idx) => (
-                            <li key={idx} className="font-semibold text-[#003527]">{op}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </div>
-                )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3.5 pt-1 text-left">
+                <div className="space-y-0.5">
+                  <span className="block text-[10px] font-medium text-zinc-400">Unfälle im Leben?</span>
+                  <span className="block text-xs font-extrabold text-[#003527] whitespace-pre-wrap leading-relaxed">
+                    {data.accidents.trim() ? data.accidents : 'Keine Angabe'}
+                  </span>
+                </div>
+                
+                <div className="space-y-0.5">
+                  <span className="block text-[10px] font-medium text-zinc-400">Andere schwere Krankheiten?</span>
+                  <span className="block text-xs font-extrabold text-[#003527] whitespace-pre-wrap leading-relaxed">
+                    {data.otherIllnesses.trim() ? data.otherIllnesses : 'Keine Angabe'}
+                  </span>
+                </div>
+
+                <div className="space-y-0.5 sm:col-span-2 border-t border-zinc-100 pt-2.5">
+                  <span className="block text-[10px] font-medium text-zinc-400">Einschneidende Ereignisse?</span>
+                  <span className="block text-xs font-extrabold text-[#003527] whitespace-pre-wrap leading-relaxed">
+                    {data.eventfulEvents.trim() ? data.eventfulEvents : 'Keine Angabe'}
+                  </span>
+                </div>
+
+                <div className="space-y-0.5 sm:col-span-2 border-t border-zinc-100 pt-2.5">
+                  <span className="block text-[10px] font-medium text-zinc-400">OPs mit Vollnarkose?</span>
+                  {data.surgeries.filter(s => s.trim() !== '').length === 0 ? (
+                    <span className="block text-xs font-extrabold text-zinc-400 italic">Keine Angabe</span>
+                  ) : (
+                    <ul className="list-disc pl-4 mt-1 text-xs font-extrabold text-[#003527] space-y-0.5">
+                      {data.surgeries.filter(s => s.trim() !== '').map((op, idx) => (
+                        <li key={idx}>{op}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -685,7 +680,7 @@ export default function CranioAnamnesisTab({ clientId }: CranioAnamnesisTabProps
           {/* BOX 5: Medikation */}
           <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 shadow-sm hover:border-[#bfc9c3]/60 transition-all duration-300 relative group overflow-hidden flex flex-col justify-between shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
             <div className="space-y-4 w-full">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 pb-1 border-b border-zinc-100/50">
                 <div className="p-2 rounded-xl bg-blue-50 border border-blue-200/40 text-blue-700">
                   <Pill className="w-4 h-4" />
                 </div>
@@ -737,40 +732,35 @@ export default function CranioAnamnesisTab({ clientId }: CranioAnamnesisTabProps
                   </div>
                 </div>
               ) : (
-                <div className="space-y-3.5 text-xs text-[#003527] font-medium text-left">
-                  {(!data.longtermCortison && !data.longtermRheuma && !data.otherLongtermMeds.trim() && !data.currentMeds.trim()) ? (
-                    <p className="text-xs text-zinc-400 italic">Keine Medikamente angegeben.</p>
-                  ) : (
-                    <div className="space-y-3.5">
-                      {(data.longtermCortison || data.longtermRheuma || data.otherLongtermMeds.trim()) && (
-                        <div>
-                          <span className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5">Langzeit-Medikation (mind. 5 Jahre)</span>
-                          <div className="flex flex-wrap gap-2 mb-2">
-                            {data.longtermCortison && (
-                              <span className="px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-200/40 text-blue-700 font-bold text-[10px]">
-                                Cortison
-                              </span>
-                            )}
-                            {data.longtermRheuma && (
-                              <span className="px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-200/40 text-blue-700 font-bold text-[10px]">
-                                Rheumamittel
-                              </span>
-                            )}
-                          </div>
-                          {data.otherLongtermMeds.trim() && (
-                            <p className="bg-[#f9f9f8] p-3 rounded-xl border border-zinc-200/30">{data.otherLongtermMeds}</p>
-                          )}
-                        </div>
+                <div className="grid grid-cols-1 gap-y-3.5 pt-1 text-left">
+                  <div className="space-y-0.5">
+                    <span className="block text-[10px] font-medium text-zinc-400">Langzeit-Medikation (mind. 5 Jahre)</span>
+                    <div className="flex flex-wrap gap-1.5 mb-1 mt-0.5">
+                      {data.longtermCortison && (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-[#003527]/5 text-[#003527]">
+                          Cortison
+                        </span>
                       )}
-                      
-                      {data.currentMeds.trim() && (
-                        <div>
-                          <span className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1">Derzeitige Medikamente</span>
-                          <p className="bg-[#f9f9f8] p-3 rounded-xl border border-zinc-200/30 whitespace-pre-wrap">{data.currentMeds}</p>
-                        </div>
+                      {data.longtermRheuma && (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-[#003527]/5 text-[#003527]">
+                          Rheumamittel
+                        </span>
+                      )}
+                      {!data.longtermCortison && !data.longtermRheuma && (
+                        <span className="text-xs font-extrabold text-[#003527]">Keine (Cortison/Rheumamittel)</span>
                       )}
                     </div>
-                  )}
+                    {data.otherLongtermMeds.trim() && (
+                      <span className="block text-xs font-extrabold text-[#003527]">{data.otherLongtermMeds}</span>
+                    )}
+                  </div>
+                  
+                  <div className="space-y-0.5 border-t border-zinc-100 pt-2.5">
+                    <span className="block text-[10px] font-medium text-zinc-400">Derzeitige Medikamente?</span>
+                    <span className="block text-xs font-extrabold text-[#003527] whitespace-pre-wrap leading-relaxed">
+                      {data.currentMeds.trim() ? data.currentMeds : 'Keine Angabe'}
+                    </span>
+                  </div>
                 </div>
               )}
             </div>
@@ -778,7 +768,7 @@ export default function CranioAnamnesisTab({ clientId }: CranioAnamnesisTabProps
 
           {/* BOX 6: Emotionale Historie */}
           <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 shadow-sm hover:border-[#bfc9c3]/60 transition-all duration-300 relative group overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 pb-1 border-b border-zinc-100/50">
               <div className="p-2 rounded-xl bg-purple-50 border border-purple-200/40 text-purple-700">
                 <Brain className="w-4 h-4" />
               </div>
@@ -810,32 +800,27 @@ export default function CranioAnamnesisTab({ clientId }: CranioAnamnesisTabProps
                 </div>
               </div>
             ) : (
-              <div className="space-y-3.5 text-xs text-[#003527] font-medium text-left">
-                {!data.emotionalHospitalization.trim() && !data.emotionalMeds.trim() ? (
-                  <p className="text-xs text-zinc-400 italic">Keine Angaben zur emotionalen Historie.</p>
-                ) : (
-                  <div className="space-y-3.5">
-                    {data.emotionalHospitalization.trim() && (
-                      <div>
-                        <span className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1">Stationäre Behandlung</span>
-                        <p className="bg-[#f9f9f8] p-3 rounded-xl border border-zinc-200/30 whitespace-pre-wrap">{data.emotionalHospitalization}</p>
-                      </div>
-                    )}
-                    {data.emotionalMeds.trim() && (
-                      <div>
-                        <span className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1">Emotionale Medikamente</span>
-                        <p className="bg-[#f9f9f8] p-3 rounded-xl border border-zinc-200/30 whitespace-pre-wrap">{data.emotionalMeds}</p>
-                      </div>
-                    )}
-                  </div>
-                )}
+              <div className="grid grid-cols-1 gap-y-3.5 pt-1 text-left">
+                <div className="space-y-0.5">
+                  <span className="block text-[10px] font-medium text-zinc-400">Stationäre Behandlung?</span>
+                  <span className="block text-xs font-extrabold text-[#003527] whitespace-pre-wrap leading-relaxed">
+                    {data.emotionalHospitalization.trim() ? data.emotionalHospitalization : 'Keine Angabe'}
+                  </span>
+                </div>
+                
+                <div className="space-y-0.5 border-t border-zinc-100 pt-2.5">
+                  <span className="block text-[10px] font-medium text-zinc-400">Medikamente (emotional)?</span>
+                  <span className="block text-xs font-extrabold text-[#003527] whitespace-pre-wrap leading-relaxed">
+                    {data.emotionalMeds.trim() ? data.emotionalMeds : 'Keine Angabe'}
+                  </span>
+                </div>
               </div>
             )}
           </div>
 
           {/* BOX 7: Geburt & Schwangerschaft */}
           <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 shadow-sm hover:border-[#bfc9c3]/60 transition-all duration-300 relative group overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 pb-1 border-b border-zinc-100/50">
               <div className="p-2 rounded-xl bg-pink-50 border border-pink-200/40 text-pink-700">
                 <Baby className="w-4 h-4" />
               </div>
@@ -882,49 +867,45 @@ export default function CranioAnamnesisTab({ clientId }: CranioAnamnesisTabProps
                 </div>
               </div>
             ) : (
-              <div className="space-y-3.5 text-xs text-[#003527] font-medium text-left">
-                {!data.birthKomplications.trim() && !data.pregnant && !data.miscarriages.trim() ? (
-                  <p className="text-xs text-zinc-400 italic">Keine Angaben zu Geburt & Schwangerschaft.</p>
-                ) : (
-                  <div className="space-y-3.5">
-                    {data.birthKomplications.trim() && (
-                      <div>
-                        <span className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1">Geburtskomplikationen</span>
-                        <p className="bg-[#f9f9f8] p-3 rounded-xl border border-zinc-200/30 whitespace-pre-wrap">{data.birthKomplications}</p>
-                      </div>
-                    )}
-                    <div className="grid grid-cols-2 gap-3">
-                      {data.pregnant && (
-                        <div>
-                          <span className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1">Schwanger</span>
-                          <p className="bg-[#f9f9f8] p-2.5 rounded-xl border border-zinc-200/30 font-bold">{data.pregnant}</p>
-                        </div>
-                      )}
-                      {data.miscarriages.trim() && (
-                        <div>
-                          <span className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1">Fehlgeburten</span>
-                          <p className="bg-[#f9f9f8] p-2.5 rounded-xl border border-zinc-200/30 font-bold">{data.miscarriages}</p>
-                        </div>
-                      )}
-                    </div>
+              <div className="grid grid-cols-1 gap-y-3.5 pt-1 text-left">
+                <div className="space-y-0.5">
+                  <span className="block text-[10px] font-medium text-zinc-400">Komplikationen bei eigener Geburt?</span>
+                  <span className="block text-xs font-extrabold text-[#003527] whitespace-pre-wrap leading-relaxed">
+                    {data.birthKomplications.trim() ? data.birthKomplications : 'Keine Angabe'}
+                  </span>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3 border-t border-zinc-100 pt-2.5">
+                  <div className="space-y-0.5">
+                    <span className="block text-[10px] font-medium text-zinc-400">Schwanger?</span>
+                    <span className="block text-xs font-extrabold text-[#003527]">
+                      {data.pregnant || 'Keine Angabe'}
+                    </span>
                   </div>
-                )}
+                  
+                  <div className="space-y-0.5">
+                    <span className="block text-[10px] font-medium text-zinc-400">Fehlgeburten?</span>
+                    <span className="block text-xs font-extrabold text-[#003527]">
+                      {data.miscarriages.trim() ? data.miscarriages : 'Keine Angabe'}
+                    </span>
+                  </div>
+                </div>
               </div>
             )}
           </div>
 
           {/* BOX 8: Cranio Erfahrung */}
           <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 shadow-sm hover:border-[#bfc9c3]/60 transition-all duration-300 relative group overflow-hidden bg-gradient-to-br from-white to-emerald-50/5 shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 pb-1 border-b border-zinc-100/50">
               <div className="p-2 rounded-xl bg-teal-50 border border-teal-200/40 text-teal-700">
                 <Sparkles className="w-4 h-4" />
               </div>
               <h4 className="text-xs font-bold text-[#003527] uppercase tracking-wider">Cranio-Erfahrung</h4>
             </div>
 
-            <div className="space-y-1 text-left">
-              <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest font-sans">Bisherige Craniosacrale Behandlungen?</label>
-              {isEditing ? (
+            {isEditing ? (
+              <div className="space-y-1 text-left">
+                <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest font-sans">Bisherige Craniosacrale Behandlungen?</label>
                 <textarea
                   rows={3}
                   value={data.cranioExperience}
@@ -932,16 +913,17 @@ export default function CranioAnamnesisTab({ clientId }: CranioAnamnesisTabProps
                   placeholder="Falls ja, wann und wie oft? Wie haben Sie diese empfunden?"
                   className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3.5 py-2.5 font-semibold text-xs text-[#003527] outline-none transition-all resize-none min-h-[90px]"
                 />
-              ) : (
-                data.cranioExperience.trim() ? (
-                  <p className="text-xs font-medium text-[#003527] leading-relaxed whitespace-pre-wrap bg-[#f9f9f8] p-3 rounded-xl border border-zinc-200/30">
-                    {data.cranioExperience}
-                  </p>
-                ) : (
-                  <p className="text-xs text-zinc-400 italic">Keine bisherigen Cranio-Erfahrungen angegeben.</p>
-                )
-              )}
-            </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-y-3.5 pt-1 text-left">
+                <div className="space-y-0.5">
+                  <span className="block text-[10px] font-medium text-zinc-400">Bisherige Craniosacrale Behandlungen?</span>
+                  <span className="block text-xs font-extrabold text-[#003527] whitespace-pre-wrap leading-relaxed">
+                    {data.cranioExperience.trim() ? data.cranioExperience : 'Keine Angabe'}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
 
         </div>
