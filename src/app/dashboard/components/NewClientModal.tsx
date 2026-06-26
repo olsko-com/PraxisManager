@@ -19,7 +19,9 @@ export default function NewClientModal() {
   const [birthday, setBirthday] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
-  const [emergency, setEmergency] = useState('');
+  const [address, setAddress] = useState('');
+  const [occupation, setOccupation] = useState('');
+  const [maritalStatus, setMaritalStatus] = useState('');
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -37,8 +39,11 @@ export default function NewClientModal() {
       birthday,
       email,
       phone,
-      emergency,
-      notes
+      '', // emergency contact is blank
+      notes,
+      address,
+      occupation,
+      maritalStatus
     );
 
     setIsSubmitting(false);
@@ -50,7 +55,9 @@ export default function NewClientModal() {
       setBirthday('');
       setPhone('');
       setEmail('');
-      setEmergency('');
+      setAddress('');
+      setOccupation('');
+      setMaritalStatus('');
       setNotes('');
       // Close modal
       setIsNewClientModalOpen(false);
@@ -149,15 +156,27 @@ export default function NewClientModal() {
                   </div>
                 </div>
 
-                {/* Birthday */}
-                <div className="space-y-1.5 text-left">
-                  <label className="block text-[10px] font-semibold text-zinc-500">Geburtstag</label>
-                  <input
-                    type="date"
-                    value={birthday}
-                    onChange={(e) => setBirthday(e.target.value)}
-                    className="w-full bg-zinc-100/60 border border-transparent focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3.5 py-2.5 font-semibold text-xs text-[#003527] outline-none transition-all cursor-pointer text-zinc-400"
-                  />
+                {/* Birthday & Marital Status in 1 row */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5 text-left">
+                    <label className="block text-[10px] font-semibold text-zinc-500">Geburtstag</label>
+                    <input
+                      type="date"
+                      value={birthday}
+                      onChange={(e) => setBirthday(e.target.value)}
+                      className="w-full bg-zinc-100/60 border border-transparent focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3.5 py-2.5 font-semibold text-xs text-[#003527] outline-none transition-all cursor-pointer text-zinc-400"
+                    />
+                  </div>
+                  <div className="space-y-1.5 text-left">
+                    <label className="block text-[10px] font-semibold text-zinc-500">Familienstand</label>
+                    <input
+                      type="text"
+                      value={maritalStatus}
+                      onChange={(e) => setMaritalStatus(e.target.value)}
+                      placeholder="z.B. ledig, verheiratet"
+                      className="w-full bg-zinc-100/60 border border-transparent focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3.5 py-2.5 font-semibold text-xs text-[#003527] outline-none transition-all placeholder-zinc-400/70"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -166,7 +185,7 @@ export default function NewClientModal() {
 
             {/* SECTION 2: Contact Details */}
             <div className="space-y-4">
-              <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Kontakt & Erreichbarkeit</h4>
+              <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Erreichbarkeit & Lebensumstände</h4>
               
               <div className="space-y-4">
                 {/* Phone & Email */}
@@ -193,14 +212,26 @@ export default function NewClientModal() {
                   </div>
                 </div>
 
-                {/* Emergency Contact */}
+                {/* Anschrift */}
                 <div className="space-y-1.5 text-left">
-                  <label className="block text-[10px] font-semibold text-zinc-500">Notfallkontakt</label>
+                  <label className="block text-[10px] font-semibold text-zinc-500">Anschrift</label>
                   <input
                     type="text"
-                    value={emergency}
-                    onChange={(e) => setEmergency(e.target.value)}
-                    placeholder="Name, Beziehung & Telefonnummer"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    placeholder="Straße, Hausnummer, PLZ & Ort"
+                    className="w-full bg-zinc-100/60 border border-transparent focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3.5 py-2.5 font-semibold text-xs text-[#003527] outline-none transition-all placeholder-zinc-400/70"
+                  />
+                </div>
+
+                {/* Derzeitige Beschäftigung */}
+                <div className="space-y-1.5 text-left">
+                  <label className="block text-[10px] font-semibold text-zinc-500">Derzeitige Beschäftigung</label>
+                  <input
+                    type="text"
+                    value={occupation}
+                    onChange={(e) => setOccupation(e.target.value)}
+                    placeholder="z.B. Büroangestellte/r, Handwerker/in"
                     className="w-full bg-zinc-100/60 border border-transparent focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3.5 py-2.5 font-semibold text-xs text-[#003527] outline-none transition-all placeholder-zinc-400/70"
                   />
                 </div>

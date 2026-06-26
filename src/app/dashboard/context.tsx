@@ -183,10 +183,14 @@ interface DashboardContextProps {
     email: string,
     phone: string,
     emergencyContact: string,
-    notes: string
+    notes: string,
+    address?: string,
+    occupation?: string,
+    maritalStatus?: string
   ) => Promise<boolean>;
   deleteClient: (id: string) => Promise<void>;
   updateClientName: (id: string, name: string) => Promise<void>;
+  updateClientDetails: (id: string, updatedFields: Partial<Client>) => Promise<boolean>;
   deleteService: (id: string) => Promise<void>;
   updateService: (id: string, name: string) => Promise<void>;
   toggleClientFavorite: (id: string) => void;
@@ -492,7 +496,10 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
               gdprToken: c.gdpr_token,
               gdprTokenExpiresAt: c.gdpr_token_expires_at,
               gdprSignature: c.gdpr_signature,
-              gdprSignedAt: c.gdpr_signed_at
+              gdprSignedAt: c.gdpr_signed_at,
+              address: c.address || '',
+              occupation: c.occupation || '',
+              maritalStatus: c.marital_status || ''
             };
           });
           setClients(loadedClients);
@@ -744,7 +751,10 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     email: string,
     phone: string,
     emergencyContact: string,
-    notes: string
+    notes: string,
+    address: string = '',
+    occupation: string = '',
+    maritalStatus: string = ''
   ): Promise<boolean> => {
     if (!firstName || !lastName || !therapistId) return false;
 
@@ -763,7 +773,10 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       createdAt: new Date().toISOString(),
       isFavorite: false,
       isFlagged: false,
-      gdprAccepted: false
+      gdprAccepted: false,
+      address,
+      occupation,
+      maritalStatus
     };
 
     const { error } = await supabase
@@ -776,7 +789,10 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         email: email || 'patient@email.de',
         phone: phone || '',
         emergency_contact: emergencyContact || '',
-        notes: notes || ''
+        notes: notes || '',
+        address,
+        occupation,
+        marital_status: maritalStatus
       });
 
     if (error) {
@@ -841,6 +857,56 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
     setClients(prev => prev.map(c => c.id === id ? { ...c, name: newName.trim(), firstName, lastName } : c));
     showToast('Patientenname erfolgreich aktualisiert.', 'success');
+  };
+
+  // Update Patient Details
+  const updateClientDetails = async (id: string, updatedFields: Partial<Client>): Promise<boolean> => {
+    if (!therapistId) return false;
+    const client = clients.find(c => c.id === id);
+    if (!client) return false;
+
+    const dbUpdate: any = {};
+    if (updatedFields.firstName !== undefined || updatedFields.lastName !== undefined || updatedFields.salutation !== undefined) {
+      const sal = updatedFields.salutation !== undefined ? updatedFields.salutation : (client.salutation || 'Keine');
+      const first = updatedFields.firstName !== undefined ? updatedFields.firstName : (client.firstName || '');
+      const last = updatedFields.lastName !== undefined ? updatedFields.lastName : (client.lastName || '');
+      dbUpdate.name = `${sal}|${first}|${last}`;
+    }
+    if (updatedFields.birthday !== undefined) dbUpdate.birthday = updatedFields.birthday;
+    if (updatedFields.email !== undefined) dbUpdate.email = updatedFields.email;
+    if (updatedFields.phone !== undefined) dbUpdate.phone = updatedFields.phone;
+    if (updatedFields.emergencyContact !== undefined) dbUpdate.emergency_contact = updatedFields.emergencyContact;
+    if (updatedFields.notes !== undefined) dbUpdate.notes = updatedFields.notes;
+    if (updatedFields.address !== undefined) dbUpdate.address = updatedFields.address;
+    if (updatedFields.occupation !== undefined) dbUpdate.occupation = updatedFields.occupation;
+    if (updatedFields.maritalStatus !== undefined) dbUpdate.marital_status = updatedFields.maritalStatus;
+    if (updatedFields.gdprAccepted !== undefined) dbUpdate.gdpr_accepted = updatedFields.gdprAccepted;
+
+    const { error } = await supabase
+      .from('clients')
+      .update(dbUpdate)
+      .eq('id', id);
+
+    if (error) {
+      showToast(`Fehler beim Aktualisieren der Patientendaten: ${error.message}`, 'error');
+      return false;
+    }
+
+    setClients(prev => prev.map(c => {
+      if (c.id === id) {
+        const merged = { ...c, ...updatedFields };
+        if (updatedFields.firstName !== undefined || updatedFields.lastName !== undefined) {
+          const first = updatedFields.firstName !== undefined ? updatedFields.firstName : (c.firstName || '');
+          const last = updatedFields.lastName !== undefined ? updatedFields.lastName : (c.lastName || '');
+          merged.name = `${first} ${last}`.trim();
+        }
+        return merged;
+      }
+      return c;
+    }));
+
+    showToast('Patientendaten erfolgreich aktualisiert.', 'success');
+    return true;
   };
 
   // Toggling Patient Favorite
@@ -1740,6 +1806,7 @@ Vielen Dank fuer Ihr Vertrauen!
       handleCreateClient,
       deleteClient,
       updateClientName,
+      updateClientDetails,
       toggleClientFavorite,
       toggleClientFlag,
       toggleClientGdpr,

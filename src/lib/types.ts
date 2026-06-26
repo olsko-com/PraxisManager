@@ -17,7 +17,11 @@ export interface Client {
   gdprTokenExpiresAt?: string | null;
   gdprSignature?: string | null;
   gdprSignedAt?: string | null;
+  address?: string;
+  occupation?: string;
+  maritalStatus?: string;
 }
+
 
 
 export interface Service {

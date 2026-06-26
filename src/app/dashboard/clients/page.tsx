@@ -3,7 +3,8 @@
 import React from 'react';
 import { 
   Plus, Search, Mail, Calendar as CalendarIcon, Paperclip, FileText, 
-  Edit2, Trash2, Star, Flag, ChevronLeft, ChevronRight, MoreVertical, User, Phone, Heart, Info
+  Edit2, Trash2, Star, Flag, ChevronLeft, ChevronRight, MoreVertical, User, Phone, Heart, Info,
+  Check, Printer, Download, Briefcase, MapPin, Smile
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDashboard } from '../context';
@@ -171,6 +172,11 @@ export default function ClientsPage() {
     openGdprModal,
     handleClientContextMenu,
     deleteClient,
+    updateClientDetails,
+    markInvoicePaid,
+    sendInvoiceEmail,
+    printInvoice,
+    downloadInvoicePdf,
     therapistId,
     appointments,
     invoices,
@@ -216,6 +222,71 @@ export default function ClientsPage() {
   const [isDetailsMenuOpen, setIsDetailsMenuOpen] = React.useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
   const [showGdprTooltip, setShowGdprTooltip] = React.useState(false);
+  const [activeTab, setActiveTab] = React.useState<'overview' | 'soap' | 'billing'>('overview');
+
+  // Inline client editing state
+  const [isEditingClient, setIsEditingClient] = React.useState(false);
+  const [editSalutation, setEditSalutation] = React.useState('');
+  const [editFirstName, setEditFirstName] = React.useState('');
+  const [editLastName, setEditLastName] = React.useState('');
+  const [editBirthday, setEditBirthday] = React.useState('');
+  const [editPhone, setEditPhone] = React.useState('');
+  const [editEmail, setEditEmail] = React.useState('');
+  const [editAddress, setEditAddress] = React.useState('');
+  const [editOccupation, setEditOccupation] = React.useState('');
+  const [editMaritalStatus, setEditMaritalStatus] = React.useState('');
+  const [editNotes, setEditNotes] = React.useState('');
+
+  const calculateAge = (birthdayStr: string) => {
+    if (!birthdayStr) return '';
+    const birthDate = new Date(birthdayStr);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
+  const startEditing = () => {
+    if (!currentClient) return;
+    setEditSalutation(currentClient.salutation || 'Keine');
+    setEditFirstName(currentClient.firstName || '');
+    setEditLastName(currentClient.lastName || '');
+    setEditBirthday(currentClient.birthday || '');
+    setEditPhone(currentClient.phone || '');
+    setEditEmail(currentClient.email || '');
+    setEditAddress(currentClient.address || '');
+    setEditOccupation(currentClient.occupation || '');
+    setEditMaritalStatus(currentClient.maritalStatus || '');
+    setEditNotes(currentClient.notes || '');
+    setIsEditingClient(true);
+  };
+
+  const saveEditing = async () => {
+    if (!currentClient) return;
+    const success = await updateClientDetails(currentClient.id, {
+      salutation: editSalutation,
+      firstName: editFirstName,
+      lastName: editLastName,
+      birthday: editBirthday,
+      email: editEmail,
+      phone: editPhone,
+      address: editAddress,
+      occupation: editOccupation,
+      maritalStatus: editMaritalStatus,
+      notes: editNotes
+    });
+    if (success) {
+      setIsEditingClient(false);
+    }
+  };
+
+  // Reset editing mode when client changes
+  React.useEffect(() => {
+    setIsEditingClient(false);
+  }, [selectedClientId]);
 
   // Auto-close sidebar when selected client changes
   React.useEffect(() => {
@@ -449,8 +520,35 @@ export default function ClientsPage() {
             <div className="border-b border-[#bfc9c3]/30 px-4 md:px-6 pt-6 pb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-transparent z-20 flex-shrink-0 text-left">
               <div className="flex flex-col text-left">
                 <div className="text-left">
-                  <h3 className="text-xl font-bold text-[#043F2D]">{currentClient.name}</h3>
-                  <p className="text-xs text-zinc-500 mt-1">Registriert seit {new Date(currentClient.createdAt).toLocaleDateString('de-DE')}</p>
+                  <h3 className="text-xl font-bold text-[#043F2D]">
+                    {currentClient.name}
+                    {currentClient.birthday && (
+                      <span className="text-sm font-semibold text-zinc-400 ml-2">
+                        ({calculateAge(currentClient.birthday)} J.)
+                      </span>
+                    )}
+                  </h3>
+                  <div className="flex flex-wrap items-center gap-2 mt-1">
+                    <span className="text-xs text-zinc-500">Patient seit {new Date(currentClient.createdAt).toLocaleDateString('de-DE')}</span>
+                    <span className="text-zinc-300 hidden sm:inline">•</span>
+                    <button
+                      onClick={() => {
+                        if (currentClient.gdprAccepted) {
+                          toggleClientGdpr(currentClient.id);
+                        } else {
+                          openGdprModal(currentClient.id);
+                        }
+                      }}
+                      className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full border transition-all cursor-pointer inline-flex items-center gap-0.5 outline-none ${
+                        currentClient.gdprAccepted
+                          ? 'bg-emerald-50 border-emerald-200/50 text-emerald-700 hover:bg-emerald-100'
+                          : 'bg-amber-50 border-amber-200/50 text-amber-700 hover:bg-amber-100'
+                      }`}
+                      title={currentClient.gdprAccepted ? "Klicken, um Einwilligung zu widerrufen" : "Klicken, um DSGVO-Einwilligung zu erteilen"}
+                    >
+                      {currentClient.gdprAccepted ? '✓ DSGVO erteilt' : '⚠ DSGVO ausstehend'}
+                    </button>
+                  </div>
                 </div>
               </div>
               
@@ -577,313 +675,670 @@ export default function ClientsPage() {
               </div>
             </div>
 
+            {/* Sub-tab navigation */}
+            <div className="flex border-b border-[#bfc9c3]/30 px-4 md:px-6 bg-transparent select-none z-20 flex-shrink-0">
+              {(['overview', 'soap', 'billing'] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`py-3.5 px-4 text-xs font-bold transition-all relative border-b-2 -mb-[2px] cursor-pointer outline-none bg-transparent ${
+                    activeTab === tab
+                      ? 'border-[#003527] text-[#003527]'
+                      : 'border-transparent text-zinc-400 hover:text-[#003527]'
+                  }`}
+                >
+                  {tab === 'overview' && '📋 Stammdaten & Anamnese'}
+                  {tab === 'soap' && '🩺 Therapieverlauf (SOAP)'}
+                  {tab === 'billing' && '📄 Abrechnung & Dokumente'}
+                </button>
+              ))}
+            </div>
+
             {/* Scrollable details content */}
-            <div className="flex-grow overflow-y-auto px-4 md:px-6 py-6 space-y-6 pb-24 md:pb-6">
-              {/* Quick profile info grid (Bento Grid) */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Bento Card 1: Stammdaten */}
-                <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 flex flex-col justify-between transition-all duration-300 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)] relative group">
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-start">
-                      <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200/40 text-emerald-700">
-                        <User className="w-4 h-4" />
-                      </div>
-                      <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-500">
-                        Stammdaten
-                      </span>
+            <div className="flex-grow overflow-y-auto px-4 md:px-6 py-6 pb-24 md:pb-6">
+              {activeTab === 'overview' && (
+                <div className="space-y-6 animate-fade-in text-left">
+                  {/* Tab Action Bar */}
+                  <div className="flex justify-between items-center pb-2 border-b border-[#bfc9c3]/20">
+                    <div>
+                      <h4 className="text-[10px] font-bold text-[#003527]/60 uppercase tracking-widest">Stammdaten & Anamnese</h4>
+                      <p className="text-[11px] text-zinc-400 mt-0.5">Demographische Daten, Beschäftigung und medizinisches Profil.</p>
                     </div>
-                    <div className="space-y-3.5 text-left pt-1">
-                      <div className="space-y-0.5">
-                        <span className="block text-[10px] font-medium text-zinc-400">Geburtstag</span>
-                        <span className="block text-xs font-extrabold text-[#003527]">{new Date(currentClient.birthday).toLocaleDateString('de-DE')}</span>
-                      </div>
-                      <div className="space-y-0.5">
-                        <span className="block text-[10px] font-medium text-zinc-400">Mitglied seit</span>
-                        <span className="block text-xs font-extrabold text-[#003527]">{new Date(currentClient.createdAt).toLocaleDateString('de-DE')}</span>
-                      </div>
-                      <div className="space-y-0.5 relative">
-                        <span 
-                          className="inline-flex items-center gap-1 text-[10px] font-medium text-zinc-400 cursor-help select-none"
-                          onMouseEnter={() => setShowGdprTooltip(true)}
-                          onMouseLeave={() => setShowGdprTooltip(false)}
-                        >
-                          Datenschutz
-                          <Info className="w-3 h-3 text-zinc-400 hover:text-[#003527] transition-colors" />
-                        </span>
-                        
-                        {/* Styled HTML Tooltip */}
-                        {showGdprTooltip && (
-                          <div className="absolute bottom-full left-0 mb-2 w-72 bg-white text-zinc-700 text-[10px] leading-relaxed p-3.5 rounded-xl shadow-xl z-50 normal-case font-medium border border-[#bfc9c3]/30 pointer-events-none select-none animate-fade-in">
-                            <p className="font-bold mb-1 text-[11px] text-[#003527]">DSGVO-Status</p>
-                            <p className="text-zinc-500 font-semibold leading-relaxed">
-                              Dokumentiert, ob der Patient der Verarbeitung seiner Gesundheitsdaten (gemäß Art. 9 DSGVO) zugestimmt hat. Diese ausdrückliche Einwilligung ist rechtlich erforderlich, um Behandlungsdaten speichern zu dürfen.
-                            </p>
-                            {/* Arrow pointing down */}
-                            <div className="absolute top-full left-6 border-4 border-transparent border-t-white" />
-                            <div className="absolute top-full left-6 border-4 border-transparent border-t-[#bfc9c3]/30 -z-10" style={{ transform: 'translateY(1.5px)' }} />
-                          </div>
-                        )}
-                        <div>
-                          <button
-                            onClick={() => {
-                              if (currentClient.gdprAccepted) {
-                                toggleClientGdpr(currentClient.id);
-                              } else {
-                                openGdprModal(currentClient.id);
-                              }
-                            }}
-                            className={`mt-1 text-[10px] font-bold px-2 py-1 rounded-lg border transition-all cursor-pointer inline-flex items-center gap-1 outline-none ${
-                              currentClient.gdprAccepted
-                                ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100'
-                                : 'bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100'
-                            }`}
-                          >
-                            {currentClient.gdprAccepted ? '✓ Erteilt' : '⚠ Ausstehend'}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Bento Card 2: Kontakt */}
-                <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 flex flex-col justify-between transition-all duration-300 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)] relative group overflow-hidden">
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-start">
-                      <div className="p-2 rounded-xl bg-blue-50 border border-blue-200/40 text-blue-700">
-                        <Phone className="w-4 h-4" />
-                      </div>
-                      <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-500">
-                        Erreichbarkeit
-                      </span>
-                    </div>
-                    <div className="space-y-3.5 text-left pt-1">
-                      <div className="space-y-0.5">
-                        <span className="block text-[10px] font-medium text-zinc-400">Telefon</span>
-                        <span className="block text-xs font-extrabold text-[#003527]">{currentClient.phone || 'Keine Angabe'}</span>
-                      </div>
-                      <div className="space-y-0.5">
-                        <span className="block text-[10px] font-medium text-zinc-400">E-Mail</span>
-                        <span className="block text-xs font-extrabold text-[#003527] break-all">{currentClient.email}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Bento Card 3: Notfallkontakt */}
-                <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 flex flex-col justify-between transition-all duration-300 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)] relative group overflow-hidden">
-                  <div className="space-y-4 flex-grow">
-                    <div className="flex justify-between items-start">
-                      <div className="p-2 rounded-xl bg-rose-50 border border-rose-200/40 text-rose-700">
-                        <Heart className="w-4 h-4" />
-                      </div>
-                      <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-500">
-                        Notfallkontakt
-                      </span>
-                    </div>
-                    <div className="space-y-3 text-left pt-3 min-h-[82px] flex flex-col justify-center">
-                      <p className="text-xs font-extrabold text-[#003527] leading-relaxed">
-                        {currentClient.emergencyContact || 'Kein Notfallkontakt hinterlegt'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Bento Row 2: Notes & Document Locker side-by-side */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Bento Card 4: Medizinische Notizen / Anamnese (col-span-2) */}
-                <div className="md:col-span-2 bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 flex flex-col justify-between transition-all duration-300 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)] relative group overflow-hidden">
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-start">
-                      <div className="p-2 rounded-xl bg-purple-50 border border-purple-200/40 text-purple-700">
-                        <FileText className="w-4 h-4" />
-                      </div>
-                      <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-500">
-                        Praxisnotizen & Anamnese
-                      </span>
-                    </div>
-                    <div className="text-left pt-1">
-                      <p className="text-xs font-semibold leading-relaxed text-[#404944] min-h-[60px]">
-                        {currentClient.notes || 'Keine medizinischen Notizen hinterlegt.'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Bento Card 5: Dokumente locker (col-span-1) */}
-                <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 flex flex-col justify-between transition-all duration-300 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)] relative group overflow-hidden">
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-start">
-                      <div className="p-2 rounded-xl bg-amber-50 border border-amber-200/40 text-amber-700">
-                        <Paperclip className="w-4 h-4" />
-                      </div>
+                    {!isEditingClient ? (
                       <button 
-                        onClick={() => {
-                          const name = prompt('Dokumentenname (z.B. Rezept_Befund.pdf):');
-                          if (name) {
-                            const docs = clientDocuments[currentClient.id] || [];
-                            setClientDocuments((prev: Record<string, {name: string, size: string}[]>) => ({
-                              ...prev,
-                              [currentClient.id]: [...docs, { name, size: '150 KB' }]
-                            }));
-                            showToast('Dokument erfolgreich hinzugefügt.', 'success');
-                          }
-                        }}
-                        className="text-[9px] font-bold text-[#003527] hover:text-[#0b513d] flex items-center gap-0.5 transition-colors cursor-pointer bg-zinc-100 hover:bg-[#003527]/5 border border-transparent rounded-md px-2 py-0.5"
+                        onClick={startEditing}
+                        className="bg-white hover:bg-zinc-50 text-[#003527] border border-[#bfc9c3]/50 px-3.5 py-1.5 rounded-xl text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1.5"
                       >
-                        + PDF
+                        <Edit2 className="w-3 h-3" /> Akte bearbeiten
                       </button>
-                    </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => setIsEditingClient(false)}
+                          className="bg-zinc-100 hover:bg-zinc-200/80 text-[#003527] px-3.5 py-1.5 rounded-xl text-[10px] font-bold transition-all cursor-pointer border-none"
+                        >
+                          Abbrechen
+                        </button>
+                        <button 
+                          onClick={saveEditing}
+                          className="bg-[#003527] hover:bg-[#0b513d] text-white px-3.5 py-1.5 rounded-xl text-[10px] font-bold transition-all cursor-pointer border-none"
+                        >
+                          Speichern
+                        </button>
+                      </div>
+                    )}
+                  </div>
 
-                    <div className="space-y-2 text-left">
-                      {(clientDocuments[currentClient.id] || []).length > 0 ? (
-                        <div className="max-h-[110px] overflow-y-auto pr-1 space-y-1.5 hide-scrollbar">
-                          {(clientDocuments[currentClient.id] || []).map((doc, idx) => (
-                            <div key={idx} className="flex justify-between items-center text-[10px] font-semibold text-[#404944] bg-zinc-50 border border-zinc-200/30 p-2 rounded-lg hover:border-zinc-200 transition-all">
-                              <span className="flex items-center gap-1.5 min-w-0 pr-2">
-                                <FileText className="w-3.5 h-3.5 text-[#003527]/60 flex-shrink-0" />
-                                <span className="truncate" title={doc.name}>{doc.name}</span>
-                              </span>
-                              <a href="#" className="text-[9px] font-extrabold text-[#003527] hover:underline flex-shrink-0">Ansehen</a>
+                  {isEditingClient ? (
+                    /* EDIT MODE FORM */
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 text-left">
+                      {/* Column 1: Demographie & Kontakt */}
+                      <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 shadow-sm">
+                        <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Demographie & Kontakt</h4>
+                        
+                        <div className="space-y-3.5">
+                          {/* Salutation Selector (Apple-style segmented control) */}
+                          <div className="space-y-1 text-left">
+                            <label className="block text-[10px] font-semibold text-zinc-500">Anrede</label>
+                            <div className="bg-zinc-100/60 p-0.5 rounded-xl border border-transparent flex relative overflow-hidden">
+                              {(['Keine', 'Frau', 'Herr'] as const).map((opt) => (
+                                <button
+                                  key={opt}
+                                  type="button"
+                                  onClick={() => setEditSalutation(opt)}
+                                  className={`flex-1 py-1.5 text-xs font-bold rounded-lg relative z-10 transition-colors cursor-pointer bg-transparent border-none ${
+                                    editSalutation === opt ? 'text-[#003527]' : 'text-zinc-400 hover:text-zinc-500'
+                                  }`}
+                                >
+                                  {opt}
+                                  {editSalutation === opt && (
+                                    <motion.div
+                                      layoutId="edit-salutation-pill"
+                                      className="absolute inset-0 bg-white rounded-lg border border-zinc-200/50 z-[-1] shadow-sm"
+                                      transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                                    />
+                                  )}
+                                </button>
+                              ))}
                             </div>
-                          ))}
+                          </div>
+
+                          {/* Vorname & Nachname */}
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                              <label className="block text-[10px] font-semibold text-zinc-500">Vorname</label>
+                              <input
+                                type="text"
+                                value={editFirstName}
+                                onChange={(e) => setEditFirstName(e.target.value)}
+                                className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-semibold text-xs text-[#003527] outline-none transition-all"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="block text-[10px] font-semibold text-zinc-500">Nachname</label>
+                              <input
+                                type="text"
+                                value={editLastName}
+                                onChange={(e) => setEditLastName(e.target.value)}
+                                className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-semibold text-xs text-[#003527] outline-none transition-all"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Geburtstag */}
+                          <div className="space-y-1">
+                            <label className="block text-[10px] font-semibold text-zinc-500">Geburtstag</label>
+                            <input
+                              type="date"
+                              value={editBirthday}
+                              onChange={(e) => setEditBirthday(e.target.value)}
+                              className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-semibold text-xs text-[#003527] outline-none transition-all"
+                            />
+                          </div>
+
+                          {/* Telefon */}
+                          <div className="space-y-1">
+                            <label className="block text-[10px] font-semibold text-zinc-500">Telefon</label>
+                            <input
+                              type="tel"
+                              value={editPhone}
+                              onChange={(e) => setEditPhone(e.target.value)}
+                              className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-semibold text-xs text-[#003527] outline-none transition-all"
+                            />
+                          </div>
+
+                          {/* E-Mail */}
+                          <div className="space-y-1">
+                            <label className="block text-[10px] font-semibold text-zinc-500">E-Mail</label>
+                            <input
+                              type="email"
+                              value={editEmail}
+                              onChange={(e) => setEditEmail(e.target.value)}
+                              className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-semibold text-xs text-[#003527] outline-none transition-all"
+                            />
+                          </div>
+
+                          {/* Anschrift */}
+                          <div className="space-y-1">
+                            <label className="block text-[10px] font-semibold text-zinc-500">Anschrift</label>
+                            <input
+                              type="text"
+                              value={editAddress}
+                              onChange={(e) => setEditAddress(e.target.value)}
+                              className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-semibold text-xs text-[#003527] outline-none transition-all"
+                            />
+                          </div>
                         </div>
-                      ) : (
-                        <div className="flex flex-col items-center justify-center py-6 text-center text-[10px] text-zinc-400 font-medium italic">
-                          Keine Dokumente abgelegt
+                      </div>
+
+                      {/* Column 2: Lebensumstände & Anamnese */}
+                      <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 shadow-sm">
+                        <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Lebensumstände & Anamnese</h4>
+                        
+                        <div className="space-y-4">
+                          {/* Beschäftigung */}
+                          <div className="space-y-1">
+                            <label className="block text-[10px] font-semibold text-zinc-500">Derzeitige Beschäftigung</label>
+                            <input
+                              type="text"
+                              value={editOccupation}
+                              onChange={(e) => setEditOccupation(e.target.value)}
+                              className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-semibold text-xs text-[#003527] outline-none transition-all"
+                            />
+                          </div>
+
+                          {/* Familienstand */}
+                          <div className="space-y-1">
+                            <label className="block text-[10px] font-semibold text-zinc-500">Familienstand</label>
+                            <input
+                              type="text"
+                              value={editMaritalStatus}
+                              onChange={(e) => setEditMaritalStatus(e.target.value)}
+                              className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-semibold text-xs text-[#003527] outline-none transition-all"
+                            />
+                          </div>
+
+                          {/* Medizinische Notizen */}
+                          <div className="space-y-1">
+                            <label className="block text-[10px] font-semibold text-zinc-500">Praxisnotizen & Anamnese</label>
+                            <textarea
+                              rows={6}
+                              value={editNotes}
+                              onChange={(e) => setEditNotes(e.target.value)}
+                              className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2.5 font-semibold text-xs text-[#003527] outline-none resize-none transition-all min-h-[140px]"
+                            />
+                          </div>
                         </div>
-                      )}
+                      </div>
                     </div>
+                  ) : (
+                    /* VIEW MODE DISPLAY (2-Spalten-Layout) */
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 text-left">
+                      {/* Karte 1: Stammdaten & Kontakt */}
+                      <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 flex flex-col justify-between transition-all duration-300 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)] relative group shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
+                        <div className="space-y-4">
+                          <div className="flex justify-between items-start">
+                            <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200/40 text-emerald-700">
+                              <User className="w-4 h-4" />
+                            </div>
+                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-500">
+                              Stammdaten & Kontakt
+                            </span>
+                          </div>
+                          
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3.5 pt-1">
+                            <div className="space-y-0.5">
+                              <span className="block text-[10px] font-medium text-zinc-400">Vor- & Nachname</span>
+                              <span className="block text-xs font-extrabold text-[#003527]">
+                                {currentClient.salutation && currentClient.salutation !== 'Keine' ? `${currentClient.salutation} ` : ''}
+                                {currentClient.name}
+                              </span>
+                            </div>
+                            
+                            <div className="space-y-0.5">
+                              <span className="block text-[10px] font-medium text-zinc-400">Geburtstag (Alter)</span>
+                              <span className="block text-xs font-extrabold text-[#003527]">
+                                {new Date(currentClient.birthday).toLocaleDateString('de-DE')} 
+                                {currentClient.birthday && ` (${calculateAge(currentClient.birthday)} Jahre)`}
+                              </span>
+                            </div>
+
+                            <div className="space-y-0.5">
+                              <span className="block text-[10px] font-medium text-zinc-400">Telefon</span>
+                              <span className="block text-xs font-extrabold text-[#003527] flex items-center gap-1.5">
+                                {currentClient.phone || 'Keine Angabe'}
+                                {currentClient.phone && (
+                                  <a href={`tel:${currentClient.phone}`} className="p-1 rounded bg-[#003527]/5 hover:bg-[#003527]/10 text-[#003527] transition-all">
+                                    <Phone className="w-2.5 h-2.5" />
+                                  </a>
+                                )}
+                              </span>
+                            </div>
+
+                            <div className="space-y-0.5">
+                              <span className="block text-[10px] font-medium text-zinc-400">E-Mail</span>
+                              <span className="block text-xs font-extrabold text-[#003527] flex items-center gap-1.5 min-w-0 pr-2">
+                                <span className="truncate" title={currentClient.email}>{currentClient.email}</span>
+                                <a href={`mailto:${currentClient.email}`} className="p-1 rounded bg-[#003527]/5 hover:bg-[#003527]/10 text-[#003527] transition-all flex-shrink-0">
+                                  <Mail className="w-2.5 h-2.5" />
+                                </a>
+                              </span>
+                            </div>
+
+                            <div className="space-y-0.5 sm:col-span-2 border-t border-zinc-100 pt-2.5 flex items-start gap-2">
+                              <MapPin className="w-4 h-4 text-zinc-400 mt-1 flex-shrink-0" />
+                              <div className="space-y-0.5">
+                                <span className="block text-[10px] font-medium text-zinc-400">Anschrift</span>
+                                <span className="block text-xs font-extrabold text-[#003527]">
+                                  {currentClient.address || 'Keine Anschrift hinterlegt'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Karte 2: Lebensumstände & Anamnese */}
+                      <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 flex flex-col justify-between transition-all duration-300 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)] relative group overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
+                        <div className="space-y-4">
+                          <div className="flex justify-between items-start">
+                            <div className="p-2 rounded-xl bg-purple-50 border border-purple-200/40 text-purple-700">
+                              <Briefcase className="w-4 h-4" />
+                            </div>
+                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-500">
+                              Lebensumstände & Anamnese
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3.5 pt-1">
+                            <div className="space-y-0.5">
+                              <span className="block text-[10px] font-medium text-zinc-400">Beschäftigung</span>
+                              <span className="block text-xs font-extrabold text-[#003527]">
+                                {currentClient.occupation || 'Keine Angabe'}
+                              </span>
+                            </div>
+
+                            <div className="space-y-0.5">
+                              <span className="block text-[10px] font-medium text-zinc-400">Familienstand</span>
+                              <span className="block text-xs font-extrabold text-[#003527]">
+                                {currentClient.maritalStatus || 'Keine Angabe'}
+                              </span>
+                            </div>
+
+                            <div className="space-y-0.5 sm:col-span-2 border-t border-zinc-100 pt-2.5">
+                              <span className="block text-[10px] font-medium text-zinc-400">Praxisnotizen & Anamnese</span>
+                              <p className="text-xs font-semibold leading-relaxed text-[#404944] mt-1 whitespace-pre-wrap">
+                                {currentClient.notes || 'Keine medizinischen Notizen hinterlegt.'}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Danger Zone */}
+                  <div className="pt-6 border-t border-rose-200/30 flex justify-between items-center text-left">
+                    <div>
+                      <h4 className="text-[10px] font-bold text-rose-800 uppercase tracking-widest">Gefahrenbereich</h4>
+                      <p className="text-[11px] text-zinc-400 mt-0.5">Diesen Patienten unwiderruflich aus der Datenbank entfernen.</p>
+                    </div>
+                    <button
+                      onClick={async () => {
+                        if (confirm('Möchtest du diesen Patienten wirklich löschen?')) {
+                          await deleteClient(currentClient.id);
+                          setSelectedClientId(clients.find(c => c.id !== currentClient.id)?.id || '');
+                        }
+                      }}
+                      className="bg-rose-50 hover:bg-rose-100 text-rose-600 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer border border-rose-200/30 shadow-sm"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" /> Patient löschen
+                    </button>
                   </div>
                 </div>
-              </div>
+              )}
 
-              {/* SOAP Notes Section */}
-              <div className="space-y-4 pt-4 border-t border-[#bfc9c3]/20 text-left">
-                <div className="flex justify-between items-center px-1">
-                  <h4 className="text-[10px] font-bold text-[#003527]/60 uppercase tracking-widest">Therapieverlauf (SOAP-Notes)</h4>
-                  <button 
-                    onClick={() => createSoapNote(`app-${Date.now()}`, currentClient.id)}
-                    className="bg-[#003527] hover:bg-[#0b513d] text-white px-3.5 py-1.5 rounded-xl text-[10px] font-bold transition-all cursor-pointer"
-                  >
-                    Eintrag anlegen
-                  </button>
-                </div>
+              {activeTab === 'soap' && (
+                <div className="space-y-6 text-left animate-fade-in">
+                  <div className="flex justify-between items-center pb-2 border-b border-[#bfc9c3]/20">
+                    <div>
+                      <h4 className="text-[10px] font-bold text-[#003527]/60 uppercase tracking-widest">Therapieverlauf</h4>
+                      <p className="text-[11px] text-zinc-400 mt-0.5">Chronologischer Verlauf der Behandlungssitzungen (SOAP-Methode).</p>
+                    </div>
+                    <button 
+                      onClick={() => createSoapNote(`app-${Date.now()}`, currentClient.id)}
+                      className="bg-[#003527] hover:bg-[#0b513d] text-white px-3.5 py-1.5 rounded-xl text-[10px] font-bold transition-all cursor-pointer shadow-sm border-none"
+                    >
+                      Eintrag anlegen
+                    </button>
+                  </div>
 
-                <div className="space-y-4">
-                  {clientSoapNotes.length > 0 ? (
-                    clientSoapNotes.map((note) => (
-                      <div key={note.id} className="bg-white border border-[#bfc9c3]/30 rounded-2xl p-5 space-y-4 hover:border-[#bfc9c3]/50 transition-all duration-300 relative group overflow-hidden shadow-[0_4px_20px_rgba(0,53,39,0.01)]">
-                        <div className="flex justify-between items-center border-b border-zinc-100 pb-3">
-                          <div className="flex items-center gap-2">
-                            <div className="p-1.5 rounded-lg bg-emerald-50/60 border border-emerald-200/30 text-emerald-700">
-                              <CalendarIcon className="w-3.5 h-3.5" />
+                  <div className="relative pl-0 sm:pl-8 space-y-6">
+                    {/* Vertical timeline connector track */}
+                    <div className="absolute left-[15px] top-6 bottom-6 w-0.5 bg-[#bfc9c3]/40 z-0 hidden sm:block" />
+
+                    {clientSoapNotes.length > 0 ? (
+                      clientSoapNotes.map((note) => (
+                        <div key={note.id} className="bg-white border border-[#bfc9c3]/30 rounded-2xl p-5 space-y-4 hover:border-[#bfc9c3]/50 transition-all duration-300 relative group overflow-hidden shadow-[0_4px_20px_rgba(0,53,39,0.01)]">
+                          
+                          {/* Timeline dot */}
+                          <div className="absolute left-[-29px] top-[22px] w-3 h-3 rounded-full bg-[#003527] border-2 border-white z-10 hidden sm:block shadow-sm" />
+                          
+                          <div className="flex justify-between items-center border-b border-zinc-100 pb-3">
+                            <div className="flex items-center gap-2">
+                              <div className="p-1.5 rounded-lg bg-emerald-50/60 border border-emerald-200/30 text-emerald-700">
+                                <CalendarIcon className="w-3.5 h-3.5" />
+                              </div>
+                              <span className="text-[10px] font-extrabold text-[#003527] uppercase tracking-wider">Eintrag vom {new Date(note.date).toLocaleDateString('de-DE')}</span>
                             </div>
-                            <span className="text-[10px] font-extrabold text-[#003527] uppercase tracking-wider">Eintrag vom {new Date(note.date).toLocaleDateString('de-DE')}</span>
+                            {soapEditId === note.id ? (
+                              <button onClick={saveSoapNote} className="text-[10px] font-extrabold text-emerald-700 hover:text-emerald-800 transition-colors cursor-pointer border-none bg-transparent p-0">Speichern</button>
+                            ) : (
+                              <button onClick={() => startEditSoap(note)} className="text-[10px] font-extrabold text-zinc-400 hover:text-[#003527] transition-colors flex items-center gap-0.5 cursor-pointer border-none bg-transparent p-0 opacity-0 group-hover:opacity-100">
+                                <Edit2 className="w-3.5 h-3.5" /> Bearbeiten
+                              </button>
+                            )}
                           </div>
+
                           {soapEditId === note.id ? (
-                            <button onClick={saveSoapNote} className="text-[10px] font-extrabold text-emerald-700 hover:text-emerald-800 transition-colors cursor-pointer border-none bg-transparent p-0">Speichern</button>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-left">
+                              <div className="space-y-1.5">
+                                <label className="block text-[9px] font-bold uppercase tracking-widest text-[#003527]/70">Subjective (Befund)</label>
+                                <textarea 
+                                  value={soapSubjective} 
+                                  onChange={(e) => setSoapSubjective(e.target.value)} 
+                                  className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-xl p-2.5 text-xs text-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all resize-y min-h-[60px]" 
+                                />
+                              </div>
+                              <div className="space-y-1.5">
+                                <label className="block text-[9px] font-bold uppercase tracking-widest text-[#003527]/70">Objective (Untersuchung)</label>
+                                <textarea 
+                                  value={soapObjective} 
+                                  onChange={(e) => setSoapObjective(e.target.value)} 
+                                  className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-xl p-2.5 text-xs text-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all resize-y min-h-[60px]" 
+                                />
+                              </div>
+                              <div className="space-y-1.5">
+                                <label className="block text-[9px] font-bold uppercase tracking-widest text-[#003527]/70">Assessment (Beurteilung)</label>
+                                <textarea 
+                                  value={soapAssessment} 
+                                  onChange={(e) => setSoapAssessment(e.target.value)} 
+                                  className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-xl p-2.5 text-xs text-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all resize-y min-h-[60px]" 
+                                />
+                              </div>
+                              <div className="space-y-1.5">
+                                <label className="block text-[9px] font-bold uppercase tracking-widest text-[#003527]/70">Plan (Fortsetzung)</label>
+                                <textarea 
+                                  value={soapPlan} 
+                                  onChange={(e) => setSoapPlan(e.target.value)} 
+                                  className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-xl p-2.5 text-xs text-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all resize-y min-h-[60px]" 
+                                />
+                              </div>
+                            </div>
                           ) : (
-                            <button onClick={() => startEditSoap(note)} className="text-[10px] font-extrabold text-zinc-400 hover:text-[#003527] transition-colors flex items-center gap-0.5 cursor-pointer border-none bg-transparent p-0 opacity-0 group-hover:opacity-100">
-                              <Edit2 className="w-3 h-3" /> Bearbeiten
-                            </button>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="border border-[#bfc9c3]/20 border-l-4 border-l-amber-400 rounded-xl p-3.5 space-y-1.5 text-left bg-amber-50/5">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="inline-flex items-center gap-1 text-[8px] font-bold text-amber-800 bg-amber-50 border border-amber-200/50 px-1.5 py-0.5 rounded-md uppercase tracking-wider">S</span>
+                                  <span className="block text-[9px] font-extrabold tracking-widest text-zinc-400 uppercase">Subjective (Befund)</span>
+                                </div>
+                                <p className="text-xs text-[#404944] font-medium leading-relaxed italic">{note.subjective}</p>
+                              </div>
+                              <div className="border border-[#bfc9c3]/20 border-l-4 border-l-blue-400 rounded-xl p-3.5 space-y-1.5 text-left bg-blue-50/5">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="inline-flex items-center gap-1 text-[8px] font-bold text-blue-800 bg-blue-50 border border-blue-200/50 px-1.5 py-0.5 rounded-md uppercase tracking-wider">O</span>
+                                  <span className="block text-[9px] font-extrabold tracking-widest text-zinc-400 uppercase">Objective (Untersuchung)</span>
+                                </div>
+                                <p className="text-xs text-[#404944] font-medium leading-relaxed">{note.objective}</p>
+                              </div>
+                              <div className="border border-[#bfc9c3]/20 border-l-4 border-l-emerald-400 rounded-xl p-3.5 space-y-1.5 text-left bg-emerald-50/5">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="inline-flex items-center gap-1 text-[8px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200/50 px-1.5 py-0.5 rounded-md uppercase tracking-wider">A</span>
+                                  <span className="block text-[9px] font-extrabold tracking-widest text-zinc-400 uppercase">Assessment (Beurteilung)</span>
+                                </div>
+                                <p className="text-[#404944] text-xs font-medium leading-relaxed">{note.assessment}</p>
+                              </div>
+                              <div className="border border-[#bfc9c3]/20 border-l-4 border-l-purple-400 rounded-xl p-3.5 space-y-1.5 text-left bg-purple-50/5">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="inline-flex items-center gap-1 text-[8px] font-bold text-purple-800 bg-purple-50 border border-purple-200/50 px-1.5 py-0.5 rounded-md uppercase tracking-wider">P</span>
+                                  <span className="block text-[9px] font-extrabold tracking-widest text-zinc-400 uppercase">Plan (Fortsetzung)</span>
+                                </div>
+                                <p className="text-[#404944] text-xs font-medium leading-relaxed">{note.plan}</p>
+                              </div>
+                            </div>
                           )}
                         </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-12 text-xs text-zinc-400 font-semibold italic bg-white border border-[#bfc9c3]/20 rounded-2xl shadow-[0_4px_20px_rgba(0,53,39,0.01)] sm:col-span-2">
+                        Keine Behandlungsberichte für diesen Patienten vorhanden.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
-                        {soapEditId === note.id ? (
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-left">
-                            <div className="space-y-1.5">
-                              <label className="block text-[9px] font-bold uppercase tracking-widest text-[#003527]/70">Subjective (Befund)</label>
-                              <textarea 
-                                value={soapSubjective} 
-                                onChange={(e) => setSoapSubjective(e.target.value)} 
-                                className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-xl p-2.5 text-xs text-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all resize-y min-h-[60px]" 
-                              />
-                            </div>
-                            <div className="space-y-1.5">
-                              <label className="block text-[9px] font-bold uppercase tracking-widest text-[#003527]/70">Objective (Untersuchung)</label>
-                              <textarea 
-                                value={soapObjective} 
-                                onChange={(e) => setSoapObjective(e.target.value)} 
-                                className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-xl p-2.5 text-xs text-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all resize-y min-h-[60px]" 
-                              />
-                            </div>
-                            <div className="space-y-1.5">
-                              <label className="block text-[9px] font-bold uppercase tracking-widest text-[#003527]/70">Assessment (Beurteilung)</label>
-                              <textarea 
-                                value={soapAssessment} 
-                                onChange={(e) => setSoapAssessment(e.target.value)} 
-                                className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-xl p-2.5 text-xs text-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all resize-y min-h-[60px]" 
-                              />
-                            </div>
-                            <div className="space-y-1.5">
-                              <label className="block text-[9px] font-bold uppercase tracking-widest text-[#003527]/70">Plan (Fortsetzung)</label>
-                              <textarea 
-                                value={soapPlan} 
-                                onChange={(e) => setSoapPlan(e.target.value)} 
-                                className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-xl p-2.5 text-xs text-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all resize-y min-h-[60px]" 
-                              />
-                            </div>
+              {activeTab === 'billing' && (() => {
+                const clientInvoices = invoices.filter(i => i.clientId === currentClient.id);
+                const totalBilled = clientInvoices.reduce((acc, inv) => acc + inv.amount, 0);
+                const totalPaid = clientInvoices.filter(i => i.status === 'paid').reduce((acc, inv) => acc + inv.amount, 0);
+                const totalOutstanding = clientInvoices.filter(i => i.status === 'open' || i.status === 'overdue').reduce((acc, inv) => acc + inv.amount, 0);
+
+                return (
+                  <div className="space-y-6 text-left animate-fade-in">
+                    {/* KPI Umsatz-Cards */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-4 text-left flex flex-col justify-between hover:border-[#bfc9c3]/50 transition-all duration-300 shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
+                        <span className="text-[10px] font-bold text-[#003527]/60 uppercase tracking-wider">Gesamtforderung</span>
+                        <span className="text-lg font-extrabold text-[#003527] mt-1">{totalBilled.toFixed(2)} €</span>
+                      </div>
+                      <div className="bg-[#003527]/2 rounded-2xl border border-emerald-200/20 p-4 text-left flex flex-col justify-between hover:border-emerald-200/40 transition-all duration-300 shadow-[0_2px_8px_rgba(0,0,0,0.01)] bg-emerald-50/10">
+                        <span className="text-[10px] font-bold text-emerald-700/80 uppercase tracking-wider">Bezahlt</span>
+                        <span className="text-lg font-extrabold text-emerald-800 mt-1">{totalPaid.toFixed(2)} €</span>
+                      </div>
+                      <div className={`rounded-2xl border p-4 text-left flex flex-col justify-between transition-all duration-300 shadow-[0_2px_8px_rgba(0,0,0,0.01)] ${
+                        totalOutstanding > 0 
+                          ? 'border-amber-200/30 bg-amber-50/10 text-amber-800' 
+                          : 'bg-white border-[#bfc9c3]/30 text-zinc-400'
+                      }`}>
+                        <span className="text-[10px] font-bold uppercase tracking-wider">Ausstehend</span>
+                        <span className={`text-lg font-extrabold mt-1 ${totalOutstanding > 0 ? 'text-amber-800' : 'text-zinc-400'}`}>
+                          {totalOutstanding.toFixed(2)} €
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Document Locker */}
+                    <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 transition-all duration-300 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)] shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
+                      <div className="flex justify-between items-start pb-2 border-b border-zinc-100">
+                        <div className="flex items-center gap-2">
+                          <div className="p-2 rounded-xl bg-amber-50 border border-amber-200/40 text-amber-700">
+                            <Paperclip className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <h4 className="text-xs font-bold text-[#003527]">Dokumenten-Tresor</h4>
+                            <p className="text-[10px] text-zinc-400 mt-0.5">Rezepte, Befunde und Arztberichte sicher ablegen.</p>
+                          </div>
+                        </div>
+                        <button 
+                          onClick={() => {
+                            const name = prompt('Dokumentenname (z.B. Rezept_Befund.pdf):');
+                            if (name) {
+                              const docs = clientDocuments[currentClient.id] || [];
+                              setClientDocuments((prev: Record<string, {name: string, size: string}[]>) => ({
+                                ...prev,
+                                [currentClient.id]: [...docs, { name, size: '150 KB' }]
+                              }));
+                              showToast('Dokument erfolgreich hinzugefügt.', 'success');
+                            }
+                          }}
+                          className="text-[10px] font-bold text-[#003527] hover:text-[#0b513d] flex items-center gap-0.5 transition-colors cursor-pointer bg-zinc-100 hover:bg-[#003527]/5 border border-transparent rounded-md px-3 py-1.5"
+                        >
+                          + Datei hinzufügen
+                        </button>
+                      </div>
+
+                      <div className="space-y-2">
+                        {(clientDocuments[currentClient.id] || []).length > 0 ? (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {(clientDocuments[currentClient.id] || []).map((doc, idx) => (
+                              <div key={idx} className="flex justify-between items-center text-xs font-semibold text-[#404944] bg-[#f9f9f8] border border-zinc-200/40 p-3 rounded-xl hover:border-zinc-200 transition-all">
+                                <span className="flex items-center gap-2 min-w-0 pr-2">
+                                  <FileText className="w-4 h-4 text-[#003527]/60 flex-shrink-0" />
+                                  <span className="truncate" title={doc.name}>{doc.name}</span>
+                                </span>
+                                <div className="flex items-center gap-2 flex-shrink-0">
+                                  <span className="text-[10px] text-zinc-400 font-semibold">{doc.size}</span>
+                                  <a href="#" className="text-[10px] font-extrabold text-[#003527] hover:underline">Ansehen</a>
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         ) : (
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="bg-zinc-50/50 border border-zinc-200/20 rounded-xl p-3.5 space-y-1.5 text-left">
-                              <div className="flex items-center gap-1.5">
-                                <span className="inline-flex items-center gap-1 text-[8px] font-bold text-amber-800 bg-amber-50 border border-amber-200/50 px-1.5 py-0.5 rounded-md uppercase tracking-wider">S</span>
-                                <span className="block text-[9px] font-extrabold tracking-widest text-zinc-400 uppercase">Subjective (Befund)</span>
-                              </div>
-                              <p className="text-xs text-[#404944] font-medium leading-relaxed italic">{note.subjective}</p>
-                            </div>
-                            <div className="bg-zinc-50/50 border border-zinc-200/20 rounded-xl p-3.5 space-y-1.5 text-left">
-                              <div className="flex items-center gap-1.5">
-                                <span className="inline-flex items-center gap-1 text-[8px] font-bold text-blue-800 bg-blue-50 border border-blue-200/50 px-1.5 py-0.5 rounded-md uppercase tracking-wider">O</span>
-                                <span className="block text-[9px] font-extrabold tracking-widest text-zinc-400 uppercase">Objective (Untersuchung)</span>
-                              </div>
-                              <p className="text-xs text-[#404944] font-medium leading-relaxed">{note.objective}</p>
-                            </div>
-                            <div className="bg-zinc-50/50 border border-zinc-200/20 rounded-xl p-3.5 space-y-1.5 text-left">
-                              <div className="flex items-center gap-1.5">
-                                <span className="inline-flex items-center gap-1 text-[8px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200/50 px-1.5 py-0.5 rounded-md uppercase tracking-wider">A</span>
-                                <span className="block text-[9px] font-extrabold tracking-widest text-zinc-400 uppercase">Assessment (Beurteilung)</span>
-                              </div>
-                              <p className="text-[#404944] text-xs font-medium leading-relaxed">{note.assessment}</p>
-                            </div>
-                            <div className="bg-zinc-50/50 border border-zinc-200/20 rounded-xl p-3.5 space-y-1.5 text-left">
-                              <div className="flex items-center gap-1.5">
-                                <span className="inline-flex items-center gap-1 text-[8px] font-bold text-purple-800 bg-purple-50 border border-purple-200/50 px-1.5 py-0.5 rounded-md uppercase tracking-wider">P</span>
-                                <span className="block text-[9px] font-extrabold tracking-widest text-zinc-400 uppercase">Plan (Fortsetzung)</span>
-                              </div>
-                              <p className="text-[#404944] text-xs font-medium leading-relaxed">{note.plan}</p>
-                            </div>
+                          <div className="flex flex-col items-center justify-center py-6 text-center text-xs text-zinc-400 font-semibold italic">
+                            Keine Dokumente abgelegt.
                           </div>
                         )}
                       </div>
-                    ))
-                  ) : (
-                    <div className="text-center py-8 text-xs text-zinc-400 font-semibold italic bg-white border border-[#bfc9c3]/20 rounded-2xl shadow-[0_4px_20px_rgba(0,53,39,0.01)]">Keine Behandlungsberichte für diesen Patienten vorhanden.</div>
-                  )}
-                </div>
-              </div>
+                    </div>
 
-              {/* Danger Zone */}
-              <div className="pt-6 border-t border-rose-200/30 flex justify-between items-center text-left">
-                <div>
-                  <h4 className="text-[10px] font-bold text-rose-800 uppercase tracking-widest">Gefahrenbereich</h4>
-                  <p className="text-[11px] text-zinc-400 mt-0.5">Diesen Patienten unwiderruflich aus der Datenbank entfernen.</p>
-                </div>
-                <button
-                  onClick={async () => {
-                    if (confirm('Möchtest du diesen Patienten wirklich löschen?')) {
-                      await deleteClient(currentClient.id);
-                      setSelectedClientId(clients.find(c => c.id !== currentClient.id)?.id || '');
-                    }
-                  }}
-                  className="bg-rose-50 hover:bg-rose-100 text-rose-600 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer border border-rose-200/30"
-                >
-                  <Trash2 className="w-3.5 h-3.5" /> Patient löschen
-                </button>
-              </div>
+                    {/* Invoices */}
+                    <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 transition-all duration-300 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)] shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
+                      <div className="flex justify-between items-start pb-2 border-b border-zinc-100">
+                        <div className="flex items-center gap-2">
+                          <div className="p-2 rounded-xl bg-purple-50 border border-purple-200/40 text-purple-700">
+                            <FileText className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <h4 className="text-xs font-bold text-[#003527]">Rechnungsübersicht</h4>
+                            <p className="text-[10px] text-zinc-400 mt-0.5">Erstellte Abrechnungen und deren Zahlungsstatus.</p>
+                          </div>
+                        </div>
+                        <button 
+                          onClick={() => {
+                            const amountStr = prompt('Rechnungsbetrag in € eingeben (z.B. 90.00):');
+                            if (amountStr) {
+                              const amount = parseFloat(amountStr.replace(',', '.'));
+                              if (!isNaN(amount) && amount > 0) {
+                                const num = invoices.length + 1;
+                                const invNum = `RE-2026-${num.toString().padStart(4, '0')}`;
+                                const invoiceId = crypto.randomUUID();
+                                supabase
+                                  .from('invoices')
+                                  .insert({
+                                    id: invoiceId,
+                                    user_id: therapistId,
+                                    appointment_id: null,
+                                    client_id: currentClient.id,
+                                    invoice_number: invNum,
+                                    amount: amount,
+                                    date: new Date().toISOString().slice(0, 10),
+                                    status: 'open'
+                                  })
+                                  .then(({ error }) => {
+                                    if (error) {
+                                      showToast(`Fehler beim Erstellen der Rechnung: ${error.message}`, 'error');
+                                      return;
+                                    }
+                                    const newInv = {
+                                      id: invoiceId,
+                                      appointmentId: `custom-${Date.now()}`,
+                                      clientId: currentClient.id,
+                                      clientName: currentClient.name,
+                                      invoiceNumber: invNum,
+                                      amount: amount,
+                                      date: new Date().toISOString().slice(0, 10),
+                                      status: 'open' as const
+                                    };
+                                    setInvoices((prev: Invoice[]) => [...prev, newInv]);
+                                    showToast(`Rechnung ${invNum} über ${amount.toFixed(2)} € erstellt!`, 'success');
+                                  });
+                              } else {
+                                showToast('Ungültiger Betrag.', 'error');
+                              }
+                            }
+                          }}
+                          className="text-[10px] font-bold text-[#003527] hover:text-[#0b513d] flex items-center gap-0.5 transition-colors cursor-pointer bg-zinc-100 hover:bg-[#003527]/5 border border-transparent rounded-md px-3 py-1.5"
+                        >
+                          + Rechnung erstellen
+                        </button>
+                      </div>
+
+                      <div className="overflow-x-auto">
+                        {clientInvoices.length > 0 ? (
+                          <table className="w-full text-left text-xs min-w-[500px]">
+                            <thead>
+                              <tr className="text-zinc-400 text-[10px] font-bold uppercase tracking-wider border-b border-zinc-100">
+                                <th className="pb-2 font-semibold">Rechnungsnummer</th>
+                                <th className="pb-2 font-semibold">Datum</th>
+                                <th className="pb-2 font-semibold text-right">Betrag</th>
+                                <th className="pb-2 font-semibold pl-4">Status</th>
+                                <th className="pb-2 font-semibold text-right pr-2">Aktionen</th>
+                              </tr>
+                            </thead>
+                            <tbody className="font-bold text-[#003527]">
+                              {clientInvoices.map((inv) => (
+                                <tr key={inv.id} className="hover:bg-[#003527]/3 transition-colors border-b border-zinc-100/60 last:border-b-0">
+                                  <td className="py-3 text-xs">{inv.invoiceNumber}</td>
+                                  <td className="py-3 text-xs text-zinc-400 font-semibold">{new Date(inv.date).toLocaleDateString('de-DE')}</td>
+                                  <td className="py-3 text-xs text-right">{inv.amount.toFixed(2)} €</td>
+                                  <td className="py-3 text-xs pl-4">
+                                    <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-md border ${
+                                      inv.status === 'paid'
+                                        ? 'bg-emerald-50 border-emerald-200/50 text-emerald-700'
+                                        : inv.status === 'overdue'
+                                        ? 'bg-rose-50 border-rose-200/50 text-rose-600'
+                                        : 'bg-amber-50 border-amber-200/50 text-amber-700'
+                                    }`}>
+                                      {inv.status === 'paid' ? 'Bezahlt' : inv.status === 'overdue' ? 'Überfällig' : 'Offen'}
+                                    </span>
+                                  </td>
+                                  <td className="py-3 text-xs pr-2 flex items-center justify-end gap-1">
+                                    {inv.status !== 'paid' && (
+                                      <button
+                                        onClick={() => markInvoicePaid(inv.id)}
+                                        className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 transition-all cursor-pointer border border-emerald-200/30"
+                                        title="Als bezahlt markieren"
+                                      >
+                                        <Check className="w-3.5 h-3.5" />
+                                      </button>
+                                    )}
+                                    <button
+                                      onClick={() => sendInvoiceEmail(inv)}
+                                      className="p-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 transition-all cursor-pointer border border-blue-200/30"
+                                      title="Rechnung per E-Mail senden"
+                                    >
+                                      <Mail className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                      onClick={() => printInvoice(inv)}
+                                      className="p-1.5 rounded-lg bg-zinc-50 hover:bg-zinc-100 text-zinc-600 transition-all cursor-pointer border border-zinc-200/30"
+                                      title="Rechnung drucken"
+                                    >
+                                      <Printer className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                      onClick={() => downloadInvoicePdf(inv)}
+                                      className="p-1.5 rounded-lg bg-zinc-50 hover:bg-zinc-100 text-zinc-600 transition-all cursor-pointer border border-zinc-200/30"
+                                      title="Rechnung als PDF herunterladen"
+                                    >
+                                      <Download className="w-3.5 h-3.5" />
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        ) : (
+                          <div className="flex flex-col items-center justify-center py-6 text-center text-xs text-zinc-400 font-semibold italic">
+                            Keine Rechnungen vorhanden.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         ) : clients.length === 0 ? (
