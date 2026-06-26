@@ -245,8 +245,8 @@ export default function CranioAnamnesisTab({ clientId }: CranioAnamnesisTabProps
       {/* Title & Saving Status Bar */}
       <div className="flex justify-between items-center pb-2 border-b border-[#bfc9c3]/20 flex-shrink-0">
         <div>
-          <h4 className="text-[10px] font-bold text-[#003527]/60 uppercase tracking-widest">Cranio-Anamnesebogen</h4>
-          <p className="text-[11px] text-zinc-400 mt-0.5">Spezifische Fragen vor der craniosacralen Behandlung.</p>
+          <h4 className="text-[10px] font-bold text-[#003527]/60 uppercase tracking-widest">Anamnesebogen</h4>
+          <p className="text-[11px] text-zinc-400 mt-0.5">Spezifische Fragen vor der Behandlung.</p>
         </div>
         
         <div className="flex items-center gap-3">
@@ -297,7 +297,7 @@ export default function CranioAnamnesisTab({ clientId }: CranioAnamnesisTabProps
             <Sparkles className="w-6 h-6" />
           </div>
           <div className="space-y-1">
-            <h5 className="text-sm font-bold text-[#003527]">Keine Cranio-Anamnese vorhanden</h5>
+            <h5 className="text-sm font-bold text-[#003527]">Keine Anamnese vorhanden</h5>
             <p className="text-xs text-zinc-400">Für diesen Klienten wurde noch kein Anamnesebogen ausgefüllt.</p>
           </div>
           <button

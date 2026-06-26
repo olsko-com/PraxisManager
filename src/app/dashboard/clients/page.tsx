@@ -737,7 +737,7 @@ export default function ClientsPage() {
                   }`}
                 >
                   {tab === 'overview' && 'Stammdaten'}
-                  {tab === 'anamnesis' && 'Cranio-Anamnese'}
+                  {tab === 'anamnesis' && 'Anamnese'}
                   {tab === 'soap' && 'Behandlungsverlauf'}
                   {tab === 'billing' && 'Abrechnung & Dokumente'}
                 </button>
