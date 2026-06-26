@@ -732,110 +732,131 @@ export default function ClientsPage() {
                   {isEditingClient ? (
                     /* EDIT MODE FORM */
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 text-left">
-                      {/* Column 1: Demographie & Kontakt */}
-                      <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 shadow-sm">
-                        <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Demographie & Kontakt</h4>
-                        
-                        <div className="space-y-3.5">
-                          {/* Salutation Selector (Apple-style segmented control) */}
-                          <div className="space-y-1 text-left">
-                            <label className="block text-[10px] font-semibold text-zinc-500">Anrede</label>
-                            <div className="bg-zinc-100/60 p-0.5 rounded-xl border border-transparent flex relative overflow-hidden">
-                              {(['Keine', 'Frau', 'Herr'] as const).map((opt) => (
-                                <button
-                                  key={opt}
-                                  type="button"
-                                  onClick={() => setEditSalutation(opt)}
-                                  className={`flex-1 py-1.5 text-xs font-bold rounded-lg relative z-10 transition-colors cursor-pointer bg-transparent border-none ${
-                                    editSalutation === opt ? 'text-[#003527]' : 'text-zinc-400 hover:text-zinc-500'
-                                  }`}
-                                >
-                                  {opt}
-                                  {editSalutation === opt && (
-                                    <motion.div
-                                      layoutId="edit-salutation-pill"
-                                      className="absolute inset-0 bg-white rounded-lg border border-zinc-200/50 z-[-1] shadow-sm"
-                                      transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                                    />
-                                  )}
-                                </button>
-                              ))}
+                      {/* Linke Spalte Formular */}
+                      <div className="space-y-6">
+                        {/* Karte 1 Formular: Stammdaten */}
+                        <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 shadow-sm">
+                          <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Stammdaten</h4>
+                          
+                          <div className="space-y-3.5">
+                            {/* Salutation */}
+                            <div className="space-y-1 text-left">
+                              <label className="block text-[10px] font-semibold text-zinc-500">Anrede</label>
+                              <div className="bg-zinc-100/60 p-0.5 rounded-xl border border-transparent flex relative overflow-hidden">
+                                {(['Keine', 'Frau', 'Herr'] as const).map((opt) => (
+                                  <button
+                                    key={opt}
+                                    type="button"
+                                    onClick={() => setEditSalutation(opt)}
+                                    className={`flex-1 py-1.5 text-xs font-bold rounded-lg relative z-10 transition-colors cursor-pointer bg-transparent border-none ${
+                                      editSalutation === opt ? 'text-[#003527]' : 'text-zinc-400 hover:text-zinc-500'
+                                    }`}
+                                  >
+                                    {opt}
+                                    {editSalutation === opt && (
+                                      <motion.div
+                                        layoutId="edit-salutation-pill"
+                                        className="absolute inset-0 bg-white rounded-lg border border-zinc-200/50 z-[-1] shadow-sm"
+                                        transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                                      />
+                                    )}
+                                  </button>
+                                ))}
+                              </div>
                             </div>
-                          </div>
 
-                          {/* Vorname & Nachname */}
-                          <div className="grid grid-cols-2 gap-3">
+                            {/* Vorname & Nachname */}
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="space-y-1">
+                                <label className="block text-[10px] font-semibold text-zinc-500">Vorname</label>
+                                <input
+                                  type="text"
+                                  value={editFirstName}
+                                  onChange={(e) => setEditFirstName(e.target.value)}
+                                  className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-semibold text-xs text-[#003527] outline-none transition-all"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <label className="block text-[10px] font-semibold text-zinc-500">Nachname</label>
+                                <input
+                                  type="text"
+                                  value={editLastName}
+                                  onChange={(e) => setEditLastName(e.target.value)}
+                                  className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-semibold text-xs text-[#003527] outline-none transition-all"
+                                />
+                              </div>
+                            </div>
+
+                            {/* Geburtstag */}
                             <div className="space-y-1">
-                              <label className="block text-[10px] font-semibold text-zinc-500">Vorname</label>
+                              <label className="block text-[10px] font-semibold text-zinc-500">Geburtstag</label>
                               <input
-                                type="text"
-                                value={editFirstName}
-                                onChange={(e) => setEditFirstName(e.target.value)}
+                                type="date"
+                                value={editBirthday}
+                                onChange={(e) => setEditBirthday(e.target.value)}
                                 className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-semibold text-xs text-[#003527] outline-none transition-all"
                               />
                             </div>
+
+                            {/* Familienstand */}
                             <div className="space-y-1">
-                              <label className="block text-[10px] font-semibold text-zinc-500">Nachname</label>
+                              <label className="block text-[10px] font-semibold text-zinc-500">Familienstand</label>
                               <input
                                 type="text"
-                                value={editLastName}
-                                onChange={(e) => setEditLastName(e.target.value)}
+                                value={editMaritalStatus}
+                                onChange={(e) => setEditMaritalStatus(e.target.value)}
                                 className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-semibold text-xs text-[#003527] outline-none transition-all"
                               />
                             </div>
                           </div>
+                        </div>
 
-                          {/* Geburtstag */}
-                          <div className="space-y-1">
-                            <label className="block text-[10px] font-semibold text-zinc-500">Geburtstag</label>
-                            <input
-                              type="date"
-                              value={editBirthday}
-                              onChange={(e) => setEditBirthday(e.target.value)}
-                              className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-semibold text-xs text-[#003527] outline-none transition-all"
-                            />
-                          </div>
+                        {/* Karte 2 Formular: Kontakt & Anschrift */}
+                        <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 shadow-sm">
+                          <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Kontakt & Anschrift</h4>
+                          
+                          <div className="space-y-3.5">
+                            {/* Telefon */}
+                            <div className="space-y-1">
+                              <label className="block text-[10px] font-semibold text-zinc-500">Telefon</label>
+                              <input
+                                type="tel"
+                                value={editPhone}
+                                onChange={(e) => setEditPhone(e.target.value)}
+                                className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-semibold text-xs text-[#003527] outline-none transition-all"
+                              />
+                            </div>
 
-                          {/* Telefon */}
-                          <div className="space-y-1">
-                            <label className="block text-[10px] font-semibold text-zinc-500">Telefon</label>
-                            <input
-                              type="tel"
-                              value={editPhone}
-                              onChange={(e) => setEditPhone(e.target.value)}
-                              className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-semibold text-xs text-[#003527] outline-none transition-all"
-                            />
-                          </div>
+                            {/* E-Mail */}
+                            <div className="space-y-1">
+                              <label className="block text-[10px] font-semibold text-zinc-500">E-Mail</label>
+                              <input
+                                type="email"
+                                value={editEmail}
+                                onChange={(e) => setEditEmail(e.target.value)}
+                                className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-semibold text-xs text-[#003527] outline-none transition-all"
+                              />
+                            </div>
 
-                          {/* E-Mail */}
-                          <div className="space-y-1">
-                            <label className="block text-[10px] font-semibold text-zinc-500">E-Mail</label>
-                            <input
-                              type="email"
-                              value={editEmail}
-                              onChange={(e) => setEditEmail(e.target.value)}
-                              className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-semibold text-xs text-[#003527] outline-none transition-all"
-                            />
-                          </div>
-
-                          {/* Anschrift */}
-                          <div className="space-y-1">
-                            <label className="block text-[10px] font-semibold text-zinc-500">Anschrift</label>
-                            <input
-                              type="text"
-                              value={editAddress}
-                              onChange={(e) => setEditAddress(e.target.value)}
-                              className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-semibold text-xs text-[#003527] outline-none transition-all"
-                            />
+                            {/* Anschrift */}
+                            <div className="space-y-1">
+                              <label className="block text-[10px] font-semibold text-zinc-500">Anschrift</label>
+                              <input
+                                type="text"
+                                value={editAddress}
+                                onChange={(e) => setEditAddress(e.target.value)}
+                                className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-semibold text-xs text-[#003527] outline-none transition-all"
+                              />
+                            </div>
                           </div>
                         </div>
                       </div>
 
-                      {/* Column 2: Lebensumstände & Anamnese */}
-                      <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 shadow-sm">
-                        <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Lebensumstände & Anamnese</h4>
-                        
+                      {/* Rechte Spalte Formular: Lebensumstände & Anamnese */}
+                      <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 shadow-sm flex flex-col justify-between">
                         <div className="space-y-4">
+                          <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Lebensumstände & Anamnese</h4>
+                          
                           {/* Beschäftigung */}
                           <div className="space-y-1">
                             <label className="block text-[10px] font-semibold text-zinc-500">Derzeitige Beschäftigung</label>
@@ -847,42 +868,32 @@ export default function ClientsPage() {
                             />
                           </div>
 
-                          {/* Familienstand */}
-                          <div className="space-y-1">
-                            <label className="block text-[10px] font-semibold text-zinc-500">Familienstand</label>
-                            <input
-                              type="text"
-                              value={editMaritalStatus}
-                              onChange={(e) => setEditMaritalStatus(e.target.value)}
-                              className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-semibold text-xs text-[#003527] outline-none transition-all"
-                            />
-                          </div>
-
                           {/* Medizinische Notizen */}
                           <div className="space-y-1">
                             <label className="block text-[10px] font-semibold text-zinc-500">Praxisnotizen & Anamnese</label>
                             <textarea
-                              rows={6}
+                              rows={8}
                               value={editNotes}
                               onChange={(e) => setEditNotes(e.target.value)}
-                              className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2.5 font-semibold text-xs text-[#003527] outline-none resize-none transition-all min-h-[140px]"
+                              className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2.5 font-semibold text-xs text-[#003527] outline-none resize-none transition-all min-h-[180px]"
                             />
                           </div>
                         </div>
                       </div>
                     </div>
                   ) : (
-                    /* VIEW MODE DISPLAY (2-Spalten-Layout) */
+                    /* VIEW MODE DISPLAY (2-Spalten-Layout mit 3 Kacheln) */
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 text-left">
-                      {/* Karte 1: Stammdaten & Kontakt */}
-                      <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 flex flex-col justify-between transition-all duration-300 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)] relative group shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
-                        <div className="space-y-4">
+                      {/* Linke Spalte: Stammdaten und Kontakt gestapelt */}
+                      <div className="space-y-6">
+                        {/* Karte 1: Stammdaten */}
+                        <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)] transition-all duration-300 relative group shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
                           <div className="flex justify-between items-start">
                             <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200/40 text-emerald-700">
                               <User className="w-4 h-4" />
                             </div>
                             <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-500">
-                              Stammdaten & Kontakt
+                              Stammdaten
                             </span>
                           </div>
                           
@@ -903,6 +914,27 @@ export default function ClientsPage() {
                               </span>
                             </div>
 
+                            <div className="space-y-0.5 sm:col-span-2 border-t border-zinc-100 pt-2.5">
+                              <span className="block text-[10px] font-medium text-zinc-400">Familienstand</span>
+                              <span className="block text-xs font-extrabold text-[#003527]">
+                                {currentClient.maritalStatus || 'Keine Angabe'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Karte 2: Kontakt & Anschrift */}
+                        <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)] transition-all duration-300 relative group shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
+                          <div className="flex justify-between items-start">
+                            <div className="p-2 rounded-xl bg-blue-50 border border-blue-200/40 text-blue-700">
+                              <Phone className="w-4 h-4" />
+                            </div>
+                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-500">
+                              Kontakt & Anschrift
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3.5 pt-1">
                             <div className="space-y-0.5">
                               <span className="block text-[10px] font-medium text-zinc-400">Telefon</span>
                               <span className="block text-xs font-extrabold text-[#003527] flex items-center gap-1.5">
@@ -938,7 +970,7 @@ export default function ClientsPage() {
                         </div>
                       </div>
 
-                      {/* Karte 2: Lebensumstände & Anamnese */}
+                      {/* Rechte Spalte: Lebensumstände & Anamnese */}
                       <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 flex flex-col justify-between transition-all duration-300 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)] relative group overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
                         <div className="space-y-4">
                           <div className="flex justify-between items-start">
@@ -950,7 +982,7 @@ export default function ClientsPage() {
                             </span>
                           </div>
 
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3.5 pt-1">
+                          <div className="grid grid-cols-1 gap-y-3.5 pt-1">
                             <div className="space-y-0.5">
                               <span className="block text-[10px] font-medium text-zinc-400">Beschäftigung</span>
                               <span className="block text-xs font-extrabold text-[#003527]">
@@ -958,14 +990,7 @@ export default function ClientsPage() {
                               </span>
                             </div>
 
-                            <div className="space-y-0.5">
-                              <span className="block text-[10px] font-medium text-zinc-400">Familienstand</span>
-                              <span className="block text-xs font-extrabold text-[#003527]">
-                                {currentClient.maritalStatus || 'Keine Angabe'}
-                              </span>
-                            </div>
-
-                            <div className="space-y-0.5 sm:col-span-2 border-t border-zinc-100 pt-2.5">
+                            <div className="space-y-0.5 border-t border-zinc-100 pt-2.5">
                               <span className="block text-[10px] font-medium text-zinc-400">Praxisnotizen & Anamnese</span>
                               <p className="text-xs font-semibold leading-relaxed text-[#404944] mt-1 whitespace-pre-wrap">
                                 {currentClient.notes || 'Keine medizinischen Notizen hinterlegt.'}
