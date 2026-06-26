@@ -33,11 +33,17 @@ Speichert Patientenstammdaten.
 * **`emergency_contact`** `text`
 * **`notes`** `text` (Allgemeine Patientennotizen / Anamnese)
 * **`created_at`** `timestamptz`
+* **`gdpr_accepted`** `boolean` (Gibt an, ob die DSGVO-Zustimmung erteilt wurde)
+* **`gdpr_token`** `text` (Eindeutiger Verifizierungs-Token für das Patientenportal)
+* **`gdpr_token_expires_at`** `timestamptz` (Gültigkeit des Tokens - i.d.R. 7 Tage)
+* **`gdpr_signature`** `text` (Base64-repräsentierte Unterschrift des Patienten)
+* **`gdpr_signed_at`** `timestamptz` (Zeitpunkt der digitalen Signatur)
 
 * **Lokale Felder (localStorage):**
   Die UI-Flags `isFavorite` und `isFlagged` existieren nicht in der Datenbank und werden lokal auf dem Gerät des Therapeuten synchronisiert unter:
   - `client_favs_${therapistId}` (Array aus Client-UUIDs)
   - `client_flags_${therapistId}` (Array aus Client-UUIDs)
+  *(Hinweis: `client_gdpr_${therapistId}` dient als Legacy-Fallback; die primäre Einwilligung ist in den DB-Spalten hinterlegt).*
 
 ---
 
@@ -111,3 +117,21 @@ Rechnungsdaten.
    - Lokale Browserdaten (`localStorage`) für Notizen, Favoriten und Flags injiziert werden.
 3. **Schreibzugriffe**:
    Alle Mutationen im Kontext (`handleCreateClient`, `addAppointment`, `updateAppointment`, `deleteClient` etc.) führen das Insert/Update/Delete synchron in Supabase aus und aktualisieren bei Erfolg sofort den lokalen React-State (`setClients`, `setAppointments`), um ein extrem flüssiges Apple-typisches App-Gefühl zu erzielen.
+
+---
+
+## 🔒 Sichere DSGVO-Verifizierung & Datenbank-Funktionen (RPC)
+
+Um gesundheitsbezogene Daten der Patienten konform und sicher zu verarbeiten, läuft die Verifizierung über ein mehrstufiges, token-basiertes Authentifizierungsverfahren (Gated Magic Link). Die Datenabfrage und -manipulation erfolgt über zwei PostgreSQL-Funktionen mit `SECURITY DEFINER`-Rechten. Dadurch können unauthentifizierte Patienten (ohne Supabase-Account) auf das Portal zugreifen, während Datenlecks durch RLS-Umgehungen komplett ausgeschlossen sind.
+
+### 1. `verify_gdpr_birthday(token_val text, birthday_val text)`
+* **Zweck**: Überprüft das eingegebene Geburtsdatum des Patienten gegen den in der DB hinterlegten Wert, der dem aktiven Token zugeordnet ist.
+* **Sicherheit**: 
+  * Bietet Schutz vor Brute-Force-Angriffen (wird nach 5 Fehlversuchen clientseitig gesperrt).
+  * Gibt den Namen des Patienten nur dann zurück, wenn das Geburtsdatum korrekt ist. Keine Datenübertragung bei falscher Eingabe.
+  * Unterstützt diverse Datumsformate (`YYYY-MM-DD`, `DD.MM.YYYY`, `FMDD.FMMM.YYYY` für deutsche Kurzformate ohne führende Nullen wie `19.2.2008`).
+
+### 2. `submit_gdpr_signature(token_val text, birthday_val text, signature_val text)`
+* **Zweck**: Trägt die digitale Unterschrift (Base64 PNG aus HTML5 Canvas) in die Spalte `gdpr_signature` ein, setzt `gdpr_accepted` auf `true` und entwertet zeitgleich den Token (`gdpr_token = NULL`).
+* **Sicherheit**:
+  * Der Token wird nach erfolgreicher Ausführung sofort ungültig gemacht, sodass der Link kein zweites Mal geöffnet werden kann.

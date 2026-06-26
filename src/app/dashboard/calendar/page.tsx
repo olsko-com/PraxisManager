@@ -559,11 +559,11 @@ export default function CalendarPage() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className={`flex-grow flex flex-col pb-24 lg:pb-6 pt-0 px-4 lg:pl-8 transition-all duration-300 min-h-0 ${
+            className={`flex-grow flex flex-col pb-24 lg:pb-6 pt-0 px-4 lg:pl-8 transition-all duration-300 min-h-0 min-w-0 ${
               isSidebarOpen ? 'lg:pr-96' : 'lg:pr-8'
             }`}
           >
-            <div className="mt-3 bg-white border border-[#bfc9c3]/40 rounded-2xl flex-grow overflow-y-auto overflow-x-auto lg:overflow-x-hidden hide-scrollbar pt-0 pb-6 px-0 shadow-none flex flex-col min-h-0">
+            <div className="mt-3 bg-white border border-[#bfc9c3]/40 rounded-2xl flex-grow overflow-y-auto overflow-x-auto hide-scrollbar pt-0 pb-6 px-0 shadow-none flex flex-col min-h-0 min-w-0">
             {/* Header Row */}
             <div className="min-w-[600px] grid grid-cols-[80px_1fr] border-b border-[#bfc9c3]/20 bg-zinc-50/75 backdrop-blur-md rounded-t-2xl py-3 mb-0 sticky top-0 z-30">
               <div className="w-[80px]" />
@@ -799,11 +799,11 @@ export default function CalendarPage() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className={`flex-grow flex flex-col pb-24 lg:pb-6 pt-0 px-4 lg:pl-8 transition-all duration-300 min-h-0 ${
+            className={`flex-grow flex flex-col pb-24 lg:pb-6 pt-0 px-4 lg:pl-8 transition-all duration-300 min-h-0 min-w-0 ${
               isSidebarOpen ? 'lg:pr-96' : 'lg:pr-8'
             }`}
           >
-            <div className="mt-3 bg-white border border-[#bfc9c3]/40 rounded-2xl flex-grow overflow-y-auto overflow-x-auto lg:overflow-x-hidden hide-scrollbar pt-0 pb-6 px-0 shadow-none flex flex-col min-h-0">
+            <div className="mt-3 bg-white border border-[#bfc9c3]/40 rounded-2xl flex-grow overflow-y-auto overflow-x-auto hide-scrollbar pt-0 pb-6 px-0 shadow-none flex flex-col min-h-0 min-w-0">
             {/* Week Header Row */}
             <div className="min-w-[800px] grid grid-cols-[80px_repeat(5,1fr)] divide-x divide-zinc-200/50 border-b border-[#bfc9c3]/20 bg-zinc-50/75 backdrop-blur-md rounded-t-2xl mb-0 sticky top-0 z-30">
               <div className="w-[80px]" />
@@ -1067,11 +1067,11 @@ export default function CalendarPage() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className={`flex-grow flex flex-col pb-24 lg:pb-6 pt-0 px-4 lg:pl-8 transition-all duration-300 min-h-0 ${
+            className={`flex-grow flex flex-col pb-24 lg:pb-6 pt-0 px-4 lg:pl-8 transition-all duration-300 min-h-0 min-w-0 ${
               isSidebarOpen ? 'lg:pr-96' : 'lg:pr-8'
             }`}
           >
-            <div className="mt-3 bg-zinc-200 border border-zinc-200 rounded-2xl flex-grow overflow-y-auto overflow-x-auto lg:overflow-x-hidden hide-scrollbar grid grid-cols-7 gap-[1px] min-h-0 min-w-[600px] lg:min-w-0">
+            <div className="mt-3 bg-zinc-200 border border-zinc-200 rounded-2xl flex-grow overflow-y-auto overflow-x-auto hide-scrollbar grid grid-cols-7 gap-[1px] min-h-0 min-w-[600px] lg:min-w-0">
             {/* Day Headers */}
             {['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map((day) => (
               <div key={day} className="bg-[#f3f4f3] py-2 text-center text-[10px] font-bold text-zinc-400 select-none sticky top-0 z-30">

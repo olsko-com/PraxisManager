@@ -145,8 +145,8 @@ interface DashboardContextProps {
   setNewInvoiceAppointmentId: (id: string | null) => void;
 
   // Email form values
-  mailTopic: 'rechnung' | 'stornierung' | 'bestaetigung' | 'custom' | 'mahnung' | 'erinnerung' | 'fragebogen';
-  setMailTopic: (topic: 'rechnung' | 'stornierung' | 'bestaetigung' | 'custom' | 'mahnung' | 'erinnerung' | 'fragebogen') => void;
+  mailTopic: 'rechnung' | 'stornierung' | 'bestaetigung' | 'custom' | 'mahnung' | 'erinnerung' | 'fragebogen' | 'dsgvo';
+  setMailTopic: (topic: 'rechnung' | 'stornierung' | 'bestaetigung' | 'custom' | 'mahnung' | 'erinnerung' | 'fragebogen' | 'dsgvo') => void;
   mailSubject: string;
   setMailSubject: (subject: string) => void;
   mailBody: string;
@@ -205,9 +205,11 @@ interface DashboardContextProps {
   }) => void;
   handleContextMenu: (e: React.MouseEvent, app: Appointment) => void;
   handleClientContextMenu: (e: React.MouseEvent, client: Client) => void;
+  handleInvoiceContextMenu: (e: React.MouseEvent, invoice: Invoice) => void;
   handleCreateInvoice: (e: React.FormEvent) => void;
+  generateGdprLink: (clientId: string) => Promise<string | null>;
   applyMailTemplate: (
-    topic: 'rechnung' | 'stornierung' | 'bestaetigung' | 'custom' | 'mahnung' | 'erinnerung' | 'fragebogen',
+    topic: 'rechnung' | 'stornierung' | 'bestaetigung' | 'custom' | 'mahnung' | 'erinnerung' | 'fragebogen' | 'dsgvo',
     invoiceId?: string,
     appointmentId?: string,
     targetClient?: Client
@@ -227,8 +229,8 @@ interface DashboardContextProps {
   exportInvoicesCsv: () => void;
 
   // Context Menu state ref
-  contextMenu: { x: number; y: number; type: 'appointment' | 'client'; appointment?: Appointment; client?: Client } | null;
-  setContextMenu: (menu: { x: number; y: number; type: 'appointment' | 'client'; appointment?: Appointment; client?: Client } | null) => void;
+  contextMenu: { x: number; y: number; type: 'appointment' | 'client' | 'invoice'; appointment?: Appointment; client?: Client; invoice?: Invoice } | null;
+  setContextMenu: (menu: { x: number; y: number; type: 'appointment' | 'client' | 'invoice'; appointment?: Appointment; client?: Client; invoice?: Invoice } | null) => void;
 
   // Sign out
   handleSignOut: () => Promise<void>;
@@ -348,6 +350,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const [gdprClientId, setGdprClientId] = useState<string | null>(null);
 
   const openGdprModal = (clientId: string) => {
+    setSelectedClientId(clientId);
     setGdprClientId(clientId);
     setIsGdprModalOpen(true);
   };
@@ -362,14 +365,14 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const [newInvoiceNumber, setNewInvoiceNumber] = useState('');
   const [newInvoiceStatus, setNewInvoiceStatus] = useState<'open' | 'paid' | 'overdue'>('open');
   const [newInvoiceAppointmentId, setNewInvoiceAppointmentId] = useState<string | null>(null);
-  const [mailTopic, setMailTopic] = useState<'rechnung' | 'stornierung' | 'bestaetigung' | 'custom' | 'mahnung' | 'erinnerung' | 'fragebogen'>('rechnung');
+  const [mailTopic, setMailTopic] = useState<'rechnung' | 'stornierung' | 'bestaetigung' | 'custom' | 'mahnung' | 'erinnerung' | 'fragebogen' | 'dsgvo'>('rechnung');
   const [mailSubject, setMailSubject] = useState('');
   const [mailBody, setMailBody] = useState('');
   const [selectedMailInvoiceId, setSelectedMailInvoiceId] = useState('');
   const [selectedMailAppointmentId, setSelectedMailAppointmentId] = useState('');
 
   // Context Menu State
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; type: 'appointment' | 'client'; appointment?: Appointment; client?: Client } | null>(null);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; type: 'appointment' | 'client' | 'invoice'; appointment?: Appointment; client?: Client; invoice?: Invoice } | null>(null);
 
   // Selected calendar date
   const [currentCalendarDate, setCurrentCalendarDate] = useState<Date>(new Date('2026-06-01'));
@@ -485,7 +488,11 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
               createdAt: c.created_at,
               isFavorite: favs.includes(c.id),
               isFlagged: flags.includes(c.id),
-              gdprAccepted: gdpr.includes(c.id)
+              gdprAccepted: c.gdpr_accepted || gdpr.includes(c.id),
+              gdprToken: c.gdpr_token,
+              gdprTokenExpiresAt: c.gdpr_token_expires_at,
+              gdprSignature: c.gdpr_signature,
+              gdprSignedAt: c.gdpr_signed_at
             };
           });
           setClients(loadedClients);
@@ -857,11 +864,31 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   };
 
   // Toggling GDPR Consent status
-  const toggleClientGdpr = (id: string) => {
+  const toggleClientGdpr = async (id: string) => {
     if (!therapistId) return;
+    const client = clients.find(c => c.id === id);
+    if (!client) return;
+
+    const nextAccepted = !client.gdprAccepted;
+
+    // Update in Supabase
+    const { error } = await supabase
+      .from('clients')
+      .update({ 
+        gdpr_accepted: nextAccepted,
+        // If revoking, clear signature and signed_at
+        ...(nextAccepted ? {} : { gdpr_signature: null, gdpr_signed_at: null })
+      })
+      .eq('id', id);
+
+    if (error) {
+      showToast(`Fehler beim Aktualisieren: ${error.message}`, 'error');
+      return;
+    }
+
     const gdpr = JSON.parse(localStorage.getItem(`client_gdpr_${therapistId}`) || '[]');
     let newGdpr;
-    if (gdpr.includes(id)) {
+    if (client.gdprAccepted) {
       newGdpr = gdpr.filter((f: string) => f !== id);
       showToast('DSGVO-Einwilligung widerrufen.', 'info');
     } else {
@@ -869,7 +896,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       showToast('DSGVO-Einwilligung erteilt.', 'success');
     }
     localStorage.setItem(`client_gdpr_${therapistId}`, JSON.stringify(newGdpr));
-    setClients(prev => prev.map(cl => cl.id === id ? { ...cl, gdprAccepted: !cl.gdprAccepted } : cl));
+    setClients(prev => prev.map(cl => cl.id === id ? { ...cl, gdprAccepted: nextAccepted, gdprSignature: nextAccepted ? cl.gdprSignature : null, gdprSignedAt: nextAccepted ? cl.gdprSignedAt : null } : cl));
   };
 
   // Create Service
@@ -1122,6 +1149,18 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  // Handle Right Click context menu for invoice records
+  const handleInvoiceContextMenu = (e: React.MouseEvent, invoice: Invoice) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      type: 'invoice',
+      invoice: invoice
+    });
+  };
+
   // Creating new Invoice
   const handleCreateInvoice = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1192,7 +1231,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
   // Set template text for email writing modal
   const applyMailTemplate = (
-    topic: 'rechnung' | 'stornierung' | 'bestaetigung' | 'custom' | 'mahnung' | 'erinnerung' | 'fragebogen',
+    topic: 'rechnung' | 'stornierung' | 'bestaetigung' | 'custom' | 'mahnung' | 'erinnerung' | 'fragebogen' | 'dsgvo',
     invoiceId?: string,
     appointmentId?: string,
     targetClient?: Client
@@ -1263,10 +1302,45 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     } else if (topic === 'fragebogen') {
       setMailSubject(`Anamnesebogen / Fragebogen zur Behandlung`);
       setMailBody(`${informalGreeting},\n\nbitte füllen Sie vor unserer ersten Sitzung den digitalen Anamnesebogen aus. Dies hilft mir, mich optimal auf Ihre Behandlung vorzubereiten:\n\nhttps://hmanager.de/anamnese/${client.id}\n\nVielen Dank für Ihre Mithilfe und bis bald!\n\nMit freundlichen Grüßen,\nIhr Praxis-Team`);
+    } else if (topic === 'dsgvo') {
+      const activeClient = targetClient || client;
+      const token = activeClient.gdprToken || 'DSGVO_TOKEN';
+      const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
+      const verifyLink = `${origin}/verify/${token}`;
+      setMailSubject(`Datenschutz-Einwilligung (DSGVO) erforderlich - Praxis Ruether`);
+      setMailBody(`${informalGreeting},\n\num Ihre gesundheitsbezogenen Daten für die Behandlung DSGVO-konform verarbeiten und speichern zu dürfen, benötigen wir Ihre Einwilligung.\n\nBitte klicken Sie auf den folgenden Link, verifizieren Sie sich kurz mit Ihrem Geburtsdatum und unterzeichnen Sie das Formular digital:\n\n${verifyLink}\n\nDieser Link ist aus Sicherheitsgründen 7 Tage gültig.\n\nMit freundlichen Grüßen,\nIhr Praxis-Team`);
     } else {
       setMailSubject('');
       setMailBody('');
     }
+  };
+
+  const generateGdprLink = async (clientId: string): Promise<string | null> => {
+    if (!therapistId) return null;
+    const client = clients.find(c => c.id === clientId);
+    if (!client) return null;
+
+    const token = crypto.randomUUID();
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
+    const { error } = await supabase
+      .from('clients')
+      .update({
+        gdpr_token: token,
+        gdpr_token_expires_at: expiresAt
+      })
+      .eq('id', clientId);
+
+    if (error) {
+      showToast(`Fehler beim Erzeugen des DSGVO-Links: ${error.message}`, 'error');
+      return null;
+    }
+
+    // Update clients state with the generated token
+    setClients(prev => prev.map(c => c.id === clientId ? { ...c, gdprToken: token, gdprTokenExpiresAt: expiresAt } : c));
+
+    // Return the generated token
+    return token;
   };
 
   const handleSendMail = (e: React.FormEvent) => {
@@ -1668,7 +1742,9 @@ Vielen Dank fuer Ihr Vertrauen!
       openNewInvoiceSheetWithPrefill,
       handleContextMenu,
       handleClientContextMenu,
+      handleInvoiceContextMenu,
       handleCreateInvoice,
+      generateGdprLink,
       deleteService,
       updateService,
       applyMailTemplate,

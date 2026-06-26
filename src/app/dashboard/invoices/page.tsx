@@ -35,11 +35,27 @@ export default function InvoicesPage() {
     markInvoicePaid,
     sendInvoiceReminder,
     cancelInvoice,
-    handleOpenMahnung
+    handleOpenMahnung,
+    handleInvoiceContextMenu,
+    showToast
   } = useDashboard();
 
   // Timeframe state
   const [timeframe, setTimeframe] = useState('YTD');
+
+  // Selection state
+  const [selectedInvoiceIds, setSelectedInvoiceIds] = useState<string[]>([]);
+
+  // Filter invoices for list view
+  const displayedInvoices = invoices.filter(inv => {
+    const matchesSearch = inv.clientName.toLowerCase().includes(invoiceSearch.toLowerCase()) ||
+                          inv.invoiceNumber.toLowerCase().includes(invoiceSearch.toLowerCase());
+    const matchesFilter = invoiceFilter === 'all' || inv.status === invoiceFilter;
+    return matchesSearch && matchesFilter;
+  });
+
+  const isAllSelected = displayedInvoices.length > 0 && displayedInvoices.every(inv => selectedInvoiceIds.includes(inv.id));
+  const isSomeSelected = displayedInvoices.length > 0 && displayedInvoices.some(inv => selectedInvoiceIds.includes(inv.id)) && !isAllSelected;
 
   // Filter invoices based on selected timeframe
   const filteredInvoicesByTime = invoices.filter(inv => {
@@ -218,9 +234,22 @@ export default function InvoicesPage() {
 
   return (
     <div className="relative flex-grow bg-[#eef0ed] rounded-none lg:rounded-[24px] border-0 lg:border border-[#003527]/10 m-0 lg:my-4 lg:mr-4 lg:ml-4 flex flex-col h-[calc(100vh-64px)] lg:h-[calc(100vh-32px)] overflow-hidden shadow-none transition-all duration-300">
-      {/* Page Title */}
-      <div className="pl-6 lg:pl-8 pt-6 lg:pt-10 pb-2 bg-transparent flex-shrink-0 text-left">
-        <h1 className="text-[26px] font-bold text-[#003527] tracking-tight">Abrechnung</h1>
+      {/* Header Layout (Dashboard Style) */}
+      <div className="flex justify-between items-start w-full relative pl-6 lg:pl-8 pr-6 lg:pr-8 pt-6 lg:pt-10 pb-2 bg-transparent flex-shrink-0">
+        <div className="text-left space-y-1.5 pt-0">
+          <h1 className="text-[26px] font-bold text-[#003527] tracking-tight">Abrechnung</h1>
+        </div>
+
+        {/* Quick Add Button */}
+        <div className="relative">
+          <button 
+            onClick={openNewInvoiceSheet}
+            className="p-2 rounded-xl border border-[#bfc9c3]/50 bg-white text-[#003527] hover:bg-zinc-50 active:scale-95 transition-all cursor-pointer flex items-center justify-center shadow-none"
+            title="Rechnung erstellen"
+          >
+            <Plus className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       {/* Sub-Tab Navigation (Sticky tabs inside Card) */}
@@ -274,12 +303,36 @@ export default function InvoicesPage() {
       {invoiceSubTab === 'list' ? (
         /* Rechnungsliste tab content wrapper with white container styling */
         <div className="bg-white border border-[#bfc9c3]/50 rounded-2xl p-4 lg:p-8 shadow-none space-y-6 relative">
-          {/* Financial Status Summary */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-x-6 gap-y-3 text-xs border-b border-[#bfc9c3]/20 pb-3.5 -mx-4 lg:-mx-8 px-4 lg:px-8">
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-              <div className="flex items-center gap-2">
-                <span className="text-[#003527]/70 font-semibold">Bezahlt</span>
+          {/* Controls: Interactive Legend Filters & Search */}
+          <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-x-6 gap-y-3 text-xs border-b border-[#bfc9c3]/20 pb-3.5 -mx-4 lg:-mx-8 px-4 lg:px-8">
+            <div className="flex flex-wrap items-center gap-x-4 md:gap-x-5 gap-y-2.5">
+              {/* Filter: Alle */}
+              <button
+                onClick={() => setInvoiceFilter('all')}
+                className="flex items-center gap-2 cursor-pointer bg-transparent border-none p-0 outline-none text-left"
+              >
+                <span className={invoiceFilter === 'all' ? 'text-[#003527] font-bold underline decoration-2 underline-offset-8' : 'text-[#003527]/70 font-semibold hover:text-[#003527]'}>
+                  Gesamt
+                </span>
                 <span className="font-extrabold text-[#003527] bg-[#003527]/5 border border-[#003527]/10 rounded-full px-2.5 py-0.5 text-[11px] font-sans">
+                  {invoices.reduce((sum, inv) => sum + inv.amount, 0).toFixed(2)} €
+                </span>
+                <span className="text-[10px] text-zinc-400 font-medium">
+                  ({invoices.length})
+                </span>
+              </button>
+
+              <div className="w-px h-3 bg-[#bfc9c3]/40 hidden md:block" />
+
+              {/* Filter: Bezahlt */}
+              <button
+                onClick={() => setInvoiceFilter('paid')}
+                className="flex items-center gap-2 cursor-pointer bg-transparent border-none p-0 outline-none text-left"
+              >
+                <span className={invoiceFilter === 'paid' ? 'text-[#003527] font-bold underline decoration-2 underline-offset-8' : 'text-[#003527]/70 font-semibold hover:text-[#003527]'}>
+                  Bezahlt
+                </span>
+                <span className="font-extrabold text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-0.5 text-[11px] font-sans">
                   {invoices
                     .filter(inv => inv.status === 'paid')
                     .reduce((sum, inv) => sum + inv.amount, 0)
@@ -289,12 +342,18 @@ export default function InvoicesPage() {
                 <span className="text-[10px] text-zinc-400 font-medium">
                   ({invoices.filter(inv => inv.status === 'paid').length})
                 </span>
-              </div>
+              </button>
               
               <div className="w-px h-3 bg-[#bfc9c3]/40 hidden md:block" />
               
-              <div className="flex items-center gap-2">
-                <span className="text-[#003527]/70 font-semibold">Ausstehend</span>
+              {/* Filter: Offen */}
+              <button
+                onClick={() => setInvoiceFilter('open')}
+                className="flex items-center gap-2 cursor-pointer bg-transparent border-none p-0 outline-none text-left"
+              >
+                <span className={invoiceFilter === 'open' ? 'text-[#003527] font-bold underline decoration-2 underline-offset-8' : 'text-[#003527]/70 font-semibold hover:text-[#003527]'}>
+                  Offen
+                </span>
                 <span className="font-extrabold text-amber-800 bg-amber-50 border border-amber-200 rounded-full px-2.5 py-0.5 text-[11px] font-sans">
                   {invoices
                     .filter(inv => inv.status === 'open')
@@ -305,12 +364,18 @@ export default function InvoicesPage() {
                 <span className="text-[10px] text-zinc-400 font-medium">
                   ({invoices.filter(inv => inv.status === 'open').length})
                 </span>
-              </div>
+              </button>
               
               <div className="w-px h-3 bg-[#bfc9c3]/40 hidden md:block" />
               
-              <div className="flex items-center gap-2">
-                <span className="text-[#003527]/70 font-semibold">Überfällig</span>
+              {/* Filter: Überfällig */}
+              <button
+                onClick={() => setInvoiceFilter('overdue')}
+                className="flex items-center gap-2 cursor-pointer bg-transparent border-none p-0 outline-none text-left"
+              >
+                <span className={invoiceFilter === 'overdue' ? 'text-[#003527] font-bold underline decoration-2 underline-offset-8' : 'text-[#003527]/70 font-semibold hover:text-[#003527]'}>
+                  Überfällig
+                </span>
                 <span className="font-extrabold text-rose-800 bg-rose-50 border border-rose-200 rounded-full px-2.5 py-0.5 text-[11px] font-sans">
                   {invoices
                     .filter(inv => inv.status === 'overdue')
@@ -321,131 +386,231 @@ export default function InvoicesPage() {
                 <span className="text-[10px] text-zinc-400 font-medium">
                   ({invoices.filter(inv => inv.status === 'overdue').length})
                 </span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <button 
-                onClick={openNewInvoiceSheet}
-                className="bg-[#003527] hover:bg-[#0b513d] text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-none animate-fade-in"
-              >
-                <Plus className="w-3.5 h-3.5" /> Rechnung erstellen
               </button>
-
-              <div className="relative">
-                <button
-                  onClick={() => setIsInvoiceMenuOpen(!isInvoiceMenuOpen)}
-                  className="p-2 bg-white border border-[#bfc9c3]/50 rounded-xl hover:bg-zinc-50 text-[#003527] transition-all cursor-pointer flex items-center justify-center"
-                  title="Optionen anzeigen"
-                >
-                  <MoreVertical className="w-4 h-4" />
-                </button>
-                
-                {isInvoiceMenuOpen && (
-                  <>
-                    <div 
-                      className="fixed inset-0 z-40 bg-transparent" 
-                      onClick={() => setIsInvoiceMenuOpen(false)}
-                    />
-                    <div className="absolute top-12 right-0 w-52 bg-white border border-[#bfc9c3]/50 rounded-2xl shadow-xl overflow-hidden py-1.5 flex flex-col z-50 animate-fade-in text-left">
-                      <button
-                        onClick={() => {
-                          setIsInvoiceMenuOpen(false);
-                          exportInvoicesCsv();
-                        }}
-                        className="px-4 py-2.5 text-xs text-[#003527] hover:bg-[#f3f4f3] font-bold text-left flex items-center gap-2.5 transition-colors cursor-pointer"
-                      >
-                        <Download className="w-3.5 h-3.5 text-[#003527]/70" />
-                        CSV Export
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
             </div>
-          </div>
 
-          {/* Controls & Table Grouped Together */}
-          <div className="space-y-5">
-            {/* Controls: Search & Filters */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            {/* Right side: Search & Options */}
+            <div className="flex items-center gap-3 w-full sm:w-auto">
               <div className="relative w-full sm:w-64">
                 <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-zinc-400" />
                 <input
                   type="text"
-                  placeholder="Suchen..."
+                  placeholder="Rechnung suchen..."
                   value={invoiceSearch}
                   onChange={(e) => setInvoiceSearch(e.target.value)}
                   className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/40 rounded-xl pl-9 pr-4 py-2 font-bold text-xs text-[#003527] focus:ring-1 focus:ring-[#003527] focus:border-[#003527] outline-none transition-all text-left"
                 />
               </div>
-
-              <div className="bg-zinc-200/50 p-0.5 rounded-xl flex border border-zinc-200/20 w-full sm:w-auto">
-                {[
-                  { id: 'all', label: 'Alle' },
-                  { id: 'open', label: 'Offen' },
-                  { id: 'paid', label: 'Bezahlt' },
-                  { id: 'overdue', label: 'Überfällig' }
-                ].map((seg) => (
-                  <button
-                    key={seg.id}
-                    onClick={() => setInvoiceFilter(seg.id as any)}
-                    className={`flex-1 sm:flex-initial px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                      invoiceFilter === seg.id 
-                        ? 'bg-white text-[#003527] border border-[#bfc9c3]/30' 
-                        : 'text-zinc-500 hover:text-[#003527]'
-                    }`}
-                  >
-                    {seg.label}
-                  </button>
-                ))}
-              </div>
             </div>
+          </div>
 
-            {/* Invoice List Table */}
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-separate border-spacing-y-0">
-                <thead>
-                  <tr className="text-zinc-400 uppercase tracking-widest font-extrabold text-[9px]">
-                    <th className="py-3.5 px-5 bg-[#f9f9f8] border-y border-l border-[#bfc9c3]/30 rounded-l-xl font-extrabold">Rechnungs-Nr.</th>
-                    <th className="py-3.5 px-5 bg-[#f9f9f8] border-y border-[#bfc9c3]/30 font-extrabold">Datum</th>
-                    <th className="py-3.5 px-5 bg-[#f9f9f8] border-y border-[#bfc9c3]/30 font-extrabold">Empfänger</th>
-                    <th className="py-3.5 px-5 bg-[#f9f9f8] border-y border-[#bfc9c3]/30 font-extrabold">Betrag</th>
-                    <th className="py-3.5 px-5 bg-[#f9f9f8] border-y border-[#bfc9c3]/30 font-extrabold">Status</th>
-                    <th className="py-3.5 px-5 bg-[#f9f9f8] border-y border-r border-[#bfc9c3]/30 rounded-r-xl text-right font-extrabold">Aktionen</th>
-                  </tr>
-                </thead>
-                <tbody className="font-bold">
-                  {invoices
-                    .filter(inv => {
-                      const matchesSearch = inv.clientName.toLowerCase().includes(invoiceSearch.toLowerCase()) ||
-                                            inv.invoiceNumber.toLowerCase().includes(invoiceSearch.toLowerCase());
-                      const matchesFilter = invoiceFilter === 'all' || inv.status === invoiceFilter;
-                      return matchesSearch && matchesFilter;
-                    })
-                    .map((inv) => (
-                      <tr
-                        key={inv.id}
-                        className="text-[#003527] group"
-                      >
-                        <td className="py-3.5 px-5 font-mono rounded-l-xl border-b border-zinc-100 group-hover:bg-[#003527]/3 transition-colors text-left">{inv.invoiceNumber}</td>
-                        <td className="py-3.5 px-5 font-semibold text-zinc-400 border-b border-zinc-100 group-hover:bg-[#003527]/3 transition-colors text-left">{new Date(inv.date).toLocaleDateString('de-DE')}</td>
-                        <td className="py-3.5 px-5 border-b border-zinc-100 group-hover:bg-[#003527]/3 transition-colors text-left">{inv.clientName}</td>
-                        <td className="py-3.5 px-5 font-semibold text-xs border-b border-zinc-100 group-hover:bg-[#003527]/3 transition-colors text-left">{inv.amount.toFixed(2)} €</td>
-                        <td className="py-3.5 px-5 border-b border-zinc-100 group-hover:bg-[#003527]/3 transition-colors text-left">
-                          <span className={`px-3 py-1 rounded-full text-[9px] font-extrabold uppercase border ${
-                            inv.status === 'paid'
-                              ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                              : inv.status === 'overdue'
-                              ? 'bg-rose-50 border-rose-200 text-rose-800'
-                              : 'bg-amber-50 border-amber-200 text-amber-800'
-                          }`}>
-                            {inv.status === 'paid' && 'Bezahlt'}
-                            {inv.status === 'overdue' && 'Überfällig'}
-                            {inv.status === 'open' && 'Offen'}
-                          </span>
-                        </td>
-                        <td className="py-3.5 pl-5 pr-0 text-right relative rounded-r-xl border-b border-zinc-100 group-hover:bg-[#003527]/3 transition-colors">
+          {/* Inline Bulk Actions Accordion */}
+          <AnimatePresence initial={false}>
+            {selectedInvoiceIds.length > 0 && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.25, ease: 'easeInOut' }}
+                className="overflow-hidden border-b border-[#bfc9c3]/20 pb-3 -mx-4 lg:-mx-8 px-4 lg:px-8"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-4 text-xs font-bold text-[#003527] bg-[#f9f9f8]/50 border border-[#bfc9c3]/30 rounded-xl px-4 py-3 mt-1">
+                  <div className="flex items-center gap-2">
+                    <span className="bg-[#003527]/5 border border-[#003527]/10 rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-sans font-extrabold text-[#003527]">
+                      {selectedInvoiceIds.length}
+                    </span>
+                    <span>ausgewählt</span>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      onClick={() => {
+                        selectedInvoiceIds.forEach(id => {
+                          const inv = invoices.find(i => i.id === id);
+                          if (inv && inv.status !== 'paid') markInvoicePaid(id);
+                        });
+                        setSelectedInvoiceIds([]);
+                        showToast('Ausgewählte Rechnungen wurden als bezahlt markiert.');
+                      }}
+                      className="px-3 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 rounded-lg transition-all cursor-pointer flex items-center gap-1.5"
+                    >
+                      <Check className="w-3.5 h-3.5" /> Als bezahlt markieren
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        selectedInvoiceIds.forEach(id => {
+                          const inv = invoices.find(i => i.id === id);
+                          if (inv) sendInvoiceEmail(inv);
+                        });
+                        setSelectedInvoiceIds([]);
+                      }}
+                      className="px-3 py-1.5 bg-white border border-[#bfc9c3]/50 text-[#003527] hover:bg-zinc-50 rounded-lg transition-all cursor-pointer flex items-center gap-1.5"
+                    >
+                      <Mail className="w-3.5 h-3.5" /> E-Mail senden
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        selectedInvoiceIds.forEach(id => {
+                          const inv = invoices.find(i => i.id === id);
+                          if (inv) downloadInvoicePdf(inv);
+                        });
+                      }}
+                      className="px-3 py-1.5 bg-white border border-[#bfc9c3]/50 text-[#003527] hover:bg-zinc-50 rounded-lg transition-all cursor-pointer flex items-center gap-1.5"
+                    >
+                      <Download className="w-3.5 h-3.5" /> PDF laden
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        if (window.confirm(`${selectedInvoiceIds.length} Rechnungen wirklich stornieren?`)) {
+                          selectedInvoiceIds.forEach(id => {
+                            cancelInvoice(id);
+                          });
+                          setSelectedInvoiceIds([]);
+                        }
+                      }}
+                      className="px-3 py-1.5 bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 rounded-lg transition-all cursor-pointer flex items-center gap-1.5"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" /> Stornieren
+                    </button>
+                    
+                    <button
+                      onClick={() => setSelectedInvoiceIds([])}
+                      className="px-3 py-1.5 bg-transparent text-zinc-400 hover:text-zinc-600 rounded-lg transition-colors cursor-pointer border-none"
+                    >
+                      Aufheben
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Invoice List Table */}
+          <div className="overflow-x-auto mt-6">
+            <table className="w-full text-left text-xs border-separate border-spacing-y-0">
+              <thead>
+                <tr className="text-zinc-400 text-[11px] font-semibold">
+                  <th className="pb-3 pt-1 pl-5 pr-3 text-left border-b border-zinc-100 w-10">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (isAllSelected) {
+                          setSelectedInvoiceIds([]);
+                        } else {
+                          setSelectedInvoiceIds(displayedInvoices.map(inv => inv.id));
+                        }
+                      }}
+                      className={`w-4 h-4 rounded border flex items-center justify-center transition-all cursor-pointer outline-none bg-transparent ${
+                        isAllSelected 
+                          ? 'border-[#003527] bg-[#003527] text-white' 
+                          : isSomeSelected
+                          ? 'border-[#003527] bg-white text-[#003527]'
+                          : 'border-[#bfc9c3]/60 hover:border-[#003527]'
+                      }`}
+                    >
+                      {isAllSelected && <Check className="w-3 h-3 stroke-[3]" />}
+                      {isSomeSelected && <div className="w-2 h-0.5 bg-[#003527] rounded-sm" />}
+                    </button>
+                  </th>
+                  <th className="pb-3 pt-1 px-3 text-left border-b border-zinc-100">Rechnungs-Nr.</th>
+                  <th className="pb-3 pt-1 px-3 text-left border-b border-zinc-100">Datum</th>
+                  <th className="pb-3 pt-1 px-3 text-left border-b border-zinc-100">Empfänger</th>
+                  <th className="pb-3 pt-1 px-3 text-left border-b border-zinc-100">Betrag</th>
+                  <th className="pb-3 pt-1 px-3 text-left border-b border-zinc-100">Status</th>
+                  <th className="pb-3 pt-1 pl-3 pr-5 text-right border-b border-zinc-100">Aktionen</th>
+                </tr>
+              </thead>
+              <tbody className="font-bold">
+                {displayedInvoices.map((inv) => {
+                  const isSelected = selectedInvoiceIds.includes(inv.id);
+                  return (
+                    <tr
+                      key={inv.id}
+                      onContextMenu={(e) => handleInvoiceContextMenu(e, inv)}
+                      onClick={() => {
+                        setSelectedInvoiceIds(prev => 
+                          prev.includes(inv.id) 
+                            ? prev.filter(id => id !== inv.id) 
+                            : [...prev, inv.id]
+                        );
+                      }}
+                      className={`text-[#003527] group cursor-pointer transition-colors ${
+                        isSelected ? 'bg-[#003527]/5' : ''
+                      }`}
+                    >
+                      <td className="py-3.5 pl-5 pr-3 border-b border-zinc-100 group-last:border-b-0 group-hover:bg-[#003527]/3 transition-colors text-left w-10">
+                        <div
+                          className={`w-4 h-4 rounded border flex items-center justify-center transition-all cursor-pointer outline-none bg-transparent ${
+                            isSelected 
+                              ? 'border-[#003527] bg-[#003527] text-white' 
+                              : 'border-[#bfc9c3]/60 hover:border-[#003527]'
+                          }`}
+                        >
+                          {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
+                        </div>
+                      </td>
+                      <td className="py-3.5 px-3 font-mono border-b border-zinc-100 group-last:border-b-0 group-hover:bg-[#003527]/3 transition-colors text-left">{inv.invoiceNumber}</td>
+                      <td className="py-3.5 px-3 font-semibold text-zinc-400 border-b border-zinc-100 group-last:border-b-0 group-hover:bg-[#003527]/3 transition-colors text-left">{new Date(inv.date).toLocaleDateString('de-DE')}</td>
+                      <td className="py-3.5 px-3 border-b border-zinc-100 group-last:border-b-0 group-hover:bg-[#003527]/3 transition-colors text-left">{inv.clientName}</td>
+                      <td className="py-3.5 px-3 font-semibold text-xs border-b border-zinc-100 group-last:border-b-0 group-hover:bg-[#003527]/3 transition-colors text-left">{inv.amount.toFixed(2)} €</td>
+                      <td className="py-3.5 px-3 border-b border-zinc-100 group-last:border-b-0 group-hover:bg-[#003527]/3 transition-colors text-left">
+                        <span className={`px-3 py-1 rounded-full text-[9px] font-extrabold uppercase border ${
+                          inv.status === 'paid'
+                            ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                            : inv.status === 'overdue'
+                            ? 'bg-rose-50 border-rose-200 text-rose-800'
+                            : 'bg-amber-50 border-amber-200 text-amber-800'
+                        }`}>
+                          {inv.status === 'paid' && 'Bezahlt'}
+                          {inv.status === 'overdue' && 'Überfällig'}
+                          {inv.status === 'open' && 'Offen'}
+                        </span>
+                      </td>
+                      <td className="py-3.5 pl-3 pr-5 text-right relative border-b border-zinc-100 group-last:border-b-0 group-hover:bg-[#003527]/3 transition-colors">
+                        <div className="flex items-center justify-end gap-1 relative">
+                          {/* Direct Actions */}
+                          {inv.status !== 'paid' ? (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                markInvoicePaid(inv.id);
+                              }}
+                              title="Als bezahlt markieren"
+                              className="p-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700 transition-colors cursor-pointer flex items-center justify-center"
+                            >
+                              <Check className="w-3.5 h-3.5" />
+                            </button>
+                          ) : (
+                            <div className="w-[28px] h-[28px]" />
+                          )}
+
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              sendInvoiceEmail(inv);
+                            }}
+                            title="Per E-Mail senden"
+                            className="p-1.5 rounded-lg bg-white border border-[#bfc9c3]/50 text-[#003527]/70 hover:bg-zinc-50 hover:text-[#003527] transition-colors cursor-pointer flex items-center justify-center"
+                          >
+                            <Mail className="w-3.5 h-3.5" />
+                          </button>
+
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              downloadInvoicePdf(inv);
+                            }}
+                            title="PDF laden"
+                            className="p-1.5 rounded-lg bg-white border border-[#bfc9c3]/50 text-[#003527]/70 hover:bg-zinc-50 hover:text-[#003527] transition-colors cursor-pointer flex items-center justify-center"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                          </button>
+
+                          {/* Dropdown for other actions */}
                           <div className="relative inline-block text-left">
                             <button
                               onClick={(e) => {
@@ -454,9 +619,10 @@ export default function InvoicesPage() {
                                   activeInvoiceActionMenuId === inv.id ? null : inv.id
                                 );
                               }}
-                              className="bg-white hover:bg-zinc-50 border border-[#bfc9c3]/50 text-[#003527] px-3 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer inline-flex items-center gap-1 shadow-none"
+                              title="Weitere Aktionen"
+                              className="p-1.5 rounded-lg text-[#003527]/50 hover:bg-[#003527]/5 hover:text-[#003527] transition-colors cursor-pointer border-none bg-transparent flex items-center justify-center"
                             >
-                              Aktionen <ChevronRight className="w-3 h-3 rotate-90" />
+                              <MoreVertical className="w-3.5 h-3.5" />
                             </button>
                             
                             <AnimatePresence>
@@ -468,47 +634,36 @@ export default function InvoicesPage() {
                                   className="absolute right-0 mt-2 w-48 bg-white border border-[#bfc9c3]/50 rounded-2xl shadow-xl overflow-hidden py-1.5 flex flex-col z-50 text-left"
                                 >
                                   <button
-                                    onClick={() => sendInvoiceEmail(inv)}
-                                    className="px-4 py-2 text-left text-xs font-bold text-[#003527] hover:bg-[#f3f4f3] transition-colors flex items-center gap-2 w-full cursor-pointer"
-                                  >
-                                    <Mail className="w-3.5 h-3.5 text-[#003527]/60" /> Per E-Mail senden
-                                  </button>
-                                  
-                                  <button
-                                    onClick={() => downloadInvoicePdf(inv)}
-                                    className="px-4 py-2 text-left text-xs font-bold text-[#003527] hover:bg-[#f3f4f3] transition-colors flex items-center gap-2 w-full cursor-pointer"
-                                  >
-                                    <Download className="w-3.5 h-3.5 text-[#003527]/60" /> PDF laden
-                                  </button>
-                                  
-                                  <button
-                                    onClick={() => printInvoice(inv)}
-                                    className="px-4 py-2 text-left text-xs font-bold text-[#003527] hover:bg-[#f3f4f3] transition-colors flex items-center gap-2 w-full cursor-pointer"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setActiveInvoiceActionMenuId(null);
+                                      printInvoice(inv);
+                                    }}
+                                    className="px-4 py-2 text-left text-xs font-bold text-[#003527] hover:bg-[#f3f4f3] transition-colors flex items-center gap-2 w-full cursor-pointer border-none bg-transparent"
                                   >
                                     <Printer className="w-3.5 h-3.5 text-[#003527]/60" /> Drucken
                                   </button>
             
-                                  {inv.status !== 'paid' && (
-                                    <button
-                                      onClick={() => markInvoicePaid(inv.id)}
-                                      className="px-4 py-2 text-left text-xs font-bold text-emerald-700 hover:bg-[#f3f4f3] transition-colors border-t border-zinc-100 flex items-center gap-2 w-full cursor-pointer"
-                                    >
-                                      <Check className="w-3.5 h-3.5 text-emerald-600" /> Als bezahlt markieren
-                                    </button>
-                                  )}
-            
                                   {(inv.status === 'open' || inv.status === 'overdue') && (
                                     <button
-                                      onClick={() => sendInvoiceReminder(inv)}
-                                      className="px-4 py-2 text-left text-xs font-bold text-amber-700 hover:bg-[#f3f4f3] transition-colors flex items-center gap-2 w-full cursor-pointer"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setActiveInvoiceActionMenuId(null);
+                                        sendInvoiceReminder(inv);
+                                      }}
+                                      className="px-4 py-2 text-left text-xs font-bold text-amber-700 hover:bg-[#f3f4f3] transition-colors flex items-center gap-2 w-full cursor-pointer border-none bg-transparent"
                                     >
                                       <Clock className="w-3.5 h-3.5 text-amber-600" /> Mahnung senden
                                     </button>
                                   )}
             
                                   <button
-                                    onClick={() => cancelInvoice(inv.id)}
-                                    className="px-4 py-2 text-left text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors border-t border-zinc-100 flex items-center gap-2 w-full cursor-pointer"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setActiveInvoiceActionMenuId(null);
+                                      cancelInvoice(inv.id);
+                                    }}
+                                    className="px-4 py-2 text-left text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors border-t border-zinc-100 flex items-center gap-2 w-full cursor-pointer border-none bg-transparent"
                                   >
                                     <Trash2 className="w-3.5 h-3.5 text-rose-500" /> Stornieren
                                   </button>
@@ -516,12 +671,13 @@ export default function InvoicesPage() {
                               )}
                             </AnimatePresence>
                           </div>
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </div>
       ) : (

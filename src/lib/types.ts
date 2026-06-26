@@ -13,6 +13,10 @@ export interface Client {
   isFavorite?: boolean;
   isFlagged?: boolean;
   gdprAccepted?: boolean;
+  gdprToken?: string | null;
+  gdprTokenExpiresAt?: string | null;
+  gdprSignature?: string | null;
+  gdprSignedAt?: string | null;
 }
 
 

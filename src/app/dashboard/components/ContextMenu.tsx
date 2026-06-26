@@ -3,7 +3,8 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { 
-  FileText, Printer, Download, Plus, Settings, Sparkles, Mail, Trash2, Calendar as CalendarIcon 
+  FileText, Printer, Download, Plus, Settings, Sparkles, Mail, Trash2, Calendar as CalendarIcon,
+  Check, Clock
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useDashboard } from '../context';
@@ -17,6 +18,9 @@ export default function ContextMenu() {
     appointments,
     printInvoice,
     downloadInvoicePdf,
+    markInvoicePaid,
+    sendInvoiceReminder,
+    cancelInvoice,
     setSelectedAppointment,
     setSheetMode,
     setIsSheetOpen,
@@ -35,7 +39,8 @@ export default function ContextMenu() {
     setNewAppHour,
     setNewAppClientId,
     setNewAppServiceId,
-    services
+    services,
+    sendInvoiceEmail
   } = useDashboard();
 
   if (!contextMenu) return null;
@@ -58,10 +63,12 @@ export default function ContextMenu() {
       <div className="px-3 py-2 text-[10px] text-zinc-400 font-bold uppercase tracking-wider select-none text-left">
         {contextMenu.type === 'client' 
           ? (contextMenu.client?.name || 'Patient') 
+          : contextMenu.type === 'invoice'
+          ? (`Rechnung ${contextMenu.invoice?.invoiceNumber || ''}`)
           : (contextMenu.appointment?.clientName || contextMenu.appointment?.serviceName || 'Termin')}
       </div>
 
-      {contextMenu.type === 'client' ? (
+      {contextMenu.type === 'client' && (
         <div className="py-1 flex flex-col">
           <button
             onClick={() => {
@@ -119,7 +126,9 @@ export default function ContextMenu() {
             E-Mail schreiben
           </button>
         </div>
-      ) : (
+      )}
+
+      {contextMenu.type === 'appointment' && (
         <>
           <div className="py-1 flex flex-col">
             {(() => {
@@ -263,6 +272,89 @@ export default function ContextMenu() {
             </button>
           </div>
         </>
+      )}
+
+      {contextMenu.type === 'invoice' && (
+        <div className="py-1 flex flex-col">
+          <button
+            onClick={() => {
+              setContextMenu(null);
+              const invoice = contextMenu.invoice;
+              if (invoice) sendInvoiceEmail(invoice);
+            }}
+            className="w-full text-left px-3 py-1.5 rounded-xl hover:bg-[#003527]/5 font-bold transition-all flex items-center gap-2 cursor-pointer border-none bg-transparent"
+          >
+            <Mail className="w-3.5 h-3.5" />
+            Per E-Mail senden
+          </button>
+
+          <button
+            onClick={() => {
+              setContextMenu(null);
+              const invoice = contextMenu.invoice;
+              if (invoice) downloadInvoicePdf(invoice);
+            }}
+            className="w-full text-left px-3 py-1.5 rounded-xl hover:bg-[#003527]/5 font-bold transition-all flex items-center gap-2 cursor-pointer border-none bg-transparent"
+          >
+            <Download className="w-3.5 h-3.5" />
+            PDF herunterladen
+          </button>
+
+          <button
+            onClick={() => {
+              setContextMenu(null);
+              const invoice = contextMenu.invoice;
+              if (invoice) printInvoice(invoice);
+            }}
+            className="w-full text-left px-3 py-1.5 rounded-xl hover:bg-[#003527]/5 font-bold transition-all flex items-center gap-2 cursor-pointer border-none bg-transparent"
+          >
+            <Printer className="w-3.5 h-3.5" />
+            Drucken
+          </button>
+
+          {contextMenu.invoice?.status !== 'paid' && (
+            <button
+              onClick={() => {
+                setContextMenu(null);
+                const invoice = contextMenu.invoice;
+                if (invoice) markInvoicePaid(invoice.id);
+              }}
+              className="w-full text-left px-3 py-1.5 rounded-xl hover:bg-[#003527]/5 font-bold text-emerald-700 transition-all flex items-center gap-2 cursor-pointer border-none bg-transparent border-t border-zinc-100"
+            >
+              <Check className="w-3.5 h-3.5 text-emerald-600" />
+              Als bezahlt markieren
+            </button>
+          )}
+
+          {(contextMenu.invoice?.status === 'open' || contextMenu.invoice?.status === 'overdue') && (
+            <button
+              onClick={() => {
+                setContextMenu(null);
+                const invoice = contextMenu.invoice;
+                if (invoice) {
+                  // Direct to warning or send email reminder
+                  sendInvoiceReminder(invoice);
+                }
+              }}
+              className="w-full text-left px-3 py-1.5 rounded-xl hover:bg-[#003527]/5 font-bold text-amber-700 transition-all flex items-center gap-2 cursor-pointer border-none bg-transparent"
+            >
+              <Clock className="w-3.5 h-3.5 text-amber-600" />
+              Mahnung senden
+            </button>
+          )}
+
+          <button
+            onClick={() => {
+              setContextMenu(null);
+              const invoice = contextMenu.invoice;
+              if (invoice) cancelInvoice(invoice.id);
+            }}
+            className="w-full text-left px-3 py-1.5 rounded-xl hover:bg-rose-50 text-rose-600 font-bold transition-all flex items-center gap-2 cursor-pointer border-none bg-transparent border-t border-zinc-100"
+          >
+            <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+            Stornieren
+          </button>
+        </div>
       )}
     </motion.div>
   );

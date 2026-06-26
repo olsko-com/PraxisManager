@@ -212,18 +212,66 @@ export default function DashboardOverviewPage() {
           </div>
         </div>
 
+        {/* Nächste Termine Row (Full Width) */}
+        <div className="bg-white border border-[#bfc9c3]/40 rounded-2xl p-6 shadow-none text-left space-y-4">
+          <div className="flex justify-between items-center pb-3 border-b border-[#bfc9c3]/20">
+            <h3 className="text-sm font-bold text-[#003527]">Nächste Termine</h3>
+            <button
+              onClick={() => router.push('/dashboard/calendar')}
+              className="text-[10px] font-extrabold text-[#003527] hover:underline cursor-pointer flex items-center gap-0.5 bg-transparent border-none p-0 outline-none"
+            >
+              Kalender öffnen <ArrowUpRight className="w-3 h-3" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {upcomingAppointments.length > 0 ? (
+              upcomingAppointments.map((app) => (
+                <div 
+                  key={app.id} 
+                  className="p-3.5 bg-[#f9f9f8] border border-[#bfc9c3]/30 rounded-xl flex flex-col gap-1 hover:border-[#bfc9c3]/60 transition-all text-left group cursor-pointer"
+                  onClick={() => {
+                    if (app.clientId) {
+                      setSelectedClientId(app.clientId);
+                      router.push('/dashboard/clients');
+                    }
+                  }}
+                >
+                  <div className="flex justify-between items-start">
+                    <span className="text-[10px] font-bold text-[#003527]/70 uppercase tracking-wider">
+                      {formatAppointmentTime(app.startTime)}
+                    </span>
+                    <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-md border ${
+                      app.status === 'confirmed' 
+                        ? 'bg-emerald-50 border-emerald-200/50 text-emerald-700' 
+                        : app.status === 'cancelled'
+                        ? 'bg-rose-50 border-rose-200/50 text-rose-600'
+                        : 'bg-blue-50 border-blue-200/50 text-blue-700'
+                    }`}>
+                      {app.status === 'confirmed' ? 'Bestätigt' : app.status === 'cancelled' ? 'Storniert' : 'Gebucht'}
+                    </span>
+                  </div>
+                  <span className="text-xs font-bold text-[#003527] group-hover:underline">
+                    {app.clientName}
+                  </span>
+                  <span className="text-[10px] text-zinc-400 font-semibold truncate">
+                    {app.serviceName}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <div className="col-span-full py-8 text-center text-zinc-400 italic text-xs font-semibold">
+                Keine anstehenden Termine.
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Patients Table Card (Full Width) */}
         <div className="bg-white border border-[#bfc9c3]/40 rounded-2xl px-4 lg:px-8 pt-0 pb-4 shadow-none text-left relative">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#bfc9c3]/20 pt-6 pb-5 -mx-4 lg:-mx-8 px-4 lg:px-8">
             <div className="flex items-center gap-1.5 text-left">
               <h3 className="text-sm font-bold text-[#003527]">Patienten</h3>
-              <button
-                onClick={() => setIsNewClientModalOpen(true)}
-                className="p-1.5 rounded-lg text-zinc-400 hover:text-[#003527] hover:bg-[#003527]/5 transition-all cursor-pointer"
-                title="Patient anlegen"
-              >
-                <Plus className="w-4 h-4" />
-              </button>
             </div>
             
             {/* Search Input */}
@@ -341,61 +389,6 @@ export default function DashboardOverviewPage() {
                 )}
               </tbody>
             </table>
-          </div>
-        </div>
-
-        {/* Nächste Termine Row (Full Width) */}
-        <div className="bg-white border border-[#bfc9c3]/40 rounded-2xl p-6 shadow-none text-left space-y-4">
-          <div className="flex justify-between items-center pb-3 border-b border-[#bfc9c3]/20">
-            <h3 className="text-sm font-bold text-[#003527]">Nächste Termine</h3>
-            <button
-              onClick={() => router.push('/dashboard/calendar')}
-              className="text-[10px] font-extrabold text-[#003527] hover:underline cursor-pointer flex items-center gap-0.5 bg-transparent border-none p-0 outline-none"
-            >
-              Kalender öffnen <ArrowUpRight className="w-3 h-3" />
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {upcomingAppointments.length > 0 ? (
-              upcomingAppointments.map((app) => (
-                <div 
-                  key={app.id} 
-                  className="p-3.5 bg-[#f9f9f8] border border-[#bfc9c3]/30 rounded-xl flex flex-col gap-1 hover:border-[#bfc9c3]/60 transition-all text-left group cursor-pointer"
-                  onClick={() => {
-                    if (app.clientId) {
-                      setSelectedClientId(app.clientId);
-                      router.push('/dashboard/clients');
-                    }
-                  }}
-                >
-                  <div className="flex justify-between items-start">
-                    <span className="text-[10px] font-bold text-[#003527]/70 uppercase tracking-wider">
-                      {formatAppointmentTime(app.startTime)}
-                    </span>
-                    <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-md border ${
-                      app.status === 'confirmed' 
-                        ? 'bg-emerald-50 border-emerald-200/50 text-emerald-700' 
-                        : app.status === 'cancelled'
-                        ? 'bg-rose-50 border-rose-200/50 text-rose-600'
-                        : 'bg-blue-50 border-blue-200/50 text-blue-700'
-                    }`}>
-                      {app.status === 'confirmed' ? 'Bestätigt' : app.status === 'cancelled' ? 'Storniert' : 'Gebucht'}
-                    </span>
-                  </div>
-                  <span className="text-xs font-bold text-[#003527] group-hover:underline">
-                    {app.clientName}
-                  </span>
-                  <span className="text-[10px] text-zinc-400 font-semibold truncate">
-                    {app.serviceName}
-                  </span>
-                </div>
-              ))
-            ) : (
-              <div className="col-span-full py-8 text-center text-zinc-400 italic text-xs font-semibold">
-                Keine anstehenden Termine.
-              </div>
-            )}
           </div>
         </div>
       </div>

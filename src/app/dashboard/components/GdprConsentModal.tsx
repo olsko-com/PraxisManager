@@ -13,6 +13,9 @@ export default function GdprConsentModal() {
     setGdprClientId,
     clients,
     toggleClientGdpr,
+    generateGdprLink,
+    applyMailTemplate,
+    setIsMailModalOpen,
     showToast
   } = useDashboard();
 
@@ -28,10 +31,16 @@ export default function GdprConsentModal() {
     setGdprClientId(null);
   };
 
-  const handleSendLink = () => {
-    showToast(`Einwilligungs-Link an ${clientEmail} gesendet!`, 'success');
-    toggleClientGdpr(client.id);
-    closeGdprModal();
+  const handleSendLink = async () => {
+    // Generate token and save it to the DB
+    const token = await generateGdprLink(client.id);
+    if (token) {
+      // Apply the 'dsgvo' mail template
+      applyMailTemplate('dsgvo', undefined, undefined, client);
+      // Open the email modal
+      setIsMailModalOpen(true);
+      closeGdprModal();
+    }
   };
 
   const handleSignOnDevice = () => {
