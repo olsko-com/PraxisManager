@@ -736,7 +736,7 @@ export default function ClientsPage() {
                 >
                   {tab === 'overview' && '📋 Stammdaten'}
                   {tab === 'anamnesis' && '📝 Cranio-Anamnese'}
-                  {tab === 'soap' && '🩺 Therapieverlauf (SOAP)'}
+                  {tab === 'soap' && '🩺 Behandlungsverlauf (SOAP)'}
                   {tab === 'billing' && '📄 Abrechnung & Dokumente'}
                 </button>
               ))}
@@ -1120,7 +1120,7 @@ export default function ClientsPage() {
                 <div className="space-y-6 text-left animate-fade-in">
                   <div className="flex justify-between items-center pb-2 border-b border-[#bfc9c3]/20">
                     <div>
-                      <h4 className="text-[10px] font-bold text-[#003527]/60 uppercase tracking-widest">Therapieverlauf</h4>
+                      <h4 className="text-[10px] font-bold text-[#003527]/60 uppercase tracking-widest">Behandlungsverlauf</h4>
                       <p className="text-[11px] text-zinc-400 mt-0.5">Chronologischer Verlauf der Behandlungssitzungen (SOAP-Methode).</p>
                     </div>
                     <button 
