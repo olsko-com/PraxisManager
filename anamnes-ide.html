@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anamnesebogen - Craniosacral</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Phosphor Icons for high-quality, modern icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        // Calming, holistic color palette
+                        stone: {
+                            50: '#fafaf9',
+                            100: '#f5f5f4',
+                            200: '#e7e5e4',
+                            800: '#292524',
+                            900: '#1c1917',
+                        },
+                        teal: {
+                            50: '#f0fdfa',
+                            500: '#14b8a6',
+                            600: '#0d9488',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Custom scrollbar for a polished look */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #e7e5e4;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #d6d3d1;
+        }
+
+        /* Apple-style range sliders */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #ffffff;
+            border: 2px solid #14b8a6;
+            cursor: pointer;
+            margin-top: -8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: transform 0.1s;
+        }
+
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 6px;
+            cursor: pointer;
+            background: #e7e5e4;
+            border-radius: 4px;
+        }
+
+        input[type=range]:focus {
+            outline: none;
+        }
+
+        input[type=range]:focus::-webkit-slider-thumb {
+            box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.2);
+        }
+
+        /* Glassmorphism utility */
+        .glass {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        /* Animation for new repeater fields */
+        @keyframes fadeInDown {
+            0% {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade-in-down {
+            animation: fadeInDown 0.3s ease-out forwards;
+        }
+    </style>
+</head>
+
+<body
+    class="bg-stone-100 text-stone-800 antialiased h-screen flex overflow-hidden selection:bg-teal-100 selection:text-teal-900">
+
+    <!-- Minimalist Sidebar -->
+    <aside class="w-20 bg-stone-900 flex flex-col items-center py-6 border-r border-stone-800 flex-shrink-0 z-20">
+        <div
+            class="w-10 h-10 bg-teal-500 rounded-xl flex items-center justify-center text-white mb-8 shadow-lg shadow-teal-500/20">
+            <i class="ph ph-wave-sine text-2xl"></i>
+        </div>
+        <nav class="flex-1 flex flex-col gap-4">
+            <a href="#"
+                class="w-12 h-12 rounded-xl flex items-center justify-center text-stone-400 hover:text-white hover:bg-stone-800 transition-colors tooltip-trigger"
+                title="Dashboard">
+                <i class="ph ph-squares-four text-2xl"></i>
+            </a>
+            <a href="#"
+                class="w-12 h-12 rounded-xl flex items-center justify-center text-teal-400 bg-stone-800 transition-colors shadow-inner"
+                title="Patientenakte">
+                <i class="ph ph-user text-2xl"></i>
+            </a>
+            <a href="#"
+                class="w-12 h-12 rounded-xl flex items-center justify-center text-stone-400 hover:text-white hover:bg-stone-800 transition-colors"
+                title="Kalender">
+                <i class="ph ph-calendar-blank text-2xl"></i>
+            </a>
+        </nav>
+        <button
+            class="w-12 h-12 rounded-xl flex items-center justify-center text-stone-400 hover:text-white hover:bg-stone-800 transition-colors mt-auto">
+            <i class="ph ph-gear text-2xl"></i>
+        </button>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 flex flex-col h-full overflow-hidden relative">
+
+        <!-- Header (Sticky) -->
+        <header
+            class="glass z-10 sticky top-0 px-8 py-5 border-b border-stone-200/60 flex justify-between items-center">
+            <div class="flex items-center gap-4">
+                <button
+                    class="w-10 h-10 rounded-full bg-stone-100 flex items-center justify-center text-stone-500 hover:bg-stone-200 transition-colors">
+                    <i class="ph ph-arrow-left text-lg"></i>
+                </button>
+                <div>
+                    <div class="flex items-center gap-3">
+                        <h1 class="text-2xl font-semibold tracking-tight text-stone-900">Elena Rost</h1>
+                        <span
+                            class="px-2.5 py-0.5 rounded-full bg-teal-50 text-teal-700 text-xs font-medium border border-teal-100">Neu</span>
+                    </div>
+                    <p class="text-sm text-stone-500 mt-0.5">Craniosacral Anamnesebogen • 34 Jahre</p>
+                </div>
+            </div>
+
+            <!-- Autosave Indicator -->
+            <div class="flex items-center gap-3">
+                <div id="save-status"
+                    class="flex items-center gap-2 text-sm text-stone-500 bg-white px-3 py-1.5 rounded-full border border-stone-200 shadow-sm transition-all duration-300">
+                    <i class="ph ph-check-circle text-teal-500 text-lg"></i>
+                    <span>Alle Änderungen gespeichert</span>
+                </div>
+                <button
+                    class="bg-stone-900 hover:bg-stone-800 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition-all active:scale-95 flex items-center gap-2">
+                    <i class="ph ph-printer"></i> Export
+                </button>
+            </div>
+        </header>
+
+        <!-- Scrollable Form Area -->
+        <div class="flex-1 overflow-y-auto p-4 sm:p-8">
+            <div class="max-w-7xl mx-auto">
+
+                <!-- Bento Grid Layout -->
+                <form id="anamnese-form" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 auto-rows-min">
+
+                    <!-- Box 1: Aktuelles Anliegen & Wünsche (Col-span 2) -->
+                    <div
+                        class="bg-white rounded-[24px] p-6 shadow-sm border border-stone-100 md:col-span-2 flex flex-col relative overflow-hidden group">
+                        <!-- Decorative gradient blob -->
+                        <div
+                            class="absolute -top-10 -right-10 w-32 h-32 bg-teal-50 rounded-full blur-3xl opacity-50 pointer-events-none">
+                        </div>
+
+                        <div class="flex items-center justify-between mb-5 relative z-10">
+                            <div class="flex items-center gap-3">
+                                <div
+                                    class="w-8 h-8 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center">
+                                    <i class="ph ph-target text-xl"></i>
+                                </div>
+                                <h2 class="text-lg font-semibold text-stone-900">Aktuelle Beschwerden</h2>
+                            </div>
+                            <button type="button" id="add-complaint-btn"
+                                class="text-xs font-semibold text-teal-700 bg-teal-50/80 hover:bg-teal-100 px-3 py-2 rounded-full transition-colors flex items-center gap-1.5 shadow-sm border border-teal-100/50 active:scale-95">
+                                <i class="ph ph-plus font-bold"></i> Beschwerde
+                            </button>
+                        </div>
+
+                        <!-- REPEATER CONTAINER -->
+                        <div class="space-y-3 flex-1 relative z-10" id="complaints-list">
+                            <!-- Standard Item (kann nicht gelöscht werden, wenn es das einzige ist) -->
+                            <div
+                                class="complaint-item bg-stone-50 rounded-xl p-4 border border-stone-100 relative group/item transition-colors hover:border-stone-200">
+                                <button type="button"
+                                    class="remove-complaint-btn absolute top-3 right-3 w-6 h-6 rounded-md bg-white text-stone-400 hover:text-rose-500 hover:bg-rose-50 flex items-center justify-center shadow-sm opacity-0 group-hover/item:opacity-100 transition-all disabled:hidden"
+                                    disabled title="Beschwerde entfernen">
+                                    <i class="ph ph-trash"></i>
+                                </button>
+                                <input type="text"
+                                    class="w-full bg-transparent border-0 px-0 py-1 text-stone-900 focus:ring-0 placeholder-stone-400 font-medium text-base form-input mb-3"
+                                    placeholder="Z.B. Spannungskopfschmerzen / Nacken...">
+
+                                <div
+                                    class="flex items-center gap-4 bg-white/60 p-2.5 rounded-lg border border-stone-200/60">
+                                    <span class="text-xs font-medium text-stone-500 w-24">Schmerz (0-10):</span>
+                                    <input type="range" min="0" max="10" value="5"
+                                        class="form-input flex-1 pain-slider">
+                                    <span class="pain-val text-rose-600 font-bold text-sm w-8 text-right">5</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 pt-5 border-t border-stone-100 relative z-10">
+                            <label class="block text-sm font-medium text-stone-600 mb-1.5">Behandlungsziel / Positiver
+                                Wunsch</label>
+                            <textarea rows="2"
+                                class="w-full bg-stone-50 border-0 rounded-xl px-4 py-3 text-sm text-stone-800 focus:bg-white focus:ring-2 focus:ring-teal-500/30 transition-all resize-none form-input"
+                                placeholder="Z.B. 'Ich möchte meinen Nacken wieder frei bewegen können' anstatt 'Ich will keine Schmerzen mehr'"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Box 2: Ressourcen -->
+                    <div class="bg-white rounded-[24px] p-6 shadow-sm border border-stone-100 flex flex-col">
+                        <div class="flex items-center gap-3 mb-5">
+                            <div class="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
+                                <i class="ph ph-heart text-xl"></i>
+                            </div>
+                            <h2 class="text-lg font-semibold text-stone-900">Ressourcen</h2>
+                        </div>
+
+                        <div class="space-y-4 flex-1">
+                            <div>
+                                <label class="block text-sm font-medium text-stone-600 mb-1.5">Was hilft Ihnen, sich
+                                    sicherer/wohler zu fühlen?</label>
+                                <p class="text-xs text-stone-400 mb-2">Natur, Hobbies, Familie, Tiere, spirituelle
+                                    Praxis...</p>
+                                <textarea rows="6"
+                                    class="w-full bg-stone-50 border-0 rounded-xl px-4 py-3 text-sm text-stone-800 focus:bg-white focus:ring-2 focus:ring-teal-500/30 transition-all resize-none form-input h-full"
+                                    placeholder="Meine Kraftquellen sind..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Box 3: Spezifische Vorerkrankungen (Full Width for Tags) -->
+                    <div class="bg-white rounded-[24px] p-6 shadow-sm border border-stone-100 xl:col-span-3">
+                        <div class="flex items-center gap-3 mb-5">
+                            <div
+                                class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                                <i class="ph ph-activity text-xl"></i>
+                            </div>
+                            <h2 class="text-lg font-semibold text-stone-900">Spezifische Vorerkrankungen</h2>
+                        </div>
+
+                        <p class="text-sm text-stone-500 mb-4">Sind Sie oder waren Sie je an einer der folgenden
+                            Krankheiten erkrankt? (Bitte zutreffendes anklicken)</p>
+
+                        <div class="flex flex-wrap gap-2 mb-5" id="disease-tags">
+                            <button type="button"
+                                class="tag-btn px-4 py-2 rounded-full border border-stone-200 text-sm font-medium text-stone-600 hover:border-stone-300 hover:bg-stone-50 transition-colors">Wirbelsäulenerkrankungen</button>
+                            <button type="button"
+                                class="tag-btn px-4 py-2 rounded-full border border-stone-200 text-sm font-medium text-stone-600 hover:border-stone-300 hover:bg-stone-50 transition-colors">Schleudertrauma</button>
+                            <button type="button"
+                                class="tag-btn px-4 py-2 rounded-full border border-stone-200 text-sm font-medium text-stone-600 hover:border-stone-300 hover:bg-stone-50 transition-colors">Rheumatische
+                                Krankheiten</button>
+                            <button type="button"
+                                class="tag-btn px-4 py-2 rounded-full border border-stone-200 text-sm font-medium text-stone-600 hover:border-stone-300 hover:bg-stone-50 transition-colors">Gehirnerschütterung</button>
+                            <button type="button"
+                                class="tag-btn px-4 py-2 rounded-full border border-stone-200 text-sm font-medium text-stone-600 hover:border-stone-300 hover:bg-stone-50 transition-colors">Schädel-/Hirntrauma</button>
+                            <button type="button"
+                                class="tag-btn px-4 py-2 rounded-full border border-stone-200 text-sm font-medium text-stone-600 hover:border-stone-300 hover:bg-stone-50 transition-colors">Blutungen
+                                im Schädel</button>
+                            <button type="button"
+                                class="tag-btn px-4 py-2 rounded-full border border-stone-200 text-sm font-medium text-stone-600 hover:border-stone-300 hover:bg-stone-50 transition-colors">Meningitis</button>
+                            <button type="button"
+                                class="tag-btn px-4 py-2 rounded-full border border-stone-200 text-sm font-medium text-stone-600 hover:border-stone-300 hover:bg-stone-50 transition-colors">Depression</button>
+                            <button type="button"
+                                class="tag-btn px-4 py-2 rounded-full border border-stone-200 text-sm font-medium text-stone-600 hover:border-stone-300 hover:bg-stone-50 transition-colors">Psychosen</button>
+                            <button type="button"
+                                class="tag-btn px-4 py-2 rounded-full border border-stone-200 text-sm font-medium text-stone-600 hover:border-stone-300 hover:bg-stone-50 transition-colors">Schlaflosigkeit</button>
+                            <button type="button"
+                                class="tag-btn px-4 py-2 rounded-full border border-stone-200 text-sm font-medium text-stone-600 hover:border-stone-300 hover:bg-stone-50 transition-colors">Migräne</button>
+                            <button type="button"
+                                class="tag-btn px-4 py-2 rounded-full border border-stone-200 text-sm font-medium text-stone-600 hover:border-stone-300 hover:bg-stone-50 transition-colors">Epilepsie</button>
+                            <button type="button"
+                                class="tag-btn px-4 py-2 rounded-full border border-stone-200 text-sm font-medium text-stone-600 hover:border-stone-300 hover:bg-stone-50 transition-colors">Bluthochdruck</button>
+                            <button type="button"
+                                class="tag-btn px-4 py-2 rounded-full border border-stone-200 text-sm font-medium text-stone-600 hover:border-stone-300 hover:bg-stone-50 transition-colors">Aneurysmen</button>
+                            <button type="button"
+                                class="tag-btn px-4 py-2 rounded-full border border-stone-200 text-sm font-medium text-stone-600 hover:border-stone-300 hover:bg-stone-50 transition-colors">Art.
+                                Durchblutungsstörungen</button>
+                            <button type="button"
+                                class="tag-btn px-4 py-2 rounded-full border border-stone-200 text-sm font-medium text-stone-600 hover:border-stone-300 hover:bg-stone-50 transition-colors">Ven.
+                                Durchblutungsstörungen</button>
+                            <button type="button"
+                                class="tag-btn px-4 py-2 rounded-full border border-stone-200 text-sm font-medium text-stone-600 hover:border-stone-300 hover:bg-stone-50 transition-colors">Schlaganfall</button>
+                            <button type="button"
+                                class="tag-btn px-4 py-2 rounded-full border border-stone-200 text-sm font-medium text-stone-600 hover:border-stone-300 hover:bg-stone-50 transition-colors">Glaukom</button>
+                            <button type="button"
+                                class="tag-btn px-4 py-2 rounded-full border border-stone-200 text-sm font-medium text-stone-600 hover:border-stone-300 hover:bg-stone-50 transition-colors">Diabetes
+                                mellitus</button>
+                            <button type="button"
+                                class="tag-btn px-4 py-2 rounded-full border border-stone-200 text-sm font-medium text-stone-600 hover:border-stone-300 hover:bg-stone-50 transition-colors">Krebserkrankungen</button>
+                        </div>
+
+                        <div>
+                            <input type="text"
+                                class="w-full bg-stone-50 border-0 rounded-xl px-4 py-2.5 text-sm text-stone-800 focus:bg-white focus:ring-2 focus:ring-teal-500/30 transition-all form-input"
+                                placeholder="Andere Erkrankungen (Bitte hier eintragen)">
+                        </div>
+                    </div>
+
+                    <!-- Box 4: Lebenseinschnitte & Krankheiten (Col-span 2) -->
+                    <div class="bg-white rounded-[24px] p-6 shadow-sm border border-stone-100 md:col-span-2">
+                        <div class="flex items-center gap-3 mb-5">
+                            <div
+                                class="w-8 h-8 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center">
+                                <i class="ph ph-warning text-xl"></i>
+                            </div>
+                            <h2 class="text-lg font-semibold text-stone-900">Unfälle & Einschneidende Ereignisse</h2>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-stone-600 mb-1.5">Gab es Unfälle in
+                                        Ihrem Leben?</label>
+                                    <textarea rows="2"
+                                        class="w-full bg-stone-50 border-0 rounded-xl px-4 py-3 text-sm text-stone-800 focus:bg-white focus:ring-2 focus:ring-teal-500/30 transition-all resize-none form-input"
+                                        placeholder="Wenn ja, wann und mit welchen Folgen?"></textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-stone-600 mb-1.5">Andere schwere
+                                        Krankheiten?</label>
+                                    <textarea rows="2"
+                                        class="w-full bg-stone-50 border-0 rounded-xl px-4 py-3 text-sm text-stone-800 focus:bg-white focus:ring-2 focus:ring-teal-500/30 transition-all resize-none form-input"
+                                        placeholder="Welche und wann?"></textarea>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-stone-600 mb-1.5">Welche Ereignisse würden
+                                    Sie als einschneidend bezeichnen?</label>
+                                <textarea rows="2"
+                                    class="w-full bg-stone-50 border-0 rounded-xl px-4 py-3 text-sm text-stone-800 focus:bg-white focus:ring-2 focus:ring-teal-500/30 transition-all resize-none form-input"
+                                    placeholder="Verluste, Umbrüche, starke Veränderungen..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Box 5: OPs & Medikamente -->
+                    <div class="bg-white rounded-[24px] p-6 shadow-sm border border-stone-100">
+                        <div class="flex items-center gap-3 mb-5">
+                            <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                                <i class="ph ph-pill text-xl"></i>
+                            </div>
+                            <h2 class="text-lg font-semibold text-stone-900">OPs & Medikation</h2>
+                        </div>
+
+                        <div class="space-y-5">
+                            <div>
+                                <label class="block text-sm font-medium text-stone-600 mb-1.5">OPs mit
+                                    Vollnarkose?</label>
+                                <input type="text"
+                                    class="w-full bg-stone-50 border-0 rounded-xl px-4 py-2.5 text-sm text-stone-800 focus:bg-white focus:ring-2 focus:ring-teal-500/30 transition-all form-input"
+                                    placeholder="Welche und wann?">
+                            </div>
+
+                            <div class="pt-2 border-t border-stone-100">
+                                <label class="block text-sm font-medium text-stone-600 mb-2">Langzeit-Medikation (mind.
+                                    5 Jahre)</label>
+                                <div class="flex gap-4 mb-2">
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox"
+                                            class="w-4 h-4 text-teal-600 rounded border-stone-300 focus:ring-teal-500 form-input">
+                                        <span class="text-sm text-stone-700">Cortison</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox"
+                                            class="w-4 h-4 text-teal-600 rounded border-stone-300 focus:ring-teal-500 form-input">
+                                        <span class="text-sm text-stone-700">Rheumamittel</span>
+                                    </label>
+                                </div>
+                                <input type="text"
+                                    class="w-full bg-stone-50 border-0 rounded-xl px-4 py-2.5 text-sm text-stone-800 focus:bg-white focus:ring-2 focus:ring-teal-500/30 transition-all form-input"
+                                    placeholder="Andere Langzeit-Medikamente...">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-stone-600 mb-1.5">Derzeitige
+                                    Medikamente?</label>
+                                <input type="text"
+                                    class="w-full bg-stone-50 border-0 rounded-xl px-4 py-2.5 text-sm text-stone-800 focus:bg-white focus:ring-2 focus:ring-teal-500/30 transition-all form-input"
+                                    placeholder="Welche?">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Box 6: Emotionale Historie -->
+                    <div class="bg-white rounded-[24px] p-6 shadow-sm border border-stone-100">
+                        <div class="flex items-center gap-3 mb-5">
+                            <div
+                                class="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
+                                <i class="ph ph-brain text-xl"></i>
+                            </div>
+                            <h2 class="text-lg font-semibold text-stone-900">Emotionale Historie</h2>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-stone-600 mb-1.5">Stationäre Behandlung
+                                    wegen emotionaler Probleme?</label>
+                                <textarea rows="2"
+                                    class="w-full bg-stone-50 border-0 rounded-xl px-4 py-3 text-sm text-stone-800 focus:bg-white focus:ring-2 focus:ring-teal-500/30 transition-all resize-none form-input"
+                                    placeholder="Falls ja, bitte nähere Angaben machen."></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-stone-600 mb-1.5">Medikamente wegen
+                                    emotionaler Probleme?</label>
+                                <textarea rows="2"
+                                    class="w-full bg-stone-50 border-0 rounded-xl px-4 py-3 text-sm text-stone-800 focus:bg-white focus:ring-2 focus:ring-teal-500/30 transition-all resize-none form-input"
+                                    placeholder="Falls ja, bitte nähere Angaben machen."></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Box 7: Geburt & Schwangerschaft -->
+                    <div class="bg-white rounded-[24px] p-6 shadow-sm border border-stone-100">
+                        <div class="flex items-center gap-3 mb-5">
+                            <div class="w-8 h-8 rounded-lg bg-pink-50 text-pink-600 flex items-center justify-center">
+                                <i class="ph ph-baby text-xl"></i>
+                            </div>
+                            <h2 class="text-lg font-semibold text-stone-900">Geburt & Schwangerschaft</h2>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-stone-600 mb-1.5">Komplikationen bei der
+                                    eigenen Geburt?</label>
+                                <textarea rows="2"
+                                    class="w-full bg-stone-50 border-0 rounded-xl px-4 py-3 text-sm text-stone-800 focus:bg-white focus:ring-2 focus:ring-teal-500/30 transition-all resize-none form-input"
+                                    placeholder="Soweit bekannt..."></textarea>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4 pt-2 border-t border-stone-100">
+                                <div>
+                                    <label class="block text-sm font-medium text-stone-600 mb-1.5">Schwanger?</label>
+                                    <select
+                                        class="w-full bg-stone-50 border-0 rounded-xl px-4 py-2.5 text-sm text-stone-800 focus:bg-white focus:ring-2 focus:ring-teal-500/30 transition-all form-input appearance-none">
+                                        <option value="" disabled selected>-</option>
+                                        <option>Nein</option>
+                                        <option>Ja</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-stone-600 mb-1.5">Fehlgeburten?</label>
+                                    <input type="text"
+                                        class="w-full bg-stone-50 border-0 rounded-xl px-4 py-2.5 text-sm text-stone-800 focus:bg-white focus:ring-2 focus:ring-teal-500/30 transition-all form-input"
+                                        placeholder="Wann/wie oft?">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Box 8: Cranio Erfahrung -->
+                    <div
+                        class="bg-white rounded-[24px] p-6 shadow-sm border border-stone-100 bg-gradient-to-br from-white to-teal-50/30">
+                        <div class="flex items-center gap-3 mb-5">
+                            <div
+                                class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                                <i class="ph ph-hands-clapping text-xl"></i>
+                            </div>
+                            <h2 class="text-lg font-semibold text-stone-900">Cranio-Erfahrung</h2>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-stone-600 mb-1.5">Hatten Sie schon mal eine
+                                Craniosacrale Behandlung?</label>
+                            <textarea rows="3"
+                                class="w-full bg-stone-50 border-0 rounded-xl px-4 py-3 text-sm text-stone-800 focus:bg-white focus:ring-2 focus:ring-teal-500/30 transition-all resize-none form-input"
+                                placeholder="Falls ja, wann und wie oft?"></textarea>
+                        </div>
+                    </div>
+
+                </form>
+
+                <!-- Spacer for scrolling -->
+                <div class="h-12"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Interactivity Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // --- 1. Tag Toggle Logic ---
+            const tagBtns = document.querySelectorAll('.tag-btn');
+            tagBtns.forEach(btn => {
+                btn.addEventListener('click', function () {
+                    this.classList.toggle('bg-stone-50');
+                    this.classList.toggle('border-stone-200');
+
+                    // Active state classes
+                    this.classList.toggle('bg-teal-50');
+                    this.classList.toggle('border-teal-300');
+                    this.classList.toggle('text-teal-700');
+
+                    triggerAutosave();
+                });
+            });
+
+            // --- 2. Dynamic Repeater Logic (Multiple Complaints & Sliders) ---
+            const complaintsList = document.getElementById('complaints-list');
+            const addComplaintBtn = document.getElementById('add-complaint-btn');
+
+            // Event Delegation for Slider Output
+            complaintsList.addEventListener('input', (e) => {
+                if (e.target.classList.contains('pain-slider')) {
+                    const valDisplay = e.target.closest('.flex').querySelector('.pain-val');
+                    if (valDisplay) valDisplay.textContent = e.target.value;
+                }
+            });
+
+            // Event Delegation for Remove Buttons
+            complaintsList.addEventListener('click', (e) => {
+                const removeBtn = e.target.closest('.remove-complaint-btn');
+                if (removeBtn) {
+                    const item = removeBtn.closest('.complaint-item');
+                    // Nur löschen, wenn mehr als eins da ist
+                    if (complaintsList.children.length > 1) {
+                        item.style.opacity = '0';
+                        item.style.transform = 'scale(0.95)';
+                        setTimeout(() => {
+                            item.remove();
+                            updateRemoveButtons();
+                            triggerAutosave();
+                        }, 200);
+                    }
+                }
+            });
+
+            // Add new Complaint Field
+            addComplaintBtn.addEventListener('click', () => {
+                const newItem = document.createElement('div');
+                newItem.className = 'complaint-item bg-stone-50 rounded-xl p-4 border border-stone-100 relative group/item transition-colors hover:border-stone-200 animate-fade-in-down';
+                newItem.innerHTML = `
+                    <button type="button" class="remove-complaint-btn absolute top-3 right-3 w-6 h-6 rounded-md bg-white text-stone-400 hover:text-rose-500 hover:bg-rose-50 flex items-center justify-center shadow-sm opacity-0 group-hover/item:opacity-100 transition-all" title="Beschwerde entfernen">
+                        <i class="ph ph-trash"></i>
+                    </button>
+                    <input type="text" class="w-full bg-transparent border-0 px-0 py-1 text-stone-900 focus:ring-0 placeholder-stone-400 font-medium text-base form-input mb-3" placeholder="Weitere Beschwerde / Symptom...">
+                    
+                    <div class="flex items-center gap-4 bg-white/60 p-2.5 rounded-lg border border-stone-200/60">
+                        <span class="text-xs font-medium text-stone-500 w-24">Schmerz (0-10):</span>
+                        <input type="range" min="0" max="10" value="5" class="form-input flex-1 pain-slider">
+                        <span class="pain-val text-rose-600 font-bold text-sm w-8 text-right">5</span>
+                    </div>
+                `;
+                complaintsList.appendChild(newItem);
+
+                // Attach autosave events to new inputs
+                newItem.querySelectorAll('.form-input').forEach(input => {
+                    input.addEventListener('input', triggerAutosave);
+                });
+
+                updateRemoveButtons();
+                // Auto-focus the new input
+                newItem.querySelector('input[type="text"]').focus();
+            });
+
+            function updateRemoveButtons() {
+                const btns = complaintsList.querySelectorAll('.remove-complaint-btn');
+                if (btns.length === 1) {
+                    btns[0].disabled = true; // Disable if only one item left
+                } else {
+                    btns.forEach(btn => btn.disabled = false);
+                }
+            }
+            updateRemoveButtons(); // Init on load
+
+
+        // --- 3. Simulated Autosave Logic ---

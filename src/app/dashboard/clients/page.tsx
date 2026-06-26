@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useDashboard } from '../context';
 import { Client, SoapNote, Invoice } from '@/lib/types';
 import { supabase } from '@/lib/supabase';
+import CranioAnamnesisTab from '../components/CranioAnamnesisTab';
 
 interface ClientListItemProps {
   client: Client;
@@ -222,7 +223,7 @@ export default function ClientsPage() {
   const [isDetailsMenuOpen, setIsDetailsMenuOpen] = React.useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
   const [showGdprTooltip, setShowGdprTooltip] = React.useState(false);
-  const [activeTab, setActiveTab] = React.useState<'overview' | 'soap' | 'billing'>('overview');
+  const [activeTab, setActiveTab] = React.useState<'overview' | 'anamnesis' | 'soap' | 'billing'>('overview');
 
   // Inline client editing state
   const [isEditingClient, setIsEditingClient] = React.useState(false);
@@ -689,7 +690,7 @@ export default function ClientsPage() {
 
             {/* Sub-tab navigation */}
             <div className="flex border-b border-[#bfc9c3]/30 px-4 md:px-6 bg-transparent select-none z-20 flex-shrink-0">
-              {(['overview', 'soap', 'billing'] as const).map((tab) => (
+              {(['overview', 'anamnesis', 'soap', 'billing'] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
@@ -699,7 +700,8 @@ export default function ClientsPage() {
                       : 'border-transparent text-zinc-400 hover:text-[#003527]'
                   }`}
                 >
-                  {tab === 'overview' && '📋 Stammdaten & Anamnese'}
+                  {tab === 'overview' && '📋 Stammdaten'}
+                  {tab === 'anamnesis' && '📝 Cranio-Anamnese'}
                   {tab === 'soap' && '🩺 Therapieverlauf (SOAP)'}
                   {tab === 'billing' && '📄 Abrechnung & Dokumente'}
                 </button>
@@ -713,7 +715,7 @@ export default function ClientsPage() {
                   {/* Tab Action Bar */}
                   <div className="flex justify-between items-center pb-2 border-b border-[#bfc9c3]/20">
                     <div>
-                      <h4 className="text-[10px] font-bold text-[#003527]/60 uppercase tracking-widest">Stammdaten & Anamnese</h4>
+                      <h4 className="text-[10px] font-bold text-[#003527]/60 uppercase tracking-widest">Stammdaten</h4>
                       <p className="text-[11px] text-zinc-400 mt-0.5">Demographische Daten, Beschäftigung und medizinisches Profil.</p>
                     </div>
                     {!isEditingClient ? (
@@ -1074,6 +1076,10 @@ export default function ClientsPage() {
                     </button>
                   </div>
                 </div>
+              )}
+
+              {activeTab === 'anamnesis' && (
+                <CranioAnamnesisTab clientId={currentClient.id} />
               )}
 
               {activeTab === 'soap' && (
