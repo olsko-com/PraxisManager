@@ -136,10 +136,10 @@ function ClientListItem({
             onSelect();
           }
         }}
-      className={`px-6 py-4 cursor-pointer flex items-center justify-between bg-white relative z-10 select-none transition-all group ${
+      className={`px-6 py-4 cursor-pointer flex items-center justify-between relative z-10 select-none transition-all group ${
           isSelected 
-            ? 'bg-[#003527]/8 text-[#003527] font-semibold' 
-            : 'hover:bg-zinc-100/80 active:bg-[#003527]/8 text-[#404944]'
+            ? 'bg-[#e6ebe7] text-[#003527] font-semibold' 
+            : 'bg-white hover:bg-[#f4f6f4] active:bg-[#dce3dd] text-[#404944]'
         }`}
       >
         {isSelected && (
@@ -486,7 +486,7 @@ export default function ClientsPage() {
   return (
     <div className="relative flex-grow bg-[#eef0ed] rounded-none lg:rounded-[24px] border-0 lg:border border-[#003527]/10 m-0 lg:my-4 lg:mr-4 lg:ml-4 flex p-0 gap-0 h-[calc(100vh-64px)] lg:h-[calc(100vh-32px)] overflow-hidden shadow-none transition-all duration-300">
       {/* Left Side: Client List as a secondary Sidebar */}
-      <div className={`absolute lg:relative top-0 bottom-0 left-0 z-45 w-full md:w-80 bg-white border-r border-[#003527]/10 rounded-r-[20px] lg:rounded-none flex flex-col flex-shrink-0 overflow-hidden h-full transition-transform duration-300 ease-in-out lg:translate-x-0 lg:flex ${
+      <div className={`absolute lg:relative top-0 bottom-0 left-0 z-45 w-full md:w-80 bg-[#eef0ed] border-r border-[#003527]/10 rounded-r-[20px] lg:rounded-none flex flex-col flex-shrink-0 overflow-hidden h-full transition-transform duration-300 ease-in-out lg:translate-x-0 lg:flex ${
         !currentClient
           ? 'translate-x-0'
           : isSidebarOpen
@@ -720,7 +720,7 @@ export default function ClientsPage() {
       )}
 
       {/* Right Side: Profile Details */}
-      <div className={`flex-grow flex flex-col min-h-0 overflow-hidden bg-white ${currentClient ? 'flex' : 'hidden lg:flex'}`}>
+      <div className={`flex-grow flex flex-col min-h-0 overflow-hidden bg-[#eef0ed] ${currentClient ? 'flex' : 'hidden lg:flex'}`}>
         {currentClient ? (
           <div className="flex-grow flex flex-col min-h-0">
             {/* Klient Header */}
@@ -763,7 +763,7 @@ export default function ClientsPage() {
                 <div className="relative">
                   <button
                     onClick={() => setIsDetailsMenuOpen(!isDetailsMenuOpen)}
-                    className="p-2.5 bg-white border border-[#bfc9c3]/50 rounded-xl hover:bg-zinc-50 text-[#003527] transition-all cursor-pointer flex items-center justify-center"
+                    className="p-2 bg-white border border-[#bfc9c3]/50 rounded-xl hover:bg-zinc-50 text-[#003527] transition-all cursor-pointer flex items-center justify-center"
                     title="Optionen anzeigen"
                   >
                     <MoreVertical className="w-4 h-4" />
