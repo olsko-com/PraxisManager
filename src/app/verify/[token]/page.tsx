@@ -145,16 +145,20 @@ export default function GdprVerifyPage({ params }: { params: Promise<VerifyParam
     if (!canvas) return { x: 0, y: 0 };
     const rect = canvas.getBoundingClientRect();
 
+    // Scale coordinates accurately to match display size vs internal canvas drawing resolution
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+
     if ('touches' in e) {
       if (e.touches.length === 0) return { x: 0, y: 0 };
       return {
-        x: e.touches[0].clientX - rect.left,
-        y: e.touches[0].clientY - rect.top
+        x: (e.touches[0].clientX - rect.left) * scaleX,
+        y: (e.touches[0].clientY - rect.top) * scaleY
       };
     } else {
       return {
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top
+        x: (e.clientX - rect.left) * scaleX,
+        y: (e.clientY - rect.top) * scaleY
       };
     }
   };
@@ -394,6 +398,12 @@ export default function GdprVerifyPage({ params }: { params: Promise<VerifyParam
                 </div>
 
                 <div className="border border-[#bfc9c3]/50 rounded-2xl overflow-hidden bg-[#f9f9f8] relative">
+                  {/* Dotted Baseline & Indicator for Premium Touch Signature Fields */}
+                  <div className="absolute bottom-[28%] left-6 right-6 border-b border-dashed border-zinc-200/80 pointer-events-none select-none" />
+                  <div className="absolute bottom-[26%] left-6 text-zinc-300 font-bold text-[13px] pointer-events-none select-none font-mono">
+                    X
+                  </div>
+
                   <canvas
                     ref={canvasRef}
                     width={450}
@@ -405,10 +415,10 @@ export default function GdprVerifyPage({ params }: { params: Promise<VerifyParam
                     onTouchStart={startDrawing}
                     onTouchMove={draw}
                     onTouchEnd={stopDrawing}
-                    className="w-full block cursor-crosshair touch-none"
+                    className="w-full block cursor-crosshair touch-none relative z-10"
                   />
                   {!hasSigned && (
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none text-zinc-300 font-bold text-[11px] uppercase tracking-widest gap-1.5">
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none text-zinc-300 font-bold text-[11px] uppercase tracking-widest gap-1.5 z-20">
                       Hier mit Finger oder Maus unterschreiben
                     </div>
                   )}
