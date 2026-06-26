@@ -736,7 +736,7 @@ export default function ClientsPage() {
                 >
                   {tab === 'overview' && '📋 Stammdaten'}
                   {tab === 'anamnesis' && '📝 Cranio-Anamnese'}
-                  {tab === 'soap' && '🩺 Behandlungsverlauf (SOAP)'}
+                  {tab === 'soap' && '🩺 Behandlungsverlauf'}
                   {tab === 'billing' && '📄 Abrechnung & Dokumente'}
                 </button>
               ))}
@@ -1121,7 +1121,7 @@ export default function ClientsPage() {
                   <div className="flex justify-between items-center pb-2 border-b border-[#bfc9c3]/20">
                     <div>
                       <h4 className="text-[10px] font-bold text-[#003527]/60 uppercase tracking-widest">Behandlungsverlauf</h4>
-                      <p className="text-[11px] text-zinc-400 mt-0.5">Chronologischer Verlauf der Behandlungssitzungen (SOAP-Methode).</p>
+                      <p className="text-[11px] text-zinc-400 mt-0.5">Chronologischer Verlauf der Behandlungssitzungen.</p>
                     </div>
                     <button 
                       onClick={() => {
@@ -1213,7 +1213,7 @@ export default function ClientsPage() {
                                 {soapEditId === note.id ? (
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-left">
                                     <div className="space-y-1.5">
-                                      <label className="block text-[10px] font-bold uppercase tracking-widest text-[#003527]/70">Subjective (Befund)</label>
+                                      <label className="block text-[10px] font-bold uppercase tracking-widest text-[#003527]/70">Befinden & Symptome</label>
                                       <textarea 
                                         value={soapSubjective} 
                                         onChange={(e) => setSoapSubjective(e.target.value)} 
@@ -1221,7 +1221,7 @@ export default function ClientsPage() {
                                       />
                                     </div>
                                     <div className="space-y-1.5">
-                                      <label className="block text-[10px] font-bold uppercase tracking-widest text-[#003527]/70">Objective (Untersuchung)</label>
+                                      <label className="block text-[10px] font-bold uppercase tracking-widest text-[#003527]/70">Beobachtung & Befund</label>
                                       <textarea 
                                         value={soapObjective} 
                                         onChange={(e) => setSoapObjective(e.target.value)} 
@@ -1229,7 +1229,7 @@ export default function ClientsPage() {
                                       />
                                     </div>
                                     <div className="space-y-1.5">
-                                      <label className="block text-[10px] font-bold uppercase tracking-widest text-[#003527]/70">Assessment (Beurteilung)</label>
+                                      <label className="block text-[10px] font-bold uppercase tracking-widest text-[#003527]/70">Einschätzung</label>
                                       <textarea 
                                         value={soapAssessment} 
                                         onChange={(e) => setSoapAssessment(e.target.value)} 
@@ -1237,7 +1237,7 @@ export default function ClientsPage() {
                                       />
                                     </div>
                                     <div className="space-y-1.5">
-                                      <label className="block text-[10px] font-bold uppercase tracking-widest text-[#003527]/70">Plan (Fortsetzung)</label>
+                                      <label className="block text-[10px] font-bold uppercase tracking-widest text-[#003527]/70">Ausblick & Empfehlung</label>
                                       <textarea 
                                         value={soapPlan} 
                                         onChange={(e) => setSoapPlan(e.target.value)} 
@@ -1248,34 +1248,22 @@ export default function ClientsPage() {
                                 ) : (
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="border border-[#bfc9c3]/20 rounded-xl p-4 space-y-2 text-left bg-amber-50/5 hover:bg-amber-50/10 transition-colors">
-                                      <div className="flex items-center gap-2">
-                                        <span className="inline-flex items-center gap-1 text-[9px] font-extrabold text-amber-800 bg-amber-50 border border-amber-200/50 px-2 py-0.5 rounded-full uppercase tracking-wider">S</span>
-                                        <span className="block text-[10px] font-extrabold tracking-widest text-[#003527]/60 uppercase">Subjective (Befund)</span>
-                                      </div>
+                                      <span className="block text-[10px] font-extrabold tracking-widest text-[#003527]/60 uppercase">Befinden & Symptome</span>
                                       <p className="text-xs font-extrabold text-[#003527] leading-relaxed whitespace-pre-wrap italic">{note.subjective || 'Keine Angabe'}</p>
                                     </div>
                                     
                                     <div className="border border-[#bfc9c3]/20 rounded-xl p-4 space-y-2 text-left bg-blue-50/5 hover:bg-blue-50/10 transition-colors">
-                                      <div className="flex items-center gap-2">
-                                        <span className="inline-flex items-center gap-1 text-[9px] font-extrabold text-blue-800 bg-blue-50 border border-blue-200/50 px-2 py-0.5 rounded-full uppercase tracking-wider">O</span>
-                                        <span className="block text-[10px] font-extrabold tracking-widest text-[#003527]/60 uppercase">Objective (Untersuchung)</span>
-                                      </div>
+                                      <span className="block text-[10px] font-extrabold tracking-widest text-[#003527]/60 uppercase">Beobachtung & Befund</span>
                                       <p className="text-xs font-extrabold text-[#003527] leading-relaxed whitespace-pre-wrap">{note.objective || 'Keine Angabe'}</p>
                                     </div>
 
                                     <div className="border border-[#bfc9c3]/20 rounded-xl p-4 space-y-2 text-left bg-emerald-50/5 hover:bg-emerald-50/10 transition-colors">
-                                      <div className="flex items-center gap-2">
-                                        <span className="inline-flex items-center gap-1 text-[9px] font-extrabold text-emerald-800 bg-emerald-50 border border-emerald-200/50 px-2 py-0.5 rounded-full uppercase tracking-wider">A</span>
-                                        <span className="block text-[10px] font-extrabold tracking-widest text-[#003527]/60 uppercase">Assessment (Beurteilung)</span>
-                                      </div>
+                                      <span className="block text-[10px] font-extrabold tracking-widest text-[#003527]/60 uppercase">Einschätzung</span>
                                       <p className="text-xs font-extrabold text-[#003527] leading-relaxed whitespace-pre-wrap">{note.assessment || 'Keine Angabe'}</p>
                                     </div>
 
                                     <div className="border border-[#bfc9c3]/20 rounded-xl p-4 space-y-2 text-left bg-purple-50/5 hover:bg-purple-50/10 transition-colors">
-                                      <div className="flex items-center gap-2">
-                                        <span className="inline-flex items-center gap-1 text-[9px] font-extrabold text-purple-800 bg-purple-50 border border-purple-200/50 px-2 py-0.5 rounded-full uppercase tracking-wider">P</span>
-                                        <span className="block text-[10px] font-extrabold tracking-widest text-[#003527]/60 uppercase">Plan (Fortsetzung)</span>
-                                      </div>
+                                      <span className="block text-[10px] font-extrabold tracking-widest text-[#003527]/60 uppercase">Ausblick & Empfehlung</span>
                                       <p className="text-xs font-extrabold text-[#003527] leading-relaxed whitespace-pre-wrap">{note.plan || 'Keine Angabe'}</p>
                                     </div>
                                   </div>
@@ -1525,7 +1513,7 @@ export default function ClientsPage() {
             <div className="space-y-2">
               <h3 className="text-sm font-bold text-[#003527] uppercase tracking-wider font-mono">Noch keine Klienten angelegt</h3>
               <p className="text-xs text-[#404944] leading-relaxed max-w-sm">
-                Erstelle deinen ersten Klienten, um Termine zu vergeben, SOAP-Notizen zu führen und Rechnungen zu erstellen.
+                Erstelle deinen ersten Klienten, um Termine zu vergeben, Behandlungsberichte zu führen und Rechnungen zu erstellen.
               </p>
             </div>
             <button
