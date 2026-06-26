@@ -3,7 +3,7 @@
 import React from 'react';
 import { 
   Target, Heart, Activity, AlertTriangle, Pill, Brain, Baby, Sparkles,
-  Plus, Trash2, CheckCircle2, Loader2
+  Plus, Trash2, CheckCircle2, Loader2, Pencil
 } from 'lucide-react';
 
 interface Complaint {
@@ -78,6 +78,35 @@ const defaultAnamnesis = (): AnamnesisData => ({
   cranioExperience: ''
 });
 
+const isAnamnesisEmpty = (data: AnamnesisData): boolean => {
+  const isComplaintsEmpty = data.complaints.length === 0 || 
+    (data.complaints.length === 1 && !data.complaints[0].description.trim());
+  const isSurgeriesEmpty = data.surgeries.length === 0 || 
+    (data.surgeries.length === 1 && !data.surgeries[0].trim());
+    
+  return (
+    isComplaintsEmpty &&
+    !data.treatmentGoal.trim() &&
+    !data.resources.trim() &&
+    data.diseases.length === 0 &&
+    !data.otherDiseases.trim() &&
+    !data.accidents.trim() &&
+    !data.otherIllnesses.trim() &&
+    !data.eventfulEvents.trim() &&
+    isSurgeriesEmpty &&
+    !data.longtermCortison &&
+    !data.longtermRheuma &&
+    !data.otherLongtermMeds.trim() &&
+    !data.currentMeds.trim() &&
+    !data.emotionalHospitalization.trim() &&
+    !data.emotionalMeds.trim() &&
+    !data.birthKomplications.trim() &&
+    !data.pregnant &&
+    !data.miscarriages.trim() &&
+    !data.cranioExperience.trim()
+  );
+};
+
 interface CranioAnamnesisTabProps {
   clientId: string;
 }
@@ -85,6 +114,7 @@ interface CranioAnamnesisTabProps {
 export default function CranioAnamnesisTab({ clientId }: CranioAnamnesisTabProps) {
   const [isSaving, setIsSaving] = React.useState(false);
   const [isDiseasesExpanded, setIsDiseasesExpanded] = React.useState(false);
+  const [isEditing, setIsEditing] = React.useState(false);
   const [state, setState] = React.useState<{ clientId: string; data: AnamnesisData }>({
     clientId: '',
     data: defaultAnamnesis()
@@ -95,6 +125,7 @@ export default function CranioAnamnesisTab({ clientId }: CranioAnamnesisTabProps
     if (!clientId) return;
     const stored = localStorage.getItem('praxis_manager_cranio_anamnesis');
     let loadedData = defaultAnamnesis();
+    let shouldEdit = false;
     
     if (stored) {
       try {
@@ -106,13 +137,23 @@ export default function CranioAnamnesisTab({ clientId }: CranioAnamnesisTabProps
             raw.surgeries = raw.surgeries.trim() ? [raw.surgeries] : [''];
           }
           loadedData = { ...defaultAnamnesis(), ...raw };
+        } else {
+          shouldEdit = true;
         }
       } catch (e) {
         console.error('Error loading anamnesis data:', e);
+        shouldEdit = true;
       }
+    } else {
+      shouldEdit = true;
+    }
+    
+    if (isAnamnesisEmpty(loadedData)) {
+      shouldEdit = true;
     }
     
     setState({ clientId, data: loadedData });
+    setIsEditing(shouldEdit);
   }, [clientId]);
 
   // Debounced auto-save effect
@@ -207,435 +248,704 @@ export default function CranioAnamnesisTab({ clientId }: CranioAnamnesisTabProps
           <h4 className="text-[10px] font-bold text-[#003527]/60 uppercase tracking-widest">Cranio-Anamnesebogen</h4>
           <p className="text-[11px] text-zinc-400 mt-0.5">Spezifische Fragen vor der craniosacralen Behandlung.</p>
         </div>
-        <div className="flex items-center gap-2 text-[10px] font-bold text-zinc-400 bg-white border border-[#bfc9c3]/30 px-3 py-1.5 rounded-xl shadow-sm transition-all duration-300">
-          {isSaving ? (
-            <>
-              <Loader2 className="w-3.5 h-3.5 text-[#003527] animate-spin" />
-              <span className="text-[#003527]">Speichere...</span>
-            </>
-          ) : (
-            <>
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-              <span className="text-zinc-500">Alle Änderungen gespeichert</span>
-            </>
+        
+        <div className="flex items-center gap-3">
+          {isEditing && (
+            <div className="flex items-center gap-2 text-[10px] font-bold text-zinc-400 bg-white border border-[#bfc9c3]/30 px-3 py-1.5 rounded-xl shadow-sm transition-all duration-300">
+              {isSaving ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 text-[#003527] animate-spin" />
+                  <span className="text-[#003527]">Speichere...</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <span className="text-zinc-500">Alle Änderungen gespeichert</span>
+                </>
+              )}
+            </div>
           )}
+          
+          <button
+            type="button"
+            onClick={() => setIsEditing(!isEditing)}
+            className={`flex items-center gap-1.5 text-[10px] font-bold px-3 py-1.5 rounded-xl border transition-all duration-300 cursor-pointer active:scale-95 shadow-sm ${
+              isEditing 
+                ? 'bg-emerald-700 hover:bg-[#0b513d] border-emerald-700 text-white' 
+                : 'bg-white hover:bg-zinc-50 border-[#bfc9c3]/40 text-[#003527]'
+            }`}
+          >
+            {isEditing ? (
+              <>
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Fertig (Leseansicht)</span>
+              </>
+            ) : (
+              <>
+                <Pencil className="w-3.5 h-3.5" />
+                <span>Bearbeiten</span>
+              </>
+            )}
+          </button>
         </div>
       </div>
 
-      {/* Bento Grid layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        
-        {/* BOX 1: Aktuelle Beschwerden & Behandlungsziel (Col span 2) */}
-        <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 shadow-sm hover:border-[#bfc9c3]/60 transition-all duration-300 relative group overflow-hidden md:col-span-2 shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200/40 text-emerald-700">
-                <Target className="w-4 h-4" />
-              </div>
-              <h4 className="text-xs font-bold text-[#003527] uppercase tracking-wider">Aktuelle Beschwerden</h4>
-            </div>
-            <button
-              type="button"
-              onClick={handleAddComplaint}
-              className="text-[10px] font-bold text-[#003527] hover:text-[#0b513d] bg-zinc-100 hover:bg-[#003527]/5 border border-transparent rounded-md px-3 py-1.5 transition-colors cursor-pointer active:scale-95"
-            >
-              + Beschwerde
-            </button>
+      {/* Main Content Layout */}
+      {!isEditing && isAnamnesisEmpty(data) ? (
+        <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-10 text-center space-y-4 max-w-md mx-auto shadow-sm my-12">
+          <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-800 flex items-center justify-center mx-auto border border-emerald-200/50">
+            <Sparkles className="w-6 h-6" />
           </div>
-
-          <div className="space-y-3.5">
-            {data.complaints.map((complaint, index) => (
-              <div 
-                key={index} 
-                className="p-4 bg-[#f9f9f8] rounded-xl border border-zinc-200/40 relative group/item hover:border-zinc-300/60 transition-all"
-              >
-                {data.complaints.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveComplaint(index)}
-                    className="absolute top-3.5 right-3.5 w-6 h-6 rounded-md bg-white border border-zinc-200/50 text-zinc-400 hover:text-rose-500 hover:bg-rose-50 flex items-center justify-center shadow-sm opacity-0 group-hover/item:opacity-100 transition-all cursor-pointer animate-in fade-in duration-200"
-                    title="Beschwerde entfernen"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                )}
-                
-                <input
-                  type="text"
-                  value={complaint.description}
-                  onChange={(e) => handleComplaintChange(index, 'description', e.target.value)}
-                  placeholder="z.B. Spannungskopfschmerzen / Nackensteifigkeit..."
-                  className="w-full bg-transparent border-none px-0 py-1 text-xs font-extrabold text-[#003527] focus:ring-0 placeholder-zinc-400 outline-none mb-3"
-                />
-
-                <div className="flex items-center gap-4 bg-white border border-zinc-200/40 p-2.5 rounded-lg">
-                  <span className="text-[10px] font-bold text-zinc-400 w-24">Schmerz (0-10):</span>
-                  <input
-                    type="range"
-                    min="0"
-                    max="10"
-                    value={complaint.painLevel}
-                    onChange={(e) => handleComplaintChange(index, 'painLevel', parseInt(e.target.value))}
-                    className="flex-grow accent-[#003527] h-1.5 bg-zinc-100 rounded-lg cursor-pointer"
-                  />
-                  <span className="text-xs font-extrabold text-rose-600 w-6 text-right select-none">
-                    {complaint.painLevel}
-                  </span>
-                </div>
-              </div>
-            ))}
+          <div className="space-y-1">
+            <h5 className="text-sm font-bold text-[#003527]">Keine Cranio-Anamnese vorhanden</h5>
+            <p className="text-xs text-zinc-400">Für diesen Klienten wurde noch kein Anamnesebogen ausgefüllt.</p>
           </div>
-
-          <div className="pt-3 border-t border-zinc-100 space-y-1 text-left">
-            <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Behandlungsziel / Positiver Wunsch</label>
-            <textarea
-              rows={2}
-              value={data.treatmentGoal}
-              onChange={(e) => updateField('treatmentGoal', e.target.value)}
-              placeholder="z.B. 'Ich möchte meinen Nacken wieder frei bewegen können' anstatt 'Ich will keine Schmerzen mehr'"
-              className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3.5 py-2.5 font-semibold text-xs text-[#003527] outline-none transition-all resize-none min-h-[60px]"
-            />
-          </div>
+          <button
+            type="button"
+            onClick={() => setIsEditing(true)}
+            className="inline-flex items-center gap-1.5 text-[11px] font-bold bg-[#003527] hover:bg-[#0b513d] text-white px-4 py-2.5 rounded-xl transition-all cursor-pointer active:scale-95 shadow-sm"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Anamnesebogen anlegen</span>
+          </button>
         </div>
-
-        {/* BOX 2: Ressourcen */}
-        <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 shadow-sm hover:border-[#bfc9c3]/60 transition-all duration-300 relative group overflow-hidden flex flex-col justify-between shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <div className="p-2 rounded-xl bg-rose-50 border border-rose-200/40 text-rose-700">
-                <Heart className="w-4 h-4" />
-              </div>
-              <h4 className="text-xs font-bold text-[#003527] uppercase tracking-wider">Ressourcen</h4>
-            </div>
-            
-            <div className="space-y-1">
-              <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Was hilft Ihnen, sich wohlzufühlen?</label>
-              <p className="text-[10px] text-zinc-400 italic">Natur, Hobbies, Familie, Tiere, spirituelle Praxis...</p>
-              <textarea
-                rows={5}
-                value={data.resources}
-                onChange={(e) => updateField('resources', e.target.value)}
-                placeholder="z.B. Meine Kraftquellen sind Spaziergänge im Wald, Musikhören..."
-                className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3.5 py-2.5 font-semibold text-xs text-[#003527] outline-none transition-all resize-none min-h-[120px]"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* BOX 3: Spezifische Vorerkrankungen (Full Width - Col Span 3) */}
-        <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 shadow-sm hover:border-[#bfc9c3]/60 transition-all duration-300 relative group overflow-hidden xl:col-span-3 shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <div className="p-2 rounded-xl bg-indigo-50 border border-indigo-200/40 text-indigo-700">
-                <Activity className="w-4 h-4" />
-              </div>
-              <h4 className="text-xs font-bold text-[#003527] uppercase tracking-wider">Spezifische Vorerkrankungen</h4>
-            </div>
-            
-            <button
-              type="button"
-              onClick={() => setIsDiseasesExpanded(!isDiseasesExpanded)}
-              className="text-[10px] font-bold text-[#003527] hover:text-[#0b513d] bg-zinc-100 hover:bg-[#003527]/5 border border-[#bfc9c3]/20 rounded-md px-3 py-1.5 transition-colors cursor-pointer active:scale-95 flex items-center gap-1 font-mono"
-            >
-              {isDiseasesExpanded ? 'Auswahl zuklappen' : 'Vorerkrankungen auswählen'}
-            </button>
-          </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
           
-          <div className="flex items-center justify-between py-2 bg-zinc-50 rounded-xl px-4 border border-zinc-200/30">
-            <span className="text-[10px] text-[#003527] font-extrabold">
-              {data.diseases.length === 0 
-                ? 'Keine spezifischen Vorerkrankungen ausgewählt' 
-                : `${data.diseases.length} Vorerkrankung(en) ausgewählt`}
-            </span>
-            {data.diseases.length > 0 && !isDiseasesExpanded && (
-              <span className="text-[10px] text-zinc-400 font-semibold truncate max-w-[280px] sm:max-w-[480px]">
-                ({data.diseases.join(', ')})
-              </span>
+          {/* BOX 1: Aktuelle Beschwerden & Behandlungsziel (Col span 2) */}
+          <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 shadow-sm hover:border-[#bfc9c3]/60 transition-all duration-300 relative group overflow-hidden md:col-span-2 shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200/40 text-emerald-700">
+                  <Target className="w-4 h-4" />
+                </div>
+                <h4 className="text-xs font-bold text-[#003527] uppercase tracking-wider">Aktuelle Beschwerden</h4>
+              </div>
+              {isEditing && (
+                <button
+                  type="button"
+                  onClick={handleAddComplaint}
+                  className="text-[10px] font-bold text-[#003527] hover:text-[#0b513d] bg-zinc-100 hover:bg-[#003527]/5 border border-transparent rounded-md px-3 py-1.5 transition-colors cursor-pointer active:scale-95"
+                >
+                  + Beschwerde
+                </button>
+              )}
+            </div>
+
+            {isEditing ? (
+              <div className="space-y-3.5">
+                {data.complaints.map((complaint, index) => (
+                  <div 
+                    key={index} 
+                    className="p-4 bg-[#f9f9f8] rounded-xl border border-zinc-200/40 relative group/item hover:border-zinc-300/60 transition-all"
+                  >
+                    {data.complaints.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveComplaint(index)}
+                        className="absolute top-3.5 right-3.5 w-6 h-6 rounded-md bg-white border border-zinc-200/50 text-zinc-400 hover:text-rose-500 hover:bg-rose-50 flex items-center justify-center shadow-sm opacity-0 group-hover/item:opacity-100 transition-all cursor-pointer animate-in fade-in duration-200"
+                        title="Beschwerde entfernen"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                    
+                    <input
+                      type="text"
+                      value={complaint.description}
+                      onChange={(e) => handleComplaintChange(index, 'description', e.target.value)}
+                      placeholder="z.B. Spannungskopfschmerzen / Nackensteifigkeit..."
+                      className="w-full bg-transparent border-none px-0 py-1 text-xs font-extrabold text-[#003527] focus:ring-0 placeholder-zinc-400 outline-none mb-3"
+                    />
+
+                    <div className="flex items-center gap-4 bg-white border border-zinc-200/40 p-2.5 rounded-lg">
+                      <span className="text-[10px] font-bold text-zinc-400 w-24">Schmerz (0-10):</span>
+                      <input
+                        type="range"
+                        min="0"
+                        max="10"
+                        value={complaint.painLevel}
+                        onChange={(e) => handleComplaintChange(index, 'painLevel', parseInt(e.target.value))}
+                        className="flex-grow accent-[#003527] h-1.5 bg-zinc-100 rounded-lg cursor-pointer"
+                      />
+                      <span className="text-xs font-extrabold text-rose-600 w-6 text-right select-none">
+                        {complaint.painLevel}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {data.complaints.filter(c => c.description.trim() !== '').length === 0 ? (
+                  <p className="text-xs text-zinc-400 italic">Keine aktuellen Beschwerden angegeben.</p>
+                ) : (
+                  data.complaints
+                    .filter(c => c.description.trim() !== '')
+                    .map((complaint, index) => (
+                      <div key={index} className="flex items-center justify-between p-3.5 bg-[#f9f9f8] rounded-xl border border-zinc-200/40">
+                        <span className="text-xs font-bold text-[#003527]">{complaint.description}</span>
+                        <span className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full border ${
+                          complaint.painLevel >= 8 
+                            ? 'bg-rose-50 border-rose-200 text-rose-700' 
+                            : complaint.painLevel >= 4 
+                              ? 'bg-amber-50 border-amber-200 text-amber-700' 
+                              : 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                        }`}>
+                          Schmerz: {complaint.painLevel}/10
+                        </span>
+                      </div>
+                    ))
+                )}
+              </div>
+            )}
+
+            <div className="pt-3 border-t border-zinc-100 space-y-1 text-left">
+              <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Behandlungsziel / Positiver Wunsch</label>
+              {isEditing ? (
+                <textarea
+                  rows={2}
+                  value={data.treatmentGoal}
+                  onChange={(e) => updateField('treatmentGoal', e.target.value)}
+                  placeholder="z.B. 'Ich möchte meinen Nacken wieder frei bewegen können' anstatt 'Ich will keine Schmerzen mehr'"
+                  className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3.5 py-2.5 font-semibold text-xs text-[#003527] outline-none transition-all resize-none min-h-[60px]"
+                />
+              ) : (
+                data.treatmentGoal.trim() ? (
+                  <p className="text-xs font-medium text-[#003527] italic pl-3 border-l-2 border-emerald-600/30 py-1 bg-[#f9f9f8] pr-2 rounded-r-lg">
+                    „{data.treatmentGoal}“
+                  </p>
+                ) : (
+                  <p className="text-xs text-zinc-400 italic">Kein Behandlungsziel angegeben.</p>
+                )
+              )}
+            </div>
+          </div>
+
+          {/* BOX 2: Ressourcen */}
+          <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 shadow-sm hover:border-[#bfc9c3]/60 transition-all duration-300 relative group overflow-hidden flex flex-col justify-between shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
+            <div className="space-y-4 w-full">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-xl bg-rose-50 border border-rose-200/40 text-rose-700">
+                  <Heart className="w-4 h-4" />
+                </div>
+                <h4 className="text-xs font-bold text-[#003527] uppercase tracking-wider">Ressourcen</h4>
+              </div>
+              
+              <div className="space-y-1 text-left">
+                <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Was hilft Ihnen, sich wohlzufühlen?</label>
+                {isEditing ? (
+                  <>
+                    <p className="text-[10px] text-zinc-400 italic">Natur, Hobbies, Familie, Tiere, spirituelle Praxis...</p>
+                    <textarea
+                      rows={5}
+                      value={data.resources}
+                      onChange={(e) => updateField('resources', e.target.value)}
+                      placeholder="z.B. Meine Kraftquellen sind Spaziergänge im Wald, Musikhören..."
+                      className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3.5 py-2.5 font-semibold text-xs text-[#003527] outline-none transition-all resize-none min-h-[120px]"
+                    />
+                  </>
+                ) : (
+                  data.resources.trim() ? (
+                    <p className="text-xs font-medium text-[#003527] leading-relaxed whitespace-pre-wrap bg-[#f9f9f8] p-3 rounded-xl border border-zinc-200/30">
+                      {data.resources}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-zinc-400 italic">Keine Ressourcen angegeben.</p>
+                  )
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* BOX 3: Spezifische Vorerkrankungen (Full Width - Col Span 3) */}
+          <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 shadow-sm hover:border-[#bfc9c3]/60 transition-all duration-300 relative group overflow-hidden xl:col-span-3 shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-xl bg-indigo-50 border border-indigo-200/40 text-indigo-700">
+                  <Activity className="w-4 h-4" />
+                </div>
+                <h4 className="text-xs font-bold text-[#003527] uppercase tracking-wider">Spezifische Vorerkrankungen</h4>
+              </div>
+              
+              {isEditing && (
+                <button
+                  type="button"
+                  onClick={() => setIsDiseasesExpanded(!isDiseasesExpanded)}
+                  className="text-[10px] font-bold text-[#003527] hover:text-[#0b513d] bg-zinc-100 hover:bg-[#003527]/5 border border-[#bfc9c3]/20 rounded-md px-3 py-1.5 transition-colors cursor-pointer active:scale-95 flex items-center gap-1 font-mono"
+                >
+                  {isDiseasesExpanded ? 'Auswahl zuklappen' : 'Vorerkrankungen auswählen'}
+                </button>
+              )}
+            </div>
+            
+            {isEditing ? (
+              <>
+                <div className="flex items-center justify-between py-2 bg-zinc-50 rounded-xl px-4 border border-zinc-200/30">
+                  <span className="text-[10px] text-[#003527] font-extrabold">
+                    {data.diseases.length === 0 
+                      ? 'Keine spezifischen Vorerkrankungen ausgewählt' 
+                      : `${data.diseases.length} Vorerkrankung(en) ausgewählt`}
+                  </span>
+                  {data.diseases.length > 0 && !isDiseasesExpanded && (
+                    <span className="text-[10px] text-zinc-400 font-semibold truncate max-w-[280px] sm:max-w-[480px]">
+                      ({data.diseases.join(', ')})
+                    </span>
+                  )}
+                </div>
+
+                {isDiseasesExpanded && (
+                  <div className="space-y-3 pt-1 animate-in fade-in slide-in-from-top-2 duration-200">
+                    <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest">
+                      Bitte zutreffende Vorerkrankungen anklicken:
+                    </p>
+
+                    <div className="flex flex-wrap gap-2 py-1">
+                      {PREDEFINED_DISEASES.map((disease) => {
+                        const isActive = data.diseases.includes(disease);
+                        return (
+                          <button
+                            key={disease}
+                            type="button"
+                            onClick={() => handleToggleDisease(disease)}
+                            className={`px-3 py-1.5 rounded-full border text-[11px] font-bold transition-all cursor-pointer ${
+                              isActive
+                                ? 'bg-[#003527] border-[#003527] text-white shadow-sm'
+                                : 'bg-zinc-100/50 border-zinc-200/60 text-zinc-500 hover:border-zinc-300 hover:bg-zinc-100'
+                            }`}
+                          >
+                            {disease}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                <div className="pt-2">
+                  <input
+                    type="text"
+                    value={data.otherDiseases}
+                    onChange={(e) => updateField('otherDiseases', e.target.value)}
+                    placeholder="Andere Erkrankungen (Bitte hier eintragen)..."
+                    className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3.5 py-2.5 font-semibold text-xs text-[#003527] outline-none transition-all"
+                  />
+                </div>
+              </>
+            ) : (
+              <div className="space-y-3 text-left">
+                {data.diseases.length === 0 && !data.otherDiseases.trim() ? (
+                  <p className="text-xs text-zinc-400 italic">Keine spezifischen Vorerkrankungen angegeben.</p>
+                ) : (
+                  <>
+                    {data.diseases.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {data.diseases.map(disease => (
+                          <span key={disease} className="px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200/40 text-emerald-800 text-[11px] font-bold">
+                            {disease}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {data.otherDiseases.trim() && (
+                      <div className="p-3 bg-[#f9f9f8] rounded-xl border border-zinc-200/30">
+                        <span className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1">Sonstige Erkrankungen</span>
+                        <p className="text-xs font-semibold text-[#003527]">{data.otherDiseases}</p>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
             )}
           </div>
 
-          {isDiseasesExpanded && (
-            <div className="space-y-3 pt-1 animate-in fade-in slide-in-from-top-2 duration-200">
-              <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest">
-                Bitte zutreffende Vorerkrankungen anklicken:
-              </p>
-
-              <div className="flex flex-wrap gap-2 py-1">
-                {PREDEFINED_DISEASES.map((disease) => {
-                  const isActive = data.diseases.includes(disease);
-                  return (
-                    <button
-                      key={disease}
-                      type="button"
-                      onClick={() => handleToggleDisease(disease)}
-                      className={`px-3 py-1.5 rounded-full border text-[11px] font-bold transition-all cursor-pointer ${
-                        isActive
-                          ? 'bg-[#003527] border-[#003527] text-white shadow-sm'
-                          : 'bg-zinc-100/50 border-zinc-200/60 text-zinc-500 hover:border-zinc-300 hover:bg-zinc-100'
-                      }`}
-                    >
-                      {disease}
-                    </button>
-                  );
-                })}
+          {/* BOX 4: Unfälle & Einschneidende Ereignisse (Col span 2) */}
+          <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 shadow-sm hover:border-[#bfc9c3]/60 transition-all duration-300 relative group overflow-hidden md:col-span-2 shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
+            <div className="flex items-center gap-2">
+              <div className="p-2 rounded-xl bg-orange-50 border border-orange-200/40 text-orange-700">
+                <AlertTriangle className="w-4 h-4" />
               </div>
+              <h4 className="text-xs font-bold text-[#003527] uppercase tracking-wider">Unfälle, OPs & Ereignisse</h4>
             </div>
-          )}
 
-          <div className="pt-2">
-            <input
-              type="text"
-              value={data.otherDiseases}
-              onChange={(e) => updateField('otherDiseases', e.target.value)}
-              placeholder="Andere Erkrankungen (Bitte hier eintragen)..."
-              className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3.5 py-2.5 font-semibold text-xs text-[#003527] outline-none transition-all"
-            />
-          </div>
-        </div>
+            {isEditing ? (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Unfälle im Leben?</label>
+                    <textarea
+                      rows={2}
+                      value={data.accidents}
+                      onChange={(e) => updateField('accidents', e.target.value)}
+                      placeholder="Wenn ja, wann und mit welchen Folgen?"
+                      className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3.5 py-2.5 font-semibold text-xs text-[#003527] outline-none transition-all resize-none min-h-[60px]"
+                    />
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Andere schwere Krankheiten?</label>
+                    <textarea
+                      rows={2}
+                      value={data.otherIllnesses}
+                      onChange={(e) => updateField('otherIllnesses', e.target.value)}
+                      placeholder="Welche und wann?"
+                      className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3.5 py-2.5 font-semibold text-xs text-[#003527] outline-none transition-all resize-none min-h-[60px]"
+                    />
+                  </div>
+                </div>
 
-        {/* BOX 4: Unfälle & Einschneidende Ereignisse (Col span 2) */}
-        <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 shadow-sm hover:border-[#bfc9c3]/60 transition-all duration-300 relative group overflow-hidden md:col-span-2 shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
-          <div className="flex items-center gap-2">
-            <div className="p-2 rounded-xl bg-orange-50 border border-orange-200/40 text-orange-700">
-              <AlertTriangle className="w-4 h-4" />
-            </div>
-            <h4 className="text-xs font-bold text-[#003527] uppercase tracking-wider">Unfälle, OPs & Ereignisse</h4>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Unfälle im Leben?</label>
-              <textarea
-                rows={2}
-                value={data.accidents}
-                onChange={(e) => updateField('accidents', e.target.value)}
-                placeholder="Wenn ja, wann und mit welchen Folgen?"
-                className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3.5 py-2.5 font-semibold text-xs text-[#003527] outline-none transition-all resize-none min-h-[60px]"
-              />
-            </div>
-            
-            <div className="space-y-1">
-              <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Andere schwere Krankheiten?</label>
-              <textarea
-                rows={2}
-                value={data.otherIllnesses}
-                onChange={(e) => updateField('otherIllnesses', e.target.value)}
-                placeholder="Welche und wann?"
-                className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3.5 py-2.5 font-semibold text-xs text-[#003527] outline-none transition-all resize-none min-h-[60px]"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-1 pt-1 border-t border-zinc-100">
-            <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Einschneidende Ereignisse?</label>
-            <textarea
-              rows={2}
-              value={data.eventfulEvents}
-              onChange={(e) => updateField('eventfulEvents', e.target.value)}
-              placeholder="Verluste, Umbrüche, starke Veränderungen..."
-              className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3.5 py-2.5 font-semibold text-xs text-[#003527] outline-none transition-all resize-none min-h-[60px]"
-            />
-          </div>
-
-          {/* OPs mit Vollnarkose dynamic list */}
-          <div className="space-y-2.5 pt-3 border-t border-zinc-100">
-            <div className="flex justify-between items-center">
-              <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">OPs mit Vollnarkose? (Welche und wann?)</label>
-              <button
-                type="button"
-                onClick={handleAddSurgery}
-                className="text-[9px] font-bold text-[#003527] hover:text-[#0b513d] bg-zinc-100 hover:bg-[#003527]/5 border border-transparent rounded px-2 py-1 transition-colors cursor-pointer active:scale-95"
-              >
-                + OP hinzufügen
-              </button>
-            </div>
-            <div className="space-y-2">
-              {data.surgeries.map((surgery, index) => (
-                <div key={index} className="flex items-center gap-2 group/op relative animate-in fade-in duration-200">
-                  <input
-                    type="text"
-                    value={surgery}
-                    onChange={(e) => handleSurgeryChange(index, e.target.value)}
-                    placeholder="z.B. Blinddarm-OP (2018)"
-                    className="flex-grow bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3.5 py-2 font-semibold text-xs text-[#003527] outline-none transition-all pr-8"
+                <div className="space-y-1 pt-1 border-t border-zinc-100">
+                  <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Einschneidende Ereignisse?</label>
+                  <textarea
+                    rows={2}
+                    value={data.eventfulEvents}
+                    onChange={(e) => updateField('eventfulEvents', e.target.value)}
+                    placeholder="Verluste, Umbrüche, starke Veränderungen..."
+                    className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3.5 py-2.5 font-semibold text-xs text-[#003527] outline-none transition-all resize-none min-h-[60px]"
                   />
-                  {data.surgeries.length > 1 && (
+                </div>
+
+                {/* OPs mit Vollnarkose dynamic list */}
+                <div className="space-y-2.5 pt-3 border-t border-zinc-100">
+                  <div className="flex justify-between items-center">
+                    <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">OPs mit Vollnarkose? (Welche und wann?)</label>
                     <button
                       type="button"
-                      onClick={() => handleRemoveSurgery(index)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-zinc-400 hover:text-rose-500 rounded transition-colors cursor-pointer bg-transparent border-none"
-                      title="OP entfernen"
+                      onClick={handleAddSurgery}
+                      className="text-[9px] font-bold text-[#003527] hover:text-[#0b513d] bg-zinc-100 hover:bg-[#003527]/5 border border-transparent rounded px-2 py-1 transition-colors cursor-pointer active:scale-95"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      + OP hinzufügen
                     </button>
+                  </div>
+                  <div className="space-y-2">
+                    {data.surgeries.map((surgery, index) => (
+                      <div key={index} className="flex items-center gap-2 group/op relative animate-in fade-in duration-200">
+                        <input
+                          type="text"
+                          value={surgery}
+                          onChange={(e) => handleSurgeryChange(index, e.target.value)}
+                          placeholder="z.B. Blinddarm-OP (2018)"
+                          className="flex-grow bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3.5 py-2 font-semibold text-xs text-[#003527] outline-none transition-all pr-8"
+                        />
+                        {data.surgeries.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveSurgery(index)}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-zinc-400 hover:text-rose-500 rounded transition-colors cursor-pointer bg-transparent border-none"
+                            title="OP entfernen"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="space-y-4 text-xs text-[#003527] font-medium text-left">
+                {(!data.accidents.trim() && !data.otherIllnesses.trim() && !data.eventfulEvents.trim() && data.surgeries.filter(s => s.trim() !== '').length === 0) ? (
+                  <p className="text-xs text-zinc-400 italic">Keine Angaben zu Unfällen, OPs oder Ereignissen.</p>
+                ) : (
+                  <div className="space-y-3.5">
+                    {data.accidents.trim() && (
+                      <div>
+                        <span className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1">Unfälle im Leben</span>
+                        <p className="bg-[#f9f9f8] p-3 rounded-xl border border-zinc-200/30 whitespace-pre-wrap">{data.accidents}</p>
+                      </div>
+                    )}
+                    {data.otherIllnesses.trim() && (
+                      <div>
+                        <span className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1">Andere schwere Krankheiten</span>
+                        <p className="bg-[#f9f9f8] p-3 rounded-xl border border-zinc-200/30 whitespace-pre-wrap">{data.otherIllnesses}</p>
+                      </div>
+                    )}
+                    {data.eventfulEvents.trim() && (
+                      <div>
+                        <span className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1">Einschneidende Ereignisse</span>
+                        <p className="bg-[#f9f9f8] p-3 rounded-xl border border-zinc-200/30 whitespace-pre-wrap">{data.eventfulEvents}</p>
+                      </div>
+                    )}
+                    {data.surgeries.filter(s => s.trim() !== '').length > 0 && (
+                      <div>
+                        <span className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5">OPs mit Vollnarkose</span>
+                        <ul className="list-disc pl-4 space-y-1 text-xs">
+                          {data.surgeries.filter(s => s.trim() !== '').map((op, idx) => (
+                            <li key={idx} className="font-semibold text-[#003527]">{op}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* BOX 5: Medikation */}
+          <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 shadow-sm hover:border-[#bfc9c3]/60 transition-all duration-300 relative group overflow-hidden flex flex-col justify-between shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
+            <div className="space-y-4 w-full">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-xl bg-blue-50 border border-blue-200/40 text-blue-700">
+                  <Pill className="w-4 h-4" />
+                </div>
+                <h4 className="text-xs font-bold text-[#003527] uppercase tracking-wider">Medikation</h4>
+              </div>
+
+              {isEditing ? (
+                <div className="space-y-4 text-left">
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Langzeit-Medikation (mind. 5 Jahre)</label>
+                    <div className="flex flex-col gap-2.5 pl-1">
+                      <label className="flex items-center gap-2 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={data.longtermCortison}
+                          onChange={(e) => updateField('longtermCortison', e.target.checked)}
+                          className="w-4 h-4 text-[#003527] focus:ring-[#003527] border-zinc-300 rounded cursor-pointer"
+                        />
+                        <span className="text-xs font-bold text-[#003527]">Cortison</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={data.longtermRheuma}
+                          onChange={(e) => updateField('longtermRheuma', e.target.checked)}
+                          className="w-4 h-4 text-[#003527] focus:ring-[#003527] border-zinc-300 rounded cursor-pointer"
+                        />
+                        <span className="text-xs font-bold text-[#003527]">Rheumamittel</span>
+                      </label>
+                    </div>
+                    <input
+                      type="text"
+                      value={data.otherLongtermMeds}
+                      onChange={(e) => updateField('otherLongtermMeds', e.target.value)}
+                      placeholder="Andere Langzeit-Medikamente..."
+                      className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-semibold text-xs text-[#003527] outline-none transition-all mt-2"
+                    />
+                  </div>
+
+                  <div className="space-y-1 pt-2 border-t border-zinc-100">
+                    <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Derzeitige Medikamente?</label>
+                    <input
+                      type="text"
+                      value={data.currentMeds}
+                      onChange={(e) => updateField('currentMeds', e.target.value)}
+                      placeholder="Welche Medikamente werden aktuell eingenommen?"
+                      className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2.5 font-semibold text-xs text-[#003527] outline-none transition-all"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3.5 text-xs text-[#003527] font-medium text-left">
+                  {(!data.longtermCortison && !data.longtermRheuma && !data.otherLongtermMeds.trim() && !data.currentMeds.trim()) ? (
+                    <p className="text-xs text-zinc-400 italic">Keine Medikamente angegeben.</p>
+                  ) : (
+                    <div className="space-y-3.5">
+                      {(data.longtermCortison || data.longtermRheuma || data.otherLongtermMeds.trim()) && (
+                        <div>
+                          <span className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5">Langzeit-Medikation (mind. 5 Jahre)</span>
+                          <div className="flex flex-wrap gap-2 mb-2">
+                            {data.longtermCortison && (
+                              <span className="px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-200/40 text-blue-700 font-bold text-[10px]">
+                                Cortison
+                              </span>
+                            )}
+                            {data.longtermRheuma && (
+                              <span className="px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-200/40 text-blue-700 font-bold text-[10px]">
+                                Rheumamittel
+                              </span>
+                            )}
+                          </div>
+                          {data.otherLongtermMeds.trim() && (
+                            <p className="bg-[#f9f9f8] p-3 rounded-xl border border-zinc-200/30">{data.otherLongtermMeds}</p>
+                          )}
+                        </div>
+                      )}
+                      
+                      {data.currentMeds.trim() && (
+                        <div>
+                          <span className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1">Derzeitige Medikamente</span>
+                          <p className="bg-[#f9f9f8] p-3 rounded-xl border border-zinc-200/30 whitespace-pre-wrap">{data.currentMeds}</p>
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
-              ))}
+              )}
             </div>
           </div>
-        </div>
 
-        {/* BOX 5: Medikation */}
-        <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 shadow-sm hover:border-[#bfc9c3]/60 transition-all duration-300 relative group overflow-hidden flex flex-col justify-between shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
-          <div className="space-y-4 w-full">
+          {/* BOX 6: Emotionale Historie */}
+          <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 shadow-sm hover:border-[#bfc9c3]/60 transition-all duration-300 relative group overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
             <div className="flex items-center gap-2">
-              <div className="p-2 rounded-xl bg-blue-50 border border-blue-200/40 text-blue-700">
-                <Pill className="w-4 h-4" />
+              <div className="p-2 rounded-xl bg-purple-50 border border-purple-200/40 text-purple-700">
+                <Brain className="w-4 h-4" />
               </div>
-              <h4 className="text-xs font-bold text-[#003527] uppercase tracking-wider">Medikation</h4>
+              <h4 className="text-xs font-bold text-[#003527] uppercase tracking-wider">Emotionale Historie</h4>
             </div>
 
-            <div className="space-y-4 text-left">
-              <div className="space-y-2">
-                <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Langzeit-Medikation (mind. 5 Jahre)</label>
-                <div className="flex flex-col gap-2.5 pl-1">
-                  <label className="flex items-center gap-2 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={data.longtermCortison}
-                      onChange={(e) => updateField('longtermCortison', e.target.checked)}
-                      className="w-4 h-4 text-[#003527] focus:ring-[#003527] border-zinc-300 rounded cursor-pointer"
-                    />
-                    <span className="text-xs font-bold text-[#003527]">Cortison</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={data.longtermRheuma}
-                      onChange={(e) => updateField('longtermRheuma', e.target.checked)}
-                      className="w-4 h-4 text-[#003527] focus:ring-[#003527] border-zinc-300 rounded cursor-pointer"
-                    />
-                    <span className="text-xs font-bold text-[#003527]">Rheumamittel</span>
-                  </label>
+            {isEditing ? (
+              <div className="space-y-3.5">
+                <div className="space-y-1">
+                  <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Stationäre Behandlung?</label>
+                  <textarea
+                    rows={2}
+                    value={data.emotionalHospitalization}
+                    onChange={(e) => updateField('emotionalHospitalization', e.target.value)}
+                    placeholder="Stationäre Behandlung wegen emotionaler Probleme? Falls ja, wann?"
+                    className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3.5 py-2.5 font-semibold text-xs text-[#003527] outline-none transition-all resize-none min-h-[60px]"
+                  />
                 </div>
-                <input
-                  type="text"
-                  value={data.otherLongtermMeds}
-                  onChange={(e) => updateField('otherLongtermMeds', e.target.value)}
-                  placeholder="Andere Langzeit-Medikamente..."
-                  className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-semibold text-xs text-[#003527] outline-none transition-all mt-2"
+                
+                <div className="space-y-1 pt-1 border-t border-zinc-100">
+                  <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Medikamente (emotional)?</label>
+                  <textarea
+                    rows={2}
+                    value={data.emotionalMeds}
+                    onChange={(e) => updateField('emotionalMeds', e.target.value)}
+                    placeholder="Medikamente wegen emotionaler Probleme? Falls ja, welche und wann?"
+                    className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3.5 py-2.5 font-semibold text-xs text-[#003527] outline-none transition-all resize-none min-h-[60px]"
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3.5 text-xs text-[#003527] font-medium text-left">
+                {!data.emotionalHospitalization.trim() && !data.emotionalMeds.trim() ? (
+                  <p className="text-xs text-zinc-400 italic">Keine Angaben zur emotionalen Historie.</p>
+                ) : (
+                  <div className="space-y-3.5">
+                    {data.emotionalHospitalization.trim() && (
+                      <div>
+                        <span className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1">Stationäre Behandlung</span>
+                        <p className="bg-[#f9f9f8] p-3 rounded-xl border border-zinc-200/30 whitespace-pre-wrap">{data.emotionalHospitalization}</p>
+                      </div>
+                    )}
+                    {data.emotionalMeds.trim() && (
+                      <div>
+                        <span className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1">Emotionale Medikamente</span>
+                        <p className="bg-[#f9f9f8] p-3 rounded-xl border border-zinc-200/30 whitespace-pre-wrap">{data.emotionalMeds}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* BOX 7: Geburt & Schwangerschaft */}
+          <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 shadow-sm hover:border-[#bfc9c3]/60 transition-all duration-300 relative group overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
+            <div className="flex items-center gap-2">
+              <div className="p-2 rounded-xl bg-pink-50 border border-pink-200/40 text-pink-700">
+                <Baby className="w-4 h-4" />
+              </div>
+              <h4 className="text-xs font-bold text-[#003527] uppercase tracking-wider">Geburt & Schwangerschaft</h4>
+            </div>
+
+            {isEditing ? (
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Komplikationen bei eigener Geburt?</label>
+                  <textarea
+                    rows={2}
+                    value={data.birthKomplications}
+                    onChange={(e) => updateField('birthKomplications', e.target.value)}
+                    placeholder="Soweit bekannt (z.B. Saugglocke, Zangengeburt, Kaiserschnitt)..."
+                    className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3.5 py-2.5 font-semibold text-xs text-[#003527] outline-none transition-all resize-none min-h-[60px]"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 pt-2 border-t border-zinc-100">
+                  <div className="space-y-1">
+                    <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Schwanger?</label>
+                    <select
+                      value={data.pregnant}
+                      onChange={(e) => updateField('pregnant', e.target.value)}
+                      className="w-full bg-zinc-50 border border-zinc-200/50 rounded-xl px-3 py-2 font-bold text-xs text-[#003527] cursor-pointer focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all"
+                    >
+                      <option value="">-</option>
+                      <option value="Nein">Nein</option>
+                      <option value="Ja">Ja</option>
+                    </select>
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Fehlgeburten?</label>
+                    <input
+                      type="text"
+                      value={data.miscarriages}
+                      onChange={(e) => updateField('miscarriages', e.target.value)}
+                      placeholder="Wann / wie oft?"
+                      className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-semibold text-xs text-[#003527] outline-none transition-all"
+                    />
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3.5 text-xs text-[#003527] font-medium text-left">
+                {!data.birthKomplications.trim() && !data.pregnant && !data.miscarriages.trim() ? (
+                  <p className="text-xs text-zinc-400 italic">Keine Angaben zu Geburt & Schwangerschaft.</p>
+                ) : (
+                  <div className="space-y-3.5">
+                    {data.birthKomplications.trim() && (
+                      <div>
+                        <span className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1">Geburtskomplikationen</span>
+                        <p className="bg-[#f9f9f8] p-3 rounded-xl border border-zinc-200/30 whitespace-pre-wrap">{data.birthKomplications}</p>
+                      </div>
+                    )}
+                    <div className="grid grid-cols-2 gap-3">
+                      {data.pregnant && (
+                        <div>
+                          <span className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1">Schwanger</span>
+                          <p className="bg-[#f9f9f8] p-2.5 rounded-xl border border-zinc-200/30 font-bold">{data.pregnant}</p>
+                        </div>
+                      )}
+                      {data.miscarriages.trim() && (
+                        <div>
+                          <span className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1">Fehlgeburten</span>
+                          <p className="bg-[#f9f9f8] p-2.5 rounded-xl border border-zinc-200/30 font-bold">{data.miscarriages}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* BOX 8: Cranio Erfahrung */}
+          <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 shadow-sm hover:border-[#bfc9c3]/60 transition-all duration-300 relative group overflow-hidden bg-gradient-to-br from-white to-emerald-50/5 shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
+            <div className="flex items-center gap-2">
+              <div className="p-2 rounded-xl bg-teal-50 border border-teal-200/40 text-teal-700">
+                <Sparkles className="w-4 h-4" />
+              </div>
+              <h4 className="text-xs font-bold text-[#003527] uppercase tracking-wider">Cranio-Erfahrung</h4>
+            </div>
+
+            <div className="space-y-1 text-left">
+              <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest font-sans">Bisherige Craniosacrale Behandlungen?</label>
+              {isEditing ? (
+                <textarea
+                  rows={3}
+                  value={data.cranioExperience}
+                  onChange={(e) => updateField('cranioExperience', e.target.value)}
+                  placeholder="Falls ja, wann und wie oft? Wie haben Sie diese empfunden?"
+                  className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3.5 py-2.5 font-semibold text-xs text-[#003527] outline-none transition-all resize-none min-h-[90px]"
                 />
-              </div>
-
-              <div className="space-y-1 pt-2 border-t border-zinc-100">
-                <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Derzeitige Medikamente?</label>
-                <input
-                  type="text"
-                  value={data.currentMeds}
-                  onChange={(e) => updateField('currentMeds', e.target.value)}
-                  placeholder="Welche Medikamente werden aktuell eingenommen?"
-                  className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2.5 font-semibold text-xs text-[#003527] outline-none transition-all"
-                />
-              </div>
+              ) : (
+                data.cranioExperience.trim() ? (
+                  <p className="text-xs font-medium text-[#003527] leading-relaxed whitespace-pre-wrap bg-[#f9f9f8] p-3 rounded-xl border border-zinc-200/30">
+                    {data.cranioExperience}
+                  </p>
+                ) : (
+                  <p className="text-xs text-zinc-400 italic">Keine bisherigen Cranio-Erfahrungen angegeben.</p>
+                )
+              )}
             </div>
           </div>
+
         </div>
-
-        {/* BOX 6: Emotionale Historie */}
-        <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 shadow-sm hover:border-[#bfc9c3]/60 transition-all duration-300 relative group overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
-          <div className="flex items-center gap-2">
-            <div className="p-2 rounded-xl bg-purple-50 border border-purple-200/40 text-purple-700">
-              <Brain className="w-4 h-4" />
-            </div>
-            <h4 className="text-xs font-bold text-[#003527] uppercase tracking-wider">Emotionale Historie</h4>
-          </div>
-
-          <div className="space-y-3.5">
-            <div className="space-y-1">
-              <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Stationäre Behandlung?</label>
-              <textarea
-                rows={2}
-                value={data.emotionalHospitalization}
-                onChange={(e) => updateField('emotionalHospitalization', e.target.value)}
-                placeholder="Stationäre Behandlung wegen emotionaler Probleme? Falls ja, wann?"
-                className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3.5 py-2.5 font-semibold text-xs text-[#003527] outline-none transition-all resize-none min-h-[60px]"
-              />
-            </div>
-            
-            <div className="space-y-1 pt-1 border-t border-zinc-100">
-              <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Medikamente (emotional)?</label>
-              <textarea
-                rows={2}
-                value={data.emotionalMeds}
-                onChange={(e) => updateField('emotionalMeds', e.target.value)}
-                placeholder="Medikamente wegen emotionaler Probleme? Falls ja, welche und wann?"
-                className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3.5 py-2.5 font-semibold text-xs text-[#003527] outline-none transition-all resize-none min-h-[60px]"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* BOX 7: Geburt & Schwangerschaft */}
-        <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 shadow-sm hover:border-[#bfc9c3]/60 transition-all duration-300 relative group overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
-          <div className="flex items-center gap-2">
-            <div className="p-2 rounded-xl bg-pink-50 border border-pink-200/40 text-pink-700">
-              <Baby className="w-4 h-4" />
-            </div>
-            <h4 className="text-xs font-bold text-[#003527] uppercase tracking-wider">Geburt & Schwangerschaft</h4>
-          </div>
-
-          <div className="space-y-3">
-            <div className="space-y-1">
-              <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Komplikationen bei eigener Geburt?</label>
-              <textarea
-                rows={2}
-                value={data.birthKomplications}
-                onChange={(e) => updateField('birthKomplications', e.target.value)}
-                placeholder="Soweit bekannt (z.B. Saugglocke, Zangengeburt, Kaiserschnitt)..."
-                className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3.5 py-2.5 font-semibold text-xs text-[#003527] outline-none transition-all resize-none min-h-[60px]"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 pt-2 border-t border-zinc-100">
-              <div className="space-y-1">
-                <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Schwanger?</label>
-                <select
-                  value={data.pregnant}
-                  onChange={(e) => updateField('pregnant', e.target.value)}
-                  className="w-full bg-zinc-50 border border-zinc-200/50 rounded-xl px-3 py-2 font-bold text-xs text-[#003527] cursor-pointer focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all"
-                >
-                  <option value="">-</option>
-                  <option value="Nein">Nein</option>
-                  <option value="Ja">Ja</option>
-                </select>
-              </div>
-              
-              <div className="space-y-1">
-                <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Fehlgeburten?</label>
-                <input
-                  type="text"
-                  value={data.miscarriages}
-                  onChange={(e) => updateField('miscarriages', e.target.value)}
-                  placeholder="Wann / wie oft?"
-                  className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-semibold text-xs text-[#003527] outline-none transition-all"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* BOX 8: Cranio Erfahrung */}
-        <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 shadow-sm hover:border-[#bfc9c3]/60 transition-all duration-300 relative group overflow-hidden bg-gradient-to-br from-white to-emerald-50/5 shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
-          <div className="flex items-center gap-2">
-            <div className="p-2 rounded-xl bg-teal-50 border border-teal-200/40 text-teal-700">
-              <Sparkles className="w-4 h-4" />
-            </div>
-            <h4 className="text-xs font-bold text-[#003527] uppercase tracking-wider">Cranio-Erfahrung</h4>
-          </div>
-
-          <div className="space-y-1">
-            <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest font-sans">Bisherige Craniosacrale Behandlungen?</label>
-            <textarea
-              rows={3}
-              value={data.cranioExperience}
-              onChange={(e) => updateField('cranioExperience', e.target.value)}
-              placeholder="Falls ja, wann und wie oft? Wie haben Sie diese empfunden?"
-              className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3.5 py-2.5 font-semibold text-xs text-[#003527] outline-none transition-all resize-none min-h-[90px]"
-            />
-          </div>
-        </div>
-
-      </div>
+      )}
     </div>
   );
 }
