@@ -605,7 +605,7 @@ export default function SettingsPage() {
                       >
                         <label className="block text-[10px] font-bold text-[#003527]/70 uppercase tracking-widest">Datenschutzerklärung (Text)</label>
                         <textarea
-                          placeholder="Trage hier deine Datenschutzerklärung ein (z. B. Informationen zur Datenverarbeitung, Patientenrechte)..."
+                          placeholder="Trage hier deine Datenschutzerklärung ein (z. B. Informationen zur Datenverarbeitung, Klientenrechte)..."
                           value={datenschutzText}
                           onChange={(e) => setDatenschutzText(e.target.value)}
                           className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-lg px-4 py-3 font-medium text-xs text-[#003527] focus:border-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all h-36 resize-y"

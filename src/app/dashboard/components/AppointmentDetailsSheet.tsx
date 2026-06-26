@@ -225,7 +225,7 @@ export default function AppointmentDetailsSheet() {
 
       const cli = clients.find(c => c.id === newAppClientId);
       if (!cli) {
-        showToast('Bitte einen Patienten auswählen', 'error');
+        showToast('Bitte einen Klienten auswählen', 'error');
         return;
       }
 
@@ -313,11 +313,11 @@ export default function AppointmentDetailsSheet() {
                     {/* Patient Selector */}
                     <div className="space-y-2 relative" ref={dropdownRef}>
                       <div className="flex justify-between items-center">
-                        <label className="block text-[10px] font-bold text-[#003527]/70 uppercase tracking-widest">Patient / Klient</label>
+                        <label className="block text-[10px] font-bold text-[#003527]/70 uppercase tracking-widest">Klient</label>
                       </div>
                       {clients.length === 0 ? (
                         <div className="border border-dashed border-[#bfc9c3]/50 rounded-2xl p-4 text-center bg-[#f9f9f8]">
-                          <p className="text-[11px] font-semibold text-zinc-400">Noch keine Patienten angelegt.</p>
+                          <p className="text-[11px] font-semibold text-zinc-400">Noch keine Klienten angelegt.</p>
                           <button
                             type="button"
                             onClick={() => {
@@ -326,7 +326,7 @@ export default function AppointmentDetailsSheet() {
                             }}
                             className="mt-2 bg-[#003527] hover:bg-[#0b513d] text-white px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all cursor-pointer border-none"
                           >
-                            Patient anlegen
+                            Klient anlegen
                           </button>
                         </div>
                       ) : (
@@ -349,7 +349,7 @@ export default function AppointmentDetailsSheet() {
                                   <span className="truncate">{selectedClient.name}</span>
                                 </>
                               ) : (
-                                <span className="text-zinc-400">Patient auswählen...</span>
+                                <span className="text-zinc-400">Klient auswählen...</span>
                               )}
                             </div>
                             <ChevronDown className="w-4 h-4 text-zinc-400 flex-shrink-0" />
@@ -366,7 +366,7 @@ export default function AppointmentDetailsSheet() {
                                     type="text"
                                     value={clientSearch}
                                     onChange={(e) => setClientSearch(e.target.value)}
-                                    placeholder="Patient suchen..."
+                                    placeholder="Klienten suchen..."
                                     autoFocus
                                     className="w-full bg-white border border-zinc-200/60 focus:border-zinc-300 rounded-lg pl-9 pr-3 py-1.5 font-bold text-xs text-[#003527] outline-none transition-all"
                                   />
@@ -418,7 +418,7 @@ export default function AppointmentDetailsSheet() {
                                   })
                                 ) : (
                                   <div className="px-4 py-3 text-xs text-zinc-400 font-semibold italic text-center">
-                                    Keine Patienten gefunden
+                                    Keine Klienten gefunden
                                   </div>
                                 )}
                               </div>
@@ -438,7 +438,7 @@ export default function AppointmentDetailsSheet() {
                                   }}
                                   className="w-full py-2 px-3 rounded-lg text-xs font-bold text-[#003527] hover:bg-[#003527]/5 hover:text-[#0b513d] flex items-center justify-center gap-1.5 cursor-pointer transition-colors border-none bg-transparent"
                                 >
-                                  <Plus className="w-3.5 h-3.5" /> Patient hinzufügen
+                                  <Plus className="w-3.5 h-3.5" /> Klient hinzufügen
                                 </button>
                               </div>
                             </div>
@@ -874,7 +874,7 @@ export default function AppointmentDetailsSheet() {
             <button
               type="button"
               onClick={() => {
-                const newName = prompt(dropdownContextMenu.type === 'client' ? 'Patientenname bearbeiten:' : 'Leistungsname bearbeiten:', dropdownContextMenu.name);
+                const newName = prompt(dropdownContextMenu.type === 'client' ? 'Klientenname bearbeiten:' : 'Leistungsname bearbeiten:', dropdownContextMenu.name);
                 if (newName && newName.trim() && newName.trim() !== dropdownContextMenu.name) {
                   if (dropdownContextMenu.type === 'client') {
                     updateClientName(dropdownContextMenu.id, newName.trim());

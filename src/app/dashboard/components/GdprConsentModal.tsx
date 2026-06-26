@@ -24,7 +24,7 @@ export default function GdprConsentModal() {
   const client = clients.find(c => c.id === gdprClientId);
   if (!client) return null;
 
-  const clientEmail = client.email || 'patient@email.de';
+  const clientEmail = client.email || 'klient@email.de';
 
   const closeGdprModal = () => {
     setIsGdprModalOpen(false);
@@ -44,7 +44,7 @@ export default function GdprConsentModal() {
   };
 
   const handleSignOnDevice = () => {
-    showToast(`Kiosk-Modus für ${client.name} gestartet... (Patienten-Tablet freigeschaltet)`, 'info');
+    showToast(`Kiosk-Modus für ${client.name} gestartet... (Klienten-Tablet freigeschaltet)`, 'info');
     toggleClientGdpr(client.id);
     closeGdprModal();
   };
@@ -108,7 +108,7 @@ export default function GdprConsentModal() {
                   <Mail className="w-4 h-4" />
                 </div>
                 <div className="text-left">
-                  <span className="block text-[11px] font-extrabold">Link an Patient senden</span>
+                  <span className="block text-[11px] font-extrabold">Link an Klient senden</span>
                   <span className="block text-[9px] text-[#bfc9c3] font-semibold truncate max-w-[200px] sm:max-w-[240px]">
                     E-Mail an {clientEmail}
                   </span>

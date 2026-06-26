@@ -91,7 +91,7 @@ export default function CommandPalette({ isOpen, setIsOpen, actions }: Props) {
       {
         id: 'action-new-patient',
         type: 'action',
-        title: 'Neuen Patienten anlegen',
+        title: 'Neuen Klienten anlegen',
         icon: Plus,
         onSelect: () => {
           setIsNewClientModalOpen(true);
@@ -143,7 +143,7 @@ export default function CommandPalette({ isOpen, setIsOpen, actions }: Props) {
       {
         id: 'action-new-patient',
         type: 'action',
-        title: 'Neuen Patienten anlegen',
+        title: 'Neuen Klienten anlegen',
         icon: Plus,
         onSelect: () => {
           setIsNewClientModalOpen(true);
@@ -364,7 +364,7 @@ export default function CommandPalette({ isOpen, setIsOpen, actions }: Props) {
             <div className="flex items-center gap-6 px-6 border-b border-[#bfc9c3]/20 bg-white overflow-x-auto no-scrollbar">
               {[
                 { id: 'all', label: 'Alle', icon: null },
-                { id: 'patient', label: 'Patienten', icon: Users },
+                { id: 'patient', label: 'Klienten', icon: Users },
                 { id: 'appointment', label: 'Termine', icon: Calendar },
                 { id: 'invoice', label: 'Rechnungen', icon: FileText },
                 { id: 'action', label: 'Aktionen', icon: Plus }
@@ -421,7 +421,7 @@ export default function CommandPalette({ isOpen, setIsOpen, actions }: Props) {
                       currentType = item.type;
                       const typeLabel = 
                         item.type === 'action' ? 'Aktionen' : 
-                        item.type === 'patient' ? 'Patienten' : 
+                        item.type === 'patient' ? 'Klienten' : 
                         item.type === 'appointment' ? 'Termine' : 'Rechnungen';
                       categoryHeader = (
                         <div className="px-6 pt-4 pb-2 text-[9px] font-extrabold uppercase tracking-widest text-[#003527]/35 text-left">
@@ -498,7 +498,7 @@ export default function CommandPalette({ isOpen, setIsOpen, actions }: Props) {
                                     setIsOpen(false);
                                   }}
                                   className="p-1.5 bg-white hover:bg-zinc-50 border border-zinc-200/60 text-[#003527] rounded-lg cursor-pointer flex items-center justify-center w-7 h-7 transition-all active:scale-95"
-                                  title="Patientenakte öffnen"
+                                  title="Klientenakte öffnen"
                                 >
                                   <FolderOpen className="w-3.5 h-3.5" />
                                 </button>

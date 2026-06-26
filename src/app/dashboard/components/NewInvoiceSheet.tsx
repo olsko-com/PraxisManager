@@ -281,7 +281,7 @@ export default function NewInvoiceSheet() {
                                 setNewInvoiceClientId('');
                               }
                             }}
-                            placeholder="Name des Patienten..."
+                            placeholder="Name des Klienten..."
                             className="w-full bg-transparent border border-transparent hover:border-zinc-200 focus:border-[#003527] focus:bg-[#003527]/5 px-2 py-1 outline-none font-extrabold text-sm text-[#003527] transition-all rounded-lg z-10"
                           />
                         </div>
@@ -320,7 +320,7 @@ export default function NewInvoiceSheet() {
                                   }}
                                   className="text-[10.5px] text-[#003527] hover:text-[#0b513d] font-bold hover:underline cursor-pointer flex items-center gap-1.5 transition-all border-none bg-transparent"
                                 >
-                                  <Plus className="w-3.5 h-3.5" /> "{canvasClientSearch}" als neuen Patienten anlegen
+                                  <Plus className="w-3.5 h-3.5" /> "{canvasClientSearch}" als neuen Klienten anlegen
                                 </button>
                               </div>
                             );
@@ -328,7 +328,7 @@ export default function NewInvoiceSheet() {
 
                           return (
                             <p className="text-[10px] text-amber-600 font-semibold pl-2 italic">
-                              Bitte Namen eingeben, um Patient auszuwählen.
+                              Bitte Namen eingeben, um Klienten auszuwählen.
                             </p>
                           );
                         })()}
@@ -523,7 +523,7 @@ export default function NewInvoiceSheet() {
 
               <div className="space-y-5 text-left">
                 <div className="space-y-2 relative" ref={dropdownRef}>
-                  <label className="block text-[10px] font-bold text-[#003527]/70 uppercase tracking-widest">Patient auswählen</label>
+                  <label className="block text-[10px] font-bold text-[#003527]/70 uppercase tracking-widest">Klient auswählen</label>
                   
                   {/* Custom Trigger */}
                   <button
@@ -543,7 +543,7 @@ export default function NewInvoiceSheet() {
                           <span className="truncate">{selectedClientForInvoice.name}</span>
                         </>
                       ) : (
-                        <span className="text-zinc-400">Patient auswählen...</span>
+                        <span className="text-zinc-400">Klient auswählen...</span>
                       )}
                     </div>
                     <ChevronDown className="w-4 h-4 text-zinc-400 flex-shrink-0" />
@@ -560,7 +560,7 @@ export default function NewInvoiceSheet() {
                             type="text"
                             value={sidebarClientSearch}
                             onChange={(e) => setSidebarClientSearch(e.target.value)}
-                            placeholder="Patient suchen..."
+                            placeholder="Klienten suchen..."
                             autoFocus
                             className="w-full bg-white border border-zinc-200/60 focus:border-zinc-300 rounded-lg pl-9 pr-3 py-1.5 font-bold text-xs text-[#003527] outline-none transition-all"
                           />
@@ -601,7 +601,7 @@ export default function NewInvoiceSheet() {
                           })
                         ) : (
                           <div className="px-4 py-3 text-xs text-zinc-400 font-semibold italic text-center">
-                            Keine Patienten gefunden
+                            Keine Klienten gefunden
                           </div>
                         )}
                       </div>
@@ -619,7 +619,7 @@ export default function NewInvoiceSheet() {
                           }}
                           className="w-full py-2 px-3 rounded-lg text-xs font-bold text-[#003527] hover:bg-[#003527]/5 hover:text-[#0b513d] flex items-center justify-center gap-1.5 cursor-pointer transition-colors border-none bg-transparent"
                         >
-                          <Plus className="w-3.5 h-3.5" /> Patient hinzufügen
+                          <Plus className="w-3.5 h-3.5" /> Klient hinzufügen
                         </button>
                       </div>
                     </div>

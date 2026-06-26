@@ -62,7 +62,7 @@ export default function ContextMenu() {
     >
       <div className="px-3 py-2 text-[10px] text-zinc-400 font-bold uppercase tracking-wider select-none text-left">
         {contextMenu.type === 'client' 
-          ? (contextMenu.client?.name || 'Patient') 
+          ? (contextMenu.client?.name || 'Klient') 
           : contextMenu.type === 'invoice'
           ? (`Rechnung ${contextMenu.invoice?.invoiceNumber || ''}`)
           : (contextMenu.appointment?.clientName || contextMenu.appointment?.serviceName || 'Termin')}

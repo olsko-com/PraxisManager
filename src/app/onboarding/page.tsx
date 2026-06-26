@@ -510,7 +510,7 @@ export default function OnboardingPage() {
                       <div>
                         <h4 className="text-sm font-bold text-[#043F2D] mb-1">Praxis eingerichtet</h4>
                         <p className="text-xs text-[#404944] leading-relaxed">
-                          Deine Dienstleistungen wurden hinterlegt. Der Kalender und die Patientenakte stehen jetzt zur Verfügung.
+                          Deine Dienstleistungen wurden hinterlegt. Der Kalender und die Klientenakte stehen jetzt zur Verfügung.
                         </p>
                       </div>
                     </div>

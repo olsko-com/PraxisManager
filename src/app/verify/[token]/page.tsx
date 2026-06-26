@@ -240,7 +240,7 @@ export default function GdprVerifyPage({ params }: { params: Promise<VerifyParam
                 <div className="p-3 bg-[#003527]/5 text-[#003527] rounded-2xl w-fit">
                   <ShieldAlert className="w-6 h-6" />
                 </div>
-                <h2 className="text-xl font-bold text-[#003527] tracking-tight pt-1">Patienten-Verifizierung</h2>
+                <h2 className="text-xl font-bold text-[#003527] tracking-tight pt-1">Klienten-Verifizierung</h2>
                 <p className="text-xs text-zinc-400 font-semibold leading-relaxed">
                   Um Ihre sensiblen gesundheitsbezogenen Dokumente zu schützen, geben Sie bitte Ihr Geburtsdatum ein.
                 </p>
@@ -304,7 +304,7 @@ export default function GdprVerifyPage({ params }: { params: Promise<VerifyParam
                     Verifiziert
                   </span>
                   <span className="text-[10px] text-zinc-400 font-semibold">
-                    Patient: <strong className="text-[#003527]">{clientName}</strong>
+                    Klient: <strong className="text-[#003527]">{clientName}</strong>
                   </span>
                 </div>
                 <h2 className="text-xl font-bold text-[#003527] tracking-tight pt-1">Datenschutzerklärung</h2>

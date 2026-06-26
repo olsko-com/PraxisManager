@@ -103,7 +103,7 @@ export default function AddonsPage() {
       id: 'mail-center',
       category: 'Marketing & Kommunikation',
       title: 'Mail Center (Kommunikation)',
-      description: 'Sende Rechnungs- und Terminerinnerungen oder Fragebögen direkt aus der Patientenakte. Nutzt Liquid-Tags für vollautomatische Personalisierung.',
+      description: 'Sende Rechnungs- und Terminerinnerungen oder Fragebögen direkt aus der Klientenakte. Nutzt Liquid-Tags für vollautomatische Personalisierung.',
       icon: Mail,
       iconColor: 'text-purple-700',
       iconBg: 'bg-purple-50 border border-purple-200/40',

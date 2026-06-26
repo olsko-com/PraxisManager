@@ -115,13 +115,13 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     },
     {
       id: 'patients',
-      title: 'Patienten anzeigen',
+      title: 'Klienten anzeigen',
       icon: Users,
       onSelect: () => router.push('/dashboard/clients')
     },
     {
       id: 'new-patient',
-      title: 'Neuen Patienten anlegen',
+      title: 'Neuen Klienten anlegen',
       icon: Plus,
       onSelect: () => {
         setIsNewClientModalOpen(true);
@@ -262,7 +262,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                   : 'text-[#404944] hover:bg-zinc-50 hover:text-[#003527]'
               }`}
             >
-              <Users className="w-4 h-4 shrink-0" /> Patienten
+              <Users className="w-4 h-4 shrink-0" /> Klienten
             </Link>
  
             <Link
@@ -417,7 +417,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                   >
                     <button
                       type="button"
-                      onClick={() => showToast('Das Mail Center ist aktiv. Du kannst E-Mails direkt aus der Patientenakte senden.', 'info')}
+                      onClick={() => showToast('Das Mail Center ist aktiv. Du kannst E-Mails direkt aus der Klientenakte senden.', 'info')}
                       className="w-full flex items-center gap-3 px-4 py-2 rounded-md text-[11px] font-bold text-[#404944] hover:bg-zinc-50 hover:text-[#003527] transition-all bg-transparent border-none cursor-pointer text-left"
                     >
                       <div className="flex items-center gap-3">
@@ -588,7 +588,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           }`}
         >
           <Users className="w-5 h-5 shrink-0" />
-          <span className="text-[9px] tracking-tight mt-0.5 font-bold">Patienten</span>
+          <span className="text-[9px] tracking-tight mt-0.5 font-bold">Klienten</span>
         </Link>
 
         <Link

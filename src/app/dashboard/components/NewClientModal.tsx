@@ -94,8 +94,8 @@ export default function NewClientModal() {
           {/* Header */}
           <div className="px-8 py-6 border-b border-zinc-100 flex justify-between items-center bg-white flex-shrink-0">
             <div className="text-left">
-              <h3 className="text-base font-bold text-[#003527]">Patient anlegen</h3>
-              <p className="text-[10px] text-zinc-400 mt-0.5 font-medium">Erstelle eine neue Patientenakte in deiner Praxis.</p>
+              <h3 className="text-base font-bold text-[#003527]">Klient anlegen</h3>
+              <p className="text-[10px] text-zinc-400 mt-0.5 font-medium">Erstelle eine neue Klientenakte in deiner Praxis.</p>
             </div>
             <button 
               type="button"
@@ -318,7 +318,7 @@ export default function NewClientModal() {
               disabled={isSubmitting || !firstName.trim() || !lastName.trim()}
               className="flex-1 bg-[#003527] hover:bg-[#0b513d] text-white py-3 rounded-xl font-bold text-xs transition-colors cursor-pointer disabled:opacity-50 disabled:bg-zinc-200 disabled:text-zinc-400 disabled:cursor-not-allowed border-none shadow-none"
             >
-              {isSubmitting ? 'Wird gespeichert...' : 'Patient speichern'}
+              {isSubmitting ? 'Wird gespeichert...' : 'Klient speichern'}
             </button>
           </div>
         </form>

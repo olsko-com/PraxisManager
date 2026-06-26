@@ -261,7 +261,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   // Client database state
   const [clients, setClients] = useState<Client[]>([
     { id: 'c1', name: 'Alexander Hoffmann', salutation: 'Herr', firstName: 'Alexander', lastName: 'Hoffmann', birthday: '1984-05-12', email: 'alex@hoffmann.de', phone: '+49 176 1234567', emergencyContact: 'Sarah Hoffmann (Ehefrau) - +49 176 7654321', notes: 'Rückenschmerzen im Lendenbereich, Schreibtischtätigkeit.', createdAt: '2026-01-10T10:00:00Z', gdprAccepted: true },
-    { id: 'c2', name: 'Emma Schmidt', salutation: 'Frau', firstName: 'Emma', lastName: 'Schmidt', birthday: '1992-11-23', email: 'emma.schmidt@gmx.de', phone: '+49 152 9887766', emergencyContact: 'Karl Schmidt (Vater) - +49 30 5551234', notes: 'Migräne-Patientin, wöchentliche Akupunktur.', createdAt: '2026-02-15T11:30:00Z', gdprAccepted: false },
+    { id: 'c2', name: 'Emma Schmidt', salutation: 'Frau', firstName: 'Emma', lastName: 'Schmidt', birthday: '1992-11-23', email: 'emma.schmidt@gmx.de', phone: '+49 152 9887766', emergencyContact: 'Karl Schmidt (Vater) - +49 30 5551234', notes: 'Migräne-Klientin, wöchentliche Akupunktur.', createdAt: '2026-02-15T11:30:00Z', gdprAccepted: false },
     { id: 'c3', name: 'Maximilian Müller', salutation: 'Herr', firstName: 'Maximilian', lastName: 'Müller', birthday: '1978-02-05', email: 'max.mueller@web.de', phone: '+49 171 5554433', emergencyContact: 'Dr. Becker (Hausarzt) - +49 171 1112223', notes: 'Reha nach Knie-OP, physiotherapeutische Betreuung.', createdAt: '2026-03-01T09:00:00Z', gdprAccepted: true }
   ]);
 
@@ -546,7 +546,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         
         if (dbAppointments) {
           const mappedAppointments = dbAppointments.map(app => {
-            let clientName = 'Gelöschter Patient';
+            let clientName = 'Gelöschter Klient';
             let serviceName = 'Gelöschte Leistung';
             let price = 0;
             let currentStatus = app.status;
@@ -630,7 +630,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
               id: inv.id,
               appointmentId: inv.appointment_id,
               clientId: inv.client_id,
-              clientName: client ? client.name : 'Gelöschter Patient',
+              clientName: client ? client.name : 'Gelöschter Klient',
               invoiceNumber: inv.invoice_number,
               amount: inv.amount,
               date: inv.date,
@@ -778,7 +778,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       firstName,
       lastName,
       birthday: birthday || '1990-01-01',
-      email: email || 'patient@email.de',
+      email: email || 'klient@email.de',
       phone: phone || '',
       emergencyContact: emergencyContact || '',
       notes: notes || '',
@@ -802,7 +802,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         user_id: therapistId,
         name: `${salutation}|${firstName}|${lastName}`,
         birthday: birthday || '1990-01-01',
-        email: email || 'patient@email.de',
+        email: email || 'klient@email.de',
         phone: phone || '',
         emergency_contact: emergencyContact || '',
         notes: notes || '',
@@ -816,13 +816,13 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       });
 
     if (error) {
-      showToast(`Fehler beim Erstellen des Patienten: ${error.message}`, 'error');
+      showToast(`Fehler beim Erstellen des Klienten: ${error.message}`, 'error');
       return false;
     }
 
     setClients(prev => [...prev, newClient]);
     setSelectedClientId(newClient.id);
-    showToast(`Patient ${newClient.name} wurde erfolgreich angelegt!`, 'success');
+    showToast(`Klient ${newClient.name} wurde erfolgreich angelegt!`, 'success');
     return true;
   };
 
@@ -835,7 +835,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       .eq('id', id);
 
     if (error) {
-      showToast(`Fehler beim Löschen des Patienten: ${error.message}`, 'error');
+      showToast(`Fehler beim Löschen des Klienten: ${error.message}`, 'error');
       return;
     }
 
@@ -847,7 +847,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(`client_gdpr_${therapistId}`, JSON.stringify(gdpr.filter((f: string) => f !== id)));
 
     setClients(prev => prev.filter(cl => cl.id !== id));
-    showToast('Patient erfolgreich gelöscht.', 'success');
+    showToast('Klient erfolgreich gelöscht.', 'success');
   };
 
   // Update Patient Name
@@ -871,12 +871,12 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       .eq('id', id);
 
     if (error) {
-      showToast(`Fehler beim Aktualisieren des Patientennamens: ${error.message}`, 'error');
+      showToast(`Fehler beim Aktualisieren des Klientennamens: ${error.message}`, 'error');
       return;
     }
 
     setClients(prev => prev.map(c => c.id === id ? { ...c, name: newName.trim(), firstName, lastName } : c));
-    showToast('Patientenname erfolgreich aktualisiert.', 'success');
+    showToast('Klientenname erfolgreich aktualisiert.', 'success');
   };
 
   // Update Patient Details
@@ -912,7 +912,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       .eq('id', id);
 
     if (error) {
-      showToast(`Fehler beim Aktualisieren der Patientendaten: ${error.message}`, 'error');
+      showToast(`Fehler beim Aktualisieren der Klientendaten: ${error.message}`, 'error');
       return false;
     }
 
@@ -929,7 +929,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       return c;
     }));
 
-    showToast('Patientendaten erfolgreich aktualisiert.', 'success');
+    showToast('Klientendaten erfolgreich aktualisiert.', 'success');
     return true;
   };
 
@@ -1073,7 +1073,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     let dbServiceId = newApp.serviceId || null;
     let dbStatus = newApp.status;
 
-    let finalClientName = 'Gelöschter Patient';
+    let finalClientName = 'Gelöschter Klient';
     let finalServiceName = 'Gelöschte Leistung';
     let finalPrice = 0;
 
@@ -1263,13 +1263,13 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const handleCreateInvoice = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newInvoiceClientId || !newInvoiceAmount || !therapistId) {
-      showToast('Bitte Patient und Betrag eingeben.', 'error');
+      showToast('Bitte Klient und Betrag eingeben.', 'error');
       return;
     }
 
     const selectedClient = clients.find(c => c.id === newInvoiceClientId);
     if (!selectedClient) {
-      showToast('Ausgewählter Patient wurde nicht gefunden.', 'error');
+      showToast('Ausgewählter Klient wurde nicht gefunden.', 'error');
       return;
     }
 
@@ -1502,7 +1502,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       appointmentId: appId,
       clientId: cliId,
       date: new Date().toISOString().slice(0, 10),
-      subjective: 'Patient berichtet...',
+      subjective: 'Klient berichtet...',
       objective: 'Palpation zeigt...',
       assessment: 'Verdacht auf...',
       plan: 'Therapie fortsetzen...'
@@ -1599,13 +1599,13 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       applyMailTemplate('mahnung', inv.id, undefined, client);
       setIsMailModalOpen(true);
     } else {
-      showToast('Patient konnte nicht gefunden werden.', 'error');
+      showToast('Klient konnte nicht gefunden werden.', 'error');
     }
   };
 
   const sendInvoiceEmail = (inv: Invoice) => {
     const client = clients.find(c => c.id === inv.clientId);
-    const email = client?.email || 'patient@email.de';
+    const email = client?.email || 'klient@email.de';
     showToast(`Rechnung ${inv.invoiceNumber} erfolgreich an ${email} gesendet!`, 'success');
     setActiveInvoiceActionMenuId(null);
   };
@@ -1614,7 +1614,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     const invoiceText = `
 RECHNUNG: ${inv.invoiceNumber}
 Datum: ${new Date(inv.date).toLocaleDateString('de-DE')}
-Patient: ${inv.clientName}
+Klient: ${inv.clientName}
 Betrag: ${inv.amount.toFixed(2)} EUR
 Status: ${inv.status.toUpperCase()}
 Vielen Dank fuer Ihr Vertrauen!
@@ -1634,7 +1634,7 @@ Vielen Dank fuer Ihr Vertrauen!
 
   const sendInvoiceReminder = (inv: Invoice) => {
     const client = clients.find(c => c.id === inv.clientId);
-    const email = client?.email || 'patient@email.de';
+    const email = client?.email || 'klient@email.de';
     showToast(`Zahlungserinnerung für ${inv.invoiceNumber} an ${email} gesendet!`, 'info');
     setActiveInvoiceActionMenuId(null);
   };
@@ -1736,7 +1736,7 @@ Vielen Dank fuer Ihr Vertrauen!
 
   // CSV Export
   const exportInvoicesCsv = () => {
-    let csv = 'Rechnungsnummer,Datum,Patient,Betrag,Status\n';
+    let csv = 'Rechnungsnummer,Datum,Klient,Betrag,Status\n';
     invoices.forEach(inv => {
       csv += `"${inv.invoiceNumber}","${new Date(inv.date).toLocaleDateString('de-DE')}","${inv.clientName}",${inv.amount},"${inv.status}"\n`;
     });

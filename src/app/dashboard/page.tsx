@@ -148,7 +148,7 @@ export default function DashboardOverviewPage() {
                   }}
                   className="w-full px-4 py-2 text-xs font-bold text-[#003527] hover:bg-[#003527]/5 transition-colors cursor-pointer text-left block border-none bg-transparent outline-none"
                 >
-                  Patient hinzufügen
+                  Klient hinzufügen
                 </button>
                 <button
                   onClick={() => {
@@ -179,7 +179,7 @@ export default function DashboardOverviewPage() {
           {/* Patients stat */}
           <div className="bg-white border border-[#bfc9c3]/30 rounded-2xl p-5 flex items-center justify-between text-left transition-all duration-300 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)]">
             <div className="space-y-1">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Patienten</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Klienten</span>
               <h3 className="text-2xl font-bold text-[#003527]">{clients.length}</h3>
             </div>
             <div className="p-3 bg-emerald-50 text-[#003527] rounded-xl">
@@ -271,7 +271,7 @@ export default function DashboardOverviewPage() {
         <div className="bg-white border border-[#bfc9c3]/40 rounded-2xl px-4 lg:px-8 pt-0 pb-4 shadow-none text-left relative">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#bfc9c3]/20 pt-6 pb-5 -mx-4 lg:-mx-8 px-4 lg:px-8">
             <div className="flex items-center gap-1.5 text-left">
-              <h3 className="text-sm font-bold text-[#003527]">Patienten</h3>
+              <h3 className="text-sm font-bold text-[#003527]">Klienten</h3>
             </div>
             
             {/* Search Input */}
@@ -279,7 +279,7 @@ export default function DashboardOverviewPage() {
               <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-zinc-400" />
               <input
                 type="text"
-                placeholder="Patient suchen..."
+                placeholder="Klient suchen..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/40 rounded-xl pl-9 pr-4 py-2 font-bold text-xs text-[#003527] focus:ring-1 focus:ring-[#003527] focus:border-[#003527] outline-none transition-all text-left placeholder-zinc-400"
@@ -309,7 +309,7 @@ export default function DashboardOverviewPage() {
                       <div className="absolute top-full right-5 mt-2 w-72 bg-white text-zinc-700 text-[10px] leading-relaxed p-3.5 rounded-xl shadow-xl z-50 normal-case font-medium border border-[#bfc9c3]/30 pointer-events-none select-none animate-fade-in">
                         <p className="font-bold mb-1 text-[11px] text-[#003527]">DSGVO-Status</p>
                         <p className="text-zinc-500 font-semibold leading-relaxed">
-                          Dokumentiert, ob der Patient der Verarbeitung seiner Gesundheitsdaten (gemäß Art. 9 DSGVO) zugestimmt hat. Diese ausdrückliche Einwilligung ist rechtlich erforderlich, um Behandlungsdaten speichern zu dürfen.
+                          Dokumentiert, ob der Klient der Verarbeitung seiner Gesundheitsdaten (gemäß Art. 9 DSGVO) zugestimmt hat. Diese ausdrückliche Einwilligung ist rechtlich erforderlich, um Behandlungsdaten speichern zu dürfen.
                         </p>
                         {/* Arrow pointing up */}
                         <div className="absolute bottom-full right-6 border-4 border-transparent border-b-white" />
@@ -383,7 +383,7 @@ export default function DashboardOverviewPage() {
                 {filteredClients.length === 0 && (
                   <tr>
                     <td colSpan={5} className="py-8 text-center text-zinc-400 italic font-semibold">
-                      Keine Patienten gefunden.
+                      Keine Klienten gefunden.
                     </td>
                   </tr>
                 )}

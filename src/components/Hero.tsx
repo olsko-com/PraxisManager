@@ -34,7 +34,7 @@ export default function Hero() {
  
              {/* Subtext */}
              <p className="text-base text-[#404944] leading-relaxed max-w-md font-sans">
-               Termine, Patientenakten, SOAP-Notes und Abrechnung in einem einzigen Tool. Einfach, effizient und DSGVO-konform für Therapeuten und Freelancer.
+               Termine, Klientenakten, SOAP-Notes und Abrechnung in einem einzigen Tool. Einfach, effizient und DSGVO-konform für Therapeuten und Freelancer.
              </p>
  
              {/* CTA Button */}

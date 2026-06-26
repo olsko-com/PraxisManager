@@ -332,13 +332,13 @@ export default function ClientsPage() {
                 }
                 return true;
               }).length;
-              return <h3 className="text-sm font-bold text-[#003527]">Patienten ({count})</h3>;
+              return <h3 className="text-sm font-bold text-[#003527]">Klienten ({count})</h3>;
             })()}
             <div className="flex items-center gap-1">
               <button
                 onClick={() => setIsNewClientModalOpen(true)}
                 className="p-1.5 rounded-lg text-zinc-400 hover:text-[#003527] hover:bg-[#003527]/5 transition-all cursor-pointer animate-fade-in"
-                title="Patient anlegen"
+                title="Klient anlegen"
               >
                 <Plus className="w-4 h-4" />
               </button>
@@ -355,7 +355,7 @@ export default function ClientsPage() {
             <Search className="absolute left-3 top-3 h-4 w-4 text-zinc-400" />
             <input
               type="text"
-              placeholder="Patient suchen..."
+              placeholder="Klient suchen..."
               value={clientSearch}
               onChange={(e) => setClientSearch(e.target.value)}
               onFocus={() => setIsFilterMenuOpen(true)}
@@ -427,12 +427,12 @@ export default function ClientsPage() {
             if (clients.length === 0) {
               return (
                 <div className="p-6 text-center text-xs text-zinc-400 font-medium space-y-3">
-                  <p>Noch keine Patienten angelegt.</p>
+                  <p>Noch keine Klienten angelegt.</p>
                   <button
                     onClick={() => setIsNewClientModalOpen(true)}
                     className="w-full bg-[#003527]/5 hover:bg-[#003527]/10 text-[#003527] py-2 rounded-xl text-[10px] font-bold transition-all cursor-pointer border border-[#bfc9c3]/30"
                   >
-                    + Patient anlegen
+                    + Klient anlegen
                   </button>
                 </div>
               );
@@ -441,7 +441,7 @@ export default function ClientsPage() {
             if (filtered.length === 0) {
               return (
                 <div className="p-6 text-center text-xs text-zinc-400 font-medium">
-                  Keine Patienten gefunden
+                  Keine Klienten gefunden
                 </div>
               );
             }
@@ -510,7 +510,7 @@ export default function ClientsPage() {
         <button
           onClick={() => setIsSidebarOpen(true)}
           className="fixed left-0 top-[120px] z-30 lg:hidden bg-white hover:bg-zinc-50 border border-l-0 border-[#bfc9c3]/40 rounded-r-xl shadow-[4px_4px_12px_rgba(0,53,39,0.08)] py-3.5 px-2.5 text-[#003527] transition-all active:scale-95 flex items-center justify-center group cursor-pointer"
-          title="Patientenliste anzeigen"
+          title="Klientenliste anzeigen"
         >
           <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
         </button>
@@ -528,7 +528,7 @@ export default function ClientsPage() {
       <div className={`flex-grow flex flex-col min-h-0 overflow-hidden ${currentClient ? 'flex' : 'hidden lg:flex'}`}>
         {currentClient ? (
           <div className="flex-grow flex flex-col min-h-0">
-            {/* Patient Header */}
+            {/* Klient Header */}
             <div className="border-b border-[#bfc9c3]/30 px-4 md:px-6 pt-6 pb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-transparent z-20 flex-shrink-0 text-left">
               <div className="flex flex-col text-left">
                 <div className="text-left">
@@ -541,7 +541,7 @@ export default function ClientsPage() {
                     )}
                   </h3>
                   <div className="flex flex-wrap items-center gap-2 mt-1">
-                    <span className="text-xs text-zinc-500">Patient seit {new Date(currentClient.createdAt).toLocaleDateString('de-DE')}</span>
+                    <span className="text-xs text-zinc-500">Klient seit {new Date(currentClient.createdAt).toLocaleDateString('de-DE')}</span>
                     <span className="text-zinc-300 hidden sm:inline">•</span>
                     <button
                       onClick={() => {
@@ -1059,18 +1059,18 @@ export default function ClientsPage() {
                   <div className="pt-6 border-t border-rose-200/30 flex justify-between items-center text-left">
                     <div>
                       <h4 className="text-[10px] font-bold text-rose-800 uppercase tracking-widest">Gefahrenbereich</h4>
-                      <p className="text-[11px] text-zinc-400 mt-0.5">Diesen Patienten unwiderruflich aus der Datenbank entfernen.</p>
+                      <p className="text-[11px] text-zinc-400 mt-0.5">Diesen Klienten unwiderruflich aus der Datenbank entfernen.</p>
                     </div>
                     <button
                       onClick={async () => {
-                        if (confirm('Möchtest du diesen Patienten wirklich löschen?')) {
+                        if (confirm('Möchtest du diesen Klienten wirklich löschen?')) {
                           await deleteClient(currentClient.id);
                           setSelectedClientId(clients.find(c => c.id !== currentClient.id)?.id || '');
                         }
                       }}
                       className="bg-rose-50 hover:bg-rose-100 text-rose-600 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer border border-rose-200/30 shadow-sm"
                     >
-                      <Trash2 className="w-3.5 h-3.5" /> Patient löschen
+                      <Trash2 className="w-3.5 h-3.5" /> Klient löschen
                     </button>
                   </div>
                 </div>
@@ -1189,7 +1189,7 @@ export default function ClientsPage() {
                       ))
                     ) : (
                       <div className="text-center py-12 text-xs text-zinc-400 font-semibold italic bg-white border border-[#bfc9c3]/20 rounded-2xl shadow-[0_4px_20px_rgba(0,53,39,0.01)] sm:col-span-2">
-                        Keine Behandlungsberichte für diesen Patienten vorhanden.
+                        Keine Behandlungsberichte für diesen Klienten vorhanden.
                       </div>
                     )}
                   </div>
@@ -1425,16 +1425,16 @@ export default function ClientsPage() {
               <User className="w-8 h-8" />
             </div>
             <div className="space-y-2">
-              <h3 className="text-sm font-bold text-[#003527] uppercase tracking-wider font-mono">Noch keine Patienten angelegt</h3>
+              <h3 className="text-sm font-bold text-[#003527] uppercase tracking-wider font-mono">Noch keine Klienten angelegt</h3>
               <p className="text-xs text-[#404944] leading-relaxed max-w-sm">
-                Erstelle deinen ersten Patienten, um Termine zu vergeben, SOAP-Notizen zu führen und Rechnungen zu erstellen.
+                Erstelle deinen ersten Klienten, um Termine zu vergeben, SOAP-Notizen zu führen und Rechnungen zu erstellen.
               </p>
             </div>
             <button
               onClick={() => setIsNewClientModalOpen(true)}
               className="bg-[#003527] hover:bg-[#0b513d] text-white px-5 py-3 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 shadow-sm border-none"
             >
-              <Plus className="w-4 h-4" /> Ersten Patienten anlegen
+              <Plus className="w-4 h-4" /> Ersten Klienten anlegen
             </button>
           </div>
         ) : (
@@ -1443,8 +1443,8 @@ export default function ClientsPage() {
               <Search className="w-6 h-6 text-zinc-400" />
             </div>
             <div className="space-y-1">
-              <h3 className="text-xs font-bold text-[#003527] uppercase tracking-wider font-mono">Patient auswählen</h3>
-              <p className="text-[11px] text-zinc-400">Wähle einen Patienten aus der Liste links aus, um seine Akte zu öffnen.</p>
+              <h3 className="text-xs font-bold text-[#003527] uppercase tracking-wider font-mono">Klient auswählen</h3>
+              <p className="text-[11px] text-zinc-400">Wähle einen Klienten aus der Liste links aus, um seine Akte zu öffnen.</p>
             </div>
           </div>
         )}

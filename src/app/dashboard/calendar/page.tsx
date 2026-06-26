@@ -1158,7 +1158,7 @@ export default function CalendarPage() {
             transition={{ type: 'spring', damping: 26, stiffness: 220 }}
             className="hidden lg:flex absolute right-8 top-3 bottom-6 w-80 bg-white border border-[#003527]/10 flex-col z-30 shadow-none rounded-[20px] overflow-hidden"
           >
-            {/* Sidebar Header (Matches Patients List layout style) */}
+            {/* Sidebar Header (Matches Clients List layout style) */}
             <div className="p-6 pt-8 space-y-4 border-b border-[#bfc9c3]/20 flex-shrink-0 bg-white">
               <div className="flex justify-between items-center select-none">
                 {(() => {

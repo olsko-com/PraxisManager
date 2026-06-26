@@ -1057,11 +1057,11 @@ export default function InvoicesPage() {
 
               </div>
 
-              {/* Card 2: Top-Patienten */}
+              {/* Card 2: Top-Klienten */}
               <div className="bg-white border border-[#bfc9c3]/30 rounded-2xl overflow-hidden flex flex-col justify-between text-left">
                 <div>
                   <div className="px-6 pt-6 pb-4 border-b border-[#bfc9c3]/20 flex justify-between items-center bg-[#f9f9f8]">
-                    <span className="text-[10px] font-extrabold tracking-widest text-[#003527]/70 uppercase">Top-Patienten</span>
+                    <span className="text-[10px] font-extrabold tracking-widest text-[#003527]/70 uppercase">Top-Klienten</span>
                     {topClients.length > 0 && (
                       <span className="text-[8px] font-bold text-zinc-400 bg-white px-2 py-1 rounded border border-[#bfc9c3]/30">
                         Umsatzanteil: {((topClients.reduce((sum, c) => sum + c.amount, 0) / (totalBilled || 1)) * 100).toFixed(0)}%
@@ -1101,7 +1101,7 @@ export default function InvoicesPage() {
                       );
                     })}
                     {topClients.length === 0 && (
-                      <div className="p-8 text-center text-xs text-zinc-400 font-bold italic">Keine Patientendaten vorhanden.</div>
+                      <div className="p-8 text-center text-xs text-zinc-400 font-bold italic">Keine Klientendaten vorhanden.</div>
                     )}
                   </div>
                 </div>
