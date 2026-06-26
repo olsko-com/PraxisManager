@@ -248,13 +248,22 @@ export default function ClientsPage() {
               }).length;
               return <h3 className="text-sm font-bold text-[#003527]">Patienten ({count})</h3>;
             })()}
-            <button
-              onClick={() => setIsNewClientModalOpen(true)}
-              className="p-1.5 rounded-lg text-zinc-400 hover:text-[#003527] hover:bg-[#003527]/5 transition-all cursor-pointer animate-fade-in"
-              title="Patient anlegen"
-            >
-              <Plus className="w-4 h-4" />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setIsNewClientModalOpen(true)}
+                className="p-1.5 rounded-lg text-zinc-400 hover:text-[#003527] hover:bg-[#003527]/5 transition-all cursor-pointer animate-fade-in"
+                title="Patient anlegen"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setIsSidebarOpen(false)}
+                className="lg:hidden p-1.5 rounded-lg text-zinc-400 hover:text-rose-600 hover:bg-rose-50 transition-all cursor-pointer"
+                title="Schließen"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+            </div>
           </div>
           <div className="relative">
             <Search className="absolute left-3 top-3 h-4 w-4 text-zinc-400" />
@@ -410,6 +419,17 @@ export default function ClientsPage() {
         </div>
       </div>
 
+      {/* Floating sidebar toggle trigger on left screen edge */}
+      {!isSidebarOpen && currentClient && (
+        <button
+          onClick={() => setIsSidebarOpen(true)}
+          className="fixed left-0 top-[120px] z-30 lg:hidden bg-white hover:bg-zinc-50 border border-l-0 border-[#bfc9c3]/40 rounded-r-xl shadow-[4px_4px_12px_rgba(0,53,39,0.08)] py-3.5 px-2.5 text-[#003527] transition-all active:scale-95 flex items-center justify-center group cursor-pointer"
+          title="Patientenliste anzeigen"
+        >
+          <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+        </button>
+      )}
+
       {/* Backdrop for sliding sidebar on mobile/tablet */}
       {isSidebarOpen && currentClient && (
         <div 
@@ -424,14 +444,7 @@ export default function ClientsPage() {
           <div className="flex-grow flex flex-col min-h-0">
             {/* Patient Header */}
             <div className="border-b border-[#bfc9c3]/30 px-4 md:px-6 pb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-transparent z-20 flex-shrink-0 text-left">
-              <div className="flex flex-col text-left">
-                {/* Mobile Back Button */}
-                <button
-                  onClick={() => setIsSidebarOpen(true)}
-                  className="lg:hidden inline-flex items-center gap-1 text-xs font-bold text-[#003527]/70 hover:text-[#003527] cursor-pointer bg-transparent border-none p-0 outline-none mb-3 self-start"
-                >
-                  <ChevronLeft className="w-4 h-4" /> Patientenliste
-                </button>
+              <div className="flex flex-col text-left pt-2 lg:pt-0">
                 <div className="text-left">
                   <h3 className="text-xl font-bold text-[#043F2D]">{currentClient.name}</h3>
                   <p className="text-xs text-zinc-500 mt-1">Registriert seit {new Date(currentClient.createdAt).toLocaleDateString('de-DE')}</p>
