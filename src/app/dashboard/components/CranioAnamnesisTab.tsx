@@ -3,7 +3,7 @@
 import React from 'react';
 import { 
   Target, Heart, Activity, AlertTriangle, Pill, Brain, Baby, Sparkles,
-  Plus, Trash2, CheckCircle2, Loader2, Info
+  Plus, Trash2, CheckCircle2, Loader2
 } from 'lucide-react';
 
 interface Complaint {
@@ -20,7 +20,7 @@ interface AnamnesisData {
   accidents: string;
   otherIllnesses: string;
   eventfulEvents: string;
-  surgeries: string;
+  surgeries: string[];
   longtermCortison: boolean;
   longtermRheuma: boolean;
   otherLongtermMeds: string;
@@ -65,7 +65,7 @@ const defaultAnamnesis = (): AnamnesisData => ({
   accidents: '',
   otherIllnesses: '',
   eventfulEvents: '',
-  surgeries: '',
+  surgeries: [''],
   longtermCortison: false,
   longtermRheuma: false,
   otherLongtermMeds: '',
@@ -84,6 +84,7 @@ interface CranioAnamnesisTabProps {
 
 export default function CranioAnamnesisTab({ clientId }: CranioAnamnesisTabProps) {
   const [isSaving, setIsSaving] = React.useState(false);
+  const [isDiseasesExpanded, setIsDiseasesExpanded] = React.useState(false);
   const [state, setState] = React.useState<{ clientId: string; data: AnamnesisData }>({
     clientId: '',
     data: defaultAnamnesis()
@@ -99,8 +100,12 @@ export default function CranioAnamnesisTab({ clientId }: CranioAnamnesisTabProps
       try {
         const parsed = JSON.parse(stored);
         if (parsed[clientId]) {
-          // Merge with defaultAnamnesis to handle potential missing fields
-          loadedData = { ...defaultAnamnesis(), ...parsed[clientId] };
+          const raw = parsed[clientId];
+          // Backwards compatibility: convert legacy string surgeries to array of string
+          if (typeof raw.surgeries === 'string') {
+            raw.surgeries = raw.surgeries.trim() ? [raw.surgeries] : [''];
+          }
+          loadedData = { ...defaultAnamnesis(), ...raw };
         }
       } catch (e) {
         console.error('Error loading anamnesis data:', e);
@@ -125,7 +130,6 @@ export default function CranioAnamnesisTab({ clientId }: CranioAnamnesisTabProps
         console.error('Error saving anamnesis data:', e);
       }
       
-      // Simulate brief saving spinner for user feedback
       setTimeout(() => setIsSaving(false), 500);
     }, 800);
 
@@ -170,6 +174,23 @@ export default function CranioAnamnesisTab({ clientId }: CranioAnamnesisTabProps
     updateField('complaints', updated);
   };
 
+  // Surgeries Handlers
+  const handleAddSurgery = () => {
+    const updated = [...data.surgeries, ''];
+    updateField('surgeries', updated);
+  };
+
+  const handleRemoveSurgery = (index: number) => {
+    if (data.surgeries.length <= 1) return;
+    const updated = data.surgeries.filter((_, idx) => idx !== index);
+    updateField('surgeries', updated);
+  };
+
+  const handleSurgeryChange = (index: number, val: string) => {
+    const updated = data.surgeries.map((s, idx) => idx === index ? val : s);
+    updateField('surgeries', updated);
+  };
+
   // Disease Tag Handler
   const handleToggleDisease = (disease: string) => {
     const updated = data.diseases.includes(disease)
@@ -205,7 +226,7 @@ export default function CranioAnamnesisTab({ clientId }: CranioAnamnesisTabProps
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
         
         {/* BOX 1: Aktuelle Beschwerden & Behandlungsziel (Col span 2) */}
-        <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 shadow-sm hover:border-[#bfc9c3]/60 transition-all duration-300 relative group overflow-hidden md:col-span-2">
+        <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 shadow-sm hover:border-[#bfc9c3]/60 transition-all duration-300 relative group overflow-hidden md:col-span-2 shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
               <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200/40 text-emerald-700">
@@ -226,13 +247,13 @@ export default function CranioAnamnesisTab({ clientId }: CranioAnamnesisTabProps
             {data.complaints.map((complaint, index) => (
               <div 
                 key={index} 
-                className="p-4 bg-zinc-50 rounded-xl border border-zinc-200/40 relative group/item hover:border-zinc-300/60 transition-all"
+                className="p-4 bg-[#f9f9f8] rounded-xl border border-zinc-200/40 relative group/item hover:border-zinc-300/60 transition-all"
               >
                 {data.complaints.length > 1 && (
                   <button
                     type="button"
                     onClick={() => handleRemoveComplaint(index)}
-                    className="absolute top-3.5 right-3.5 w-6 h-6 rounded-md bg-white border border-zinc-200/50 text-zinc-400 hover:text-rose-500 hover:bg-rose-50 flex items-center justify-center shadow-sm opacity-0 group-hover/item:opacity-100 transition-all cursor-pointer"
+                    className="absolute top-3.5 right-3.5 w-6 h-6 rounded-md bg-white border border-zinc-200/50 text-zinc-400 hover:text-rose-500 hover:bg-rose-50 flex items-center justify-center shadow-sm opacity-0 group-hover/item:opacity-100 transition-all cursor-pointer animate-in fade-in duration-200"
                     title="Beschwerde entfernen"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -278,7 +299,7 @@ export default function CranioAnamnesisTab({ clientId }: CranioAnamnesisTabProps
         </div>
 
         {/* BOX 2: Ressourcen */}
-        <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 shadow-sm hover:border-[#bfc9c3]/60 transition-all duration-300 relative group overflow-hidden flex flex-col justify-between">
+        <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 shadow-sm hover:border-[#bfc9c3]/60 transition-all duration-300 relative group overflow-hidden flex flex-col justify-between shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <div className="p-2 rounded-xl bg-rose-50 border border-rose-200/40 text-rose-700">
@@ -302,37 +323,64 @@ export default function CranioAnamnesisTab({ clientId }: CranioAnamnesisTabProps
         </div>
 
         {/* BOX 3: Spezifische Vorerkrankungen (Full Width - Col Span 3) */}
-        <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 shadow-sm hover:border-[#bfc9c3]/60 transition-all duration-300 relative group overflow-hidden xl:col-span-3">
-          <div className="flex items-center gap-2">
-            <div className="p-2 rounded-xl bg-indigo-50 border border-indigo-200/40 text-indigo-700">
-              <Activity className="w-4 h-4" />
+        <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 shadow-sm hover:border-[#bfc9c3]/60 transition-all duration-300 relative group overflow-hidden xl:col-span-3 shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <div className="p-2 rounded-xl bg-indigo-50 border border-indigo-200/40 text-indigo-700">
+                <Activity className="w-4 h-4" />
+              </div>
+              <h4 className="text-xs font-bold text-[#003527] uppercase tracking-wider">Spezifische Vorerkrankungen</h4>
             </div>
-            <h4 className="text-xs font-bold text-[#003527] uppercase tracking-wider">Spezifische Vorerkrankungen</h4>
+            
+            <button
+              type="button"
+              onClick={() => setIsDiseasesExpanded(!isDiseasesExpanded)}
+              className="text-[10px] font-bold text-[#003527] hover:text-[#0b513d] bg-zinc-100 hover:bg-[#003527]/5 border border-[#bfc9c3]/20 rounded-md px-3 py-1.5 transition-colors cursor-pointer active:scale-95 flex items-center gap-1 font-mono"
+            >
+              {isDiseasesExpanded ? 'Auswahl zuklappen' : 'Vorerkrankungen auswählen'}
+            </button>
           </div>
           
-          <p className="text-[11px] text-zinc-400 font-semibold leading-relaxed">
-            Sind Sie oder waren Sie je an einer der folgenden Krankheiten erkrankt? (Zum Aktivieren anklicken)
-          </p>
-
-          <div className="flex flex-wrap gap-2 py-1">
-            {PREDEFINED_DISEASES.map((disease) => {
-              const isActive = data.diseases.includes(disease);
-              return (
-                <button
-                  key={disease}
-                  type="button"
-                  onClick={() => handleToggleDisease(disease)}
-                  className={`px-3 py-1.5 rounded-full border text-xs font-bold transition-all cursor-pointer ${
-                    isActive
-                      ? 'bg-[#003527] border-[#003527] text-white shadow-sm'
-                      : 'bg-zinc-100/50 border-zinc-200/60 text-zinc-500 hover:border-zinc-300 hover:bg-zinc-100'
-                  }`}
-                >
-                  {disease}
-                </button>
-              );
-            })}
+          <div className="flex items-center justify-between py-2 bg-zinc-50 rounded-xl px-4 border border-zinc-200/30">
+            <span className="text-[10px] text-[#003527] font-extrabold">
+              {data.diseases.length === 0 
+                ? 'Keine spezifischen Vorerkrankungen ausgewählt' 
+                : `${data.diseases.length} Vorerkrankung(en) ausgewählt`}
+            </span>
+            {data.diseases.length > 0 && !isDiseasesExpanded && (
+              <span className="text-[10px] text-zinc-400 font-semibold truncate max-w-[280px] sm:max-w-[480px]">
+                ({data.diseases.join(', ')})
+              </span>
+            )}
           </div>
+
+          {isDiseasesExpanded && (
+            <div className="space-y-3 pt-1 animate-in fade-in slide-in-from-top-2 duration-200">
+              <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest">
+                Bitte zutreffende Vorerkrankungen anklicken:
+              </p>
+
+              <div className="flex flex-wrap gap-2 py-1">
+                {PREDEFINED_DISEASES.map((disease) => {
+                  const isActive = data.diseases.includes(disease);
+                  return (
+                    <button
+                      key={disease}
+                      type="button"
+                      onClick={() => handleToggleDisease(disease)}
+                      className={`px-3 py-1.5 rounded-full border text-[11px] font-bold transition-all cursor-pointer ${
+                        isActive
+                          ? 'bg-[#003527] border-[#003527] text-white shadow-sm'
+                          : 'bg-zinc-100/50 border-zinc-200/60 text-zinc-500 hover:border-zinc-300 hover:bg-zinc-100'
+                      }`}
+                    >
+                      {disease}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           <div className="pt-2">
             <input
@@ -346,12 +394,12 @@ export default function CranioAnamnesisTab({ clientId }: CranioAnamnesisTabProps
         </div>
 
         {/* BOX 4: Unfälle & Einschneidende Ereignisse (Col span 2) */}
-        <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 shadow-sm hover:border-[#bfc9c3]/60 transition-all duration-300 relative group overflow-hidden md:col-span-2">
+        <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 shadow-sm hover:border-[#bfc9c3]/60 transition-all duration-300 relative group overflow-hidden md:col-span-2 shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
           <div className="flex items-center gap-2">
             <div className="p-2 rounded-xl bg-orange-50 border border-orange-200/40 text-orange-700">
               <AlertTriangle className="w-4 h-4" />
             </div>
-            <h4 className="text-xs font-bold text-[#003527] uppercase tracking-wider">Unfälle & Einschneidende Ereignisse</h4>
+            <h4 className="text-xs font-bold text-[#003527] uppercase tracking-wider">Unfälle, OPs & Ereignisse</h4>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -378,7 +426,7 @@ export default function CranioAnamnesisTab({ clientId }: CranioAnamnesisTabProps
             </div>
           </div>
 
-          <div className="space-y-1 pt-1">
+          <div className="space-y-1 pt-1 border-t border-zinc-100">
             <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Einschneidende Ereignisse?</label>
             <textarea
               rows={2}
@@ -388,33 +436,59 @@ export default function CranioAnamnesisTab({ clientId }: CranioAnamnesisTabProps
               className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3.5 py-2.5 font-semibold text-xs text-[#003527] outline-none transition-all resize-none min-h-[60px]"
             />
           </div>
+
+          {/* OPs mit Vollnarkose dynamic list */}
+          <div className="space-y-2.5 pt-3 border-t border-zinc-100">
+            <div className="flex justify-between items-center">
+              <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">OPs mit Vollnarkose? (Welche und wann?)</label>
+              <button
+                type="button"
+                onClick={handleAddSurgery}
+                className="text-[9px] font-bold text-[#003527] hover:text-[#0b513d] bg-zinc-100 hover:bg-[#003527]/5 border border-transparent rounded px-2 py-1 transition-colors cursor-pointer active:scale-95"
+              >
+                + OP hinzufügen
+              </button>
+            </div>
+            <div className="space-y-2">
+              {data.surgeries.map((surgery, index) => (
+                <div key={index} className="flex items-center gap-2 group/op relative animate-in fade-in duration-200">
+                  <input
+                    type="text"
+                    value={surgery}
+                    onChange={(e) => handleSurgeryChange(index, e.target.value)}
+                    placeholder="z.B. Blinddarm-OP (2018)"
+                    className="flex-grow bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3.5 py-2 font-semibold text-xs text-[#003527] outline-none transition-all pr-8"
+                  />
+                  {data.surgeries.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveSurgery(index)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-zinc-400 hover:text-rose-500 rounded transition-colors cursor-pointer bg-transparent border-none"
+                      title="OP entfernen"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
-        {/* BOX 5: OPs & Medikation */}
-        <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 shadow-sm hover:border-[#bfc9c3]/60 transition-all duration-300 relative group overflow-hidden flex flex-col justify-between">
-          <div className="space-y-4">
+        {/* BOX 5: Medikation */}
+        <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 shadow-sm hover:border-[#bfc9c3]/60 transition-all duration-300 relative group overflow-hidden flex flex-col justify-between shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
+          <div className="space-y-4 w-full">
             <div className="flex items-center gap-2">
               <div className="p-2 rounded-xl bg-blue-50 border border-blue-200/40 text-blue-700">
                 <Pill className="w-4 h-4" />
               </div>
-              <h4 className="text-xs font-bold text-[#003527] uppercase tracking-wider">OPs & Medikation</h4>
+              <h4 className="text-xs font-bold text-[#003527] uppercase tracking-wider">Medikation</h4>
             </div>
 
-            <div className="space-y-3 text-left">
-              <div className="space-y-1">
-                <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">OPs mit Vollnarkose?</label>
-                <input
-                  type="text"
-                  value={data.surgeries}
-                  onChange={(e) => updateField('surgeries', e.target.value)}
-                  placeholder="z.B. Blinddarm-OP (2018)"
-                  className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-semibold text-xs text-[#003527] outline-none transition-all"
-                />
-              </div>
-
-              <div className="pt-2 border-t border-zinc-100">
-                <label className="block text-[10px] font-bold text-[#003527]/75 uppercase tracking-widest mb-1.5">Langzeit-Medikation (mind. 5 Jahre)</label>
-                <div className="flex gap-4 mb-2.5">
+            <div className="space-y-4 text-left">
+              <div className="space-y-2">
+                <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Langzeit-Medikation (mind. 5 Jahre)</label>
+                <div className="flex flex-col gap-2.5 pl-1">
                   <label className="flex items-center gap-2 cursor-pointer select-none">
                     <input
                       type="checkbox"
@@ -439,18 +513,18 @@ export default function CranioAnamnesisTab({ clientId }: CranioAnamnesisTabProps
                   value={data.otherLongtermMeds}
                   onChange={(e) => updateField('otherLongtermMeds', e.target.value)}
                   placeholder="Andere Langzeit-Medikamente..."
-                  className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-semibold text-xs text-[#003527] outline-none transition-all"
+                  className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-semibold text-xs text-[#003527] outline-none transition-all mt-2"
                 />
               </div>
 
-              <div className="space-y-1">
+              <div className="space-y-1 pt-2 border-t border-zinc-100">
                 <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Derzeitige Medikamente?</label>
                 <input
                   type="text"
                   value={data.currentMeds}
                   onChange={(e) => updateField('currentMeds', e.target.value)}
                   placeholder="Welche Medikamente werden aktuell eingenommen?"
-                  className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-semibold text-xs text-[#003527] outline-none transition-all"
+                  className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2.5 font-semibold text-xs text-[#003527] outline-none transition-all"
                 />
               </div>
             </div>
@@ -458,7 +532,7 @@ export default function CranioAnamnesisTab({ clientId }: CranioAnamnesisTabProps
         </div>
 
         {/* BOX 6: Emotionale Historie */}
-        <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 shadow-sm hover:border-[#bfc9c3]/60 transition-all duration-300 relative group overflow-hidden">
+        <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 shadow-sm hover:border-[#bfc9c3]/60 transition-all duration-300 relative group overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
           <div className="flex items-center gap-2">
             <div className="p-2 rounded-xl bg-purple-50 border border-purple-200/40 text-purple-700">
               <Brain className="w-4 h-4" />
@@ -492,7 +566,7 @@ export default function CranioAnamnesisTab({ clientId }: CranioAnamnesisTabProps
         </div>
 
         {/* BOX 7: Geburt & Schwangerschaft */}
-        <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 shadow-sm hover:border-[#bfc9c3]/60 transition-all duration-300 relative group overflow-hidden">
+        <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 shadow-sm hover:border-[#bfc9c3]/60 transition-all duration-300 relative group overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
           <div className="flex items-center gap-2">
             <div className="p-2 rounded-xl bg-pink-50 border border-pink-200/40 text-pink-700">
               <Baby className="w-4 h-4" />
@@ -541,7 +615,7 @@ export default function CranioAnamnesisTab({ clientId }: CranioAnamnesisTabProps
         </div>
 
         {/* BOX 8: Cranio Erfahrung */}
-        <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 shadow-sm hover:border-[#bfc9c3]/60 transition-all duration-300 relative group overflow-hidden bg-gradient-to-br from-white to-emerald-50/5">
+        <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 shadow-sm hover:border-[#bfc9c3]/60 transition-all duration-300 relative group overflow-hidden bg-gradient-to-br from-white to-emerald-50/5 shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
           <div className="flex items-center gap-2">
             <div className="p-2 rounded-xl bg-teal-50 border border-teal-200/40 text-teal-700">
               <Sparkles className="w-4 h-4" />
