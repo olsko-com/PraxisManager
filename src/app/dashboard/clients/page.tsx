@@ -4,7 +4,7 @@ import React from 'react';
 import { 
   Plus, Search, Mail, Calendar as CalendarIcon, Paperclip, FileText, 
   Edit2, Trash2, Star, Flag, ChevronLeft, ChevronRight, MoreVertical, User, Phone, Heart, Info,
-  Check, Printer, Download, Briefcase, MapPin, Smile
+  Check, Printer, Download, Briefcase, MapPin, Smile, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDashboard } from '../context';
@@ -183,6 +183,7 @@ export default function ClientsPage() {
     invoices,
     setInvoices,
     soapNotes,
+    setSoapNotes,
     clientDocuments,
     setClientDocuments,
     selectedClientId,
@@ -224,6 +225,39 @@ export default function ClientsPage() {
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
   const [showGdprTooltip, setShowGdprTooltip] = React.useState(false);
   const [activeTab, setActiveTab] = React.useState<'overview' | 'anamnesis' | 'soap' | 'billing'>('overview');
+
+  // Accordion state for SOAP notes
+  const [expandedNoteIds, setExpandedNoteIds] = React.useState<Record<string, boolean>>({});
+
+  const toggleSoapNoteExpand = (noteId: string) => {
+    setExpandedNoteIds(prev => ({
+      ...prev,
+      [noteId]: !prev[noteId]
+    }));
+  };
+
+  const handleDeleteSoapNote = async (noteId: string) => {
+    if (!window.confirm('Möchten Sie diesen Behandlungsbericht wirklich unwiderruflich löschen?')) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('soap_notes')
+        .delete()
+        .eq('id', noteId);
+
+      if (error) {
+        showToast(`Fehler beim Löschen des Berichts: ${error.message}`, 'error');
+        return;
+      }
+
+      setSoapNotes(prev => prev.filter(note => note.id !== noteId));
+      showToast('Behandlungsbericht erfolgreich gelöscht.', 'success');
+    } catch (err: any) {
+      showToast(`Ein unerwarteter Fehler ist aufgetreten: ${err.message}`, 'error');
+    }
+  };
 
   // Inline client editing state
   const [isEditingClient, setIsEditingClient] = React.useState(false);
@@ -1090,109 +1124,167 @@ export default function ClientsPage() {
                       <p className="text-[11px] text-zinc-400 mt-0.5">Chronologischer Verlauf der Behandlungssitzungen (SOAP-Methode).</p>
                     </div>
                     <button 
-                      onClick={() => createSoapNote(`app-${Date.now()}`, currentClient.id)}
-                      className="bg-[#003527] hover:bg-[#0b513d] text-white px-3.5 py-1.5 rounded-xl text-[10px] font-bold transition-all cursor-pointer shadow-sm border-none"
+                      onClick={() => {
+                        const tempId = `app-${Date.now()}`;
+                        createSoapNote(tempId, currentClient.id);
+                        // Auto-expand the newly created SOAP note
+                        setExpandedNoteIds(prev => ({ ...prev, [tempId]: true }));
+                      }}
+                      className="bg-[#003527] hover:bg-[#0b513d] text-white px-3.5 py-1.5 rounded-xl text-[10px] font-bold transition-all cursor-pointer shadow-sm border-none flex items-center gap-1.5"
                     >
-                      Eintrag anlegen
+                      <Plus className="w-3.5 h-3.5" /> Eintrag anlegen
                     </button>
                   </div>
 
-                  <div className="relative pl-0 sm:pl-8 space-y-6">
+                  <div className="relative pl-0 sm:pl-8 space-y-4">
                     {/* Vertical timeline connector track */}
                     <div className="absolute left-[15px] top-6 bottom-6 w-0.5 bg-[#bfc9c3]/40 z-0 hidden sm:block" />
 
                     {clientSoapNotes.length > 0 ? (
-                      clientSoapNotes.map((note) => (
-                        <div key={note.id} className="bg-white border border-[#bfc9c3]/30 rounded-2xl p-5 space-y-4 hover:border-[#bfc9c3]/50 transition-all duration-300 relative group overflow-hidden shadow-[0_4px_20px_rgba(0,53,39,0.01)]">
-                          
-                          {/* Timeline dot */}
-                          <div className="absolute left-[-29px] top-[22px] w-3 h-3 rounded-full bg-[#003527] border-2 border-white z-10 hidden sm:block shadow-sm" />
-                          
-                          <div className="flex justify-between items-center border-b border-zinc-100 pb-3">
-                            <div className="flex items-center gap-2">
-                              <div className="p-1.5 rounded-lg bg-emerald-50/60 border border-emerald-200/30 text-emerald-700">
-                                <CalendarIcon className="w-3.5 h-3.5" />
+                      clientSoapNotes.map((note) => {
+                        const isExpanded = !!expandedNoteIds[note.id] || soapEditId === note.id;
+
+                        return (
+                          <div 
+                            key={note.id} 
+                            className="bg-white border border-[#bfc9c3]/30 rounded-2xl overflow-hidden hover:border-[#bfc9c3]/50 transition-all duration-300 relative group shadow-[0_4px_20px_rgba(0,53,39,0.01)]"
+                          >
+                            {/* Timeline dot */}
+                            <div className="absolute left-[-29px] top-[22px] w-3 h-3 rounded-full bg-[#003527] border-2 border-white z-10 hidden sm:block shadow-sm" />
+
+                            {/* Accordion Header */}
+                            <div 
+                              onClick={() => toggleSoapNoteExpand(note.id)}
+                              className="flex items-center justify-between p-4 bg-[#f9f9f8]/40 border-b border-zinc-100/50 cursor-pointer select-none hover:bg-[#f9f9f8] transition-colors"
+                            >
+                              <div className="flex items-center gap-3 overflow-hidden mr-4">
+                                <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200/30 text-[#003527]">
+                                  <CalendarIcon className="w-4 h-4" />
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="text-[10px] font-extrabold text-[#003527] uppercase tracking-wider">
+                                    Eintrag vom {new Date(note.date).toLocaleDateString('de-DE')}
+                                  </span>
+                                  {!isExpanded && note.subjective && (
+                                    <span className="text-[11px] text-zinc-400 font-medium truncate max-w-[200px] sm:max-w-[400px] mt-0.5">
+                                      {note.subjective.length > 80 ? `${note.subjective.slice(0, 80)}...` : note.subjective}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
-                              <span className="text-[10px] font-extrabold text-[#003527] uppercase tracking-wider">Eintrag vom {new Date(note.date).toLocaleDateString('de-DE')}</span>
+
+                              <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                                {soapEditId === note.id ? (
+                                  <button 
+                                    onClick={saveSoapNote} 
+                                    className="text-[10px] font-extrabold text-emerald-700 bg-emerald-50 border border-emerald-200/50 hover:bg-emerald-100 px-2.5 py-1 rounded-xl transition-all cursor-pointer"
+                                  >
+                                    Speichern
+                                  </button>
+                                ) : (
+                                  <>
+                                    <button 
+                                      onClick={() => startEditSoap(note)} 
+                                      className="text-[10px] font-extrabold text-zinc-500 hover:text-[#003527] flex items-center gap-1 cursor-pointer border border-[#bfc9c3]/30 bg-white hover:bg-zinc-50 px-2.5 py-1 rounded-xl transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+                                    >
+                                      <Edit2 className="w-3.5 h-3.5" /> Bearbeiten
+                                    </button>
+                                    <button 
+                                      onClick={() => handleDeleteSoapNote(note.id)} 
+                                      className="text-[10px] font-extrabold text-rose-600 hover:text-rose-700 hover:bg-rose-50 flex items-center gap-1 cursor-pointer border border-rose-100 bg-white px-2.5 py-1 rounded-xl transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" /> Löschen
+                                    </button>
+                                  </>
+                                )}
+                                
+                                <div 
+                                  onClick={() => toggleSoapNoteExpand(note.id)}
+                                  className="p-1 rounded-lg hover:bg-zinc-200/50 transition-colors text-zinc-400 ml-1 cursor-pointer"
+                                >
+                                  {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                                </div>
+                              </div>
                             </div>
-                            {soapEditId === note.id ? (
-                              <button onClick={saveSoapNote} className="text-[10px] font-extrabold text-emerald-700 hover:text-emerald-800 transition-colors cursor-pointer border-none bg-transparent p-0">Speichern</button>
-                            ) : (
-                              <button onClick={() => startEditSoap(note)} className="text-[10px] font-extrabold text-zinc-400 hover:text-[#003527] transition-colors flex items-center gap-0.5 cursor-pointer border-none bg-transparent p-0 opacity-0 group-hover:opacity-100">
-                                <Edit2 className="w-3.5 h-3.5" /> Bearbeiten
-                              </button>
+
+                            {/* Accordion Body */}
+                            {isExpanded && (
+                              <div className="p-5 border-t border-zinc-100/50 bg-white animate-fade-in">
+                                {soapEditId === note.id ? (
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-left">
+                                    <div className="space-y-1.5">
+                                      <label className="block text-[10px] font-bold uppercase tracking-widest text-[#003527]/70">Subjective (Befund)</label>
+                                      <textarea 
+                                        value={soapSubjective} 
+                                        onChange={(e) => setSoapSubjective(e.target.value)} 
+                                        className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-xl p-3 text-xs text-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all resize-y min-h-[70px]" 
+                                      />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                      <label className="block text-[10px] font-bold uppercase tracking-widest text-[#003527]/70">Objective (Untersuchung)</label>
+                                      <textarea 
+                                        value={soapObjective} 
+                                        onChange={(e) => setSoapObjective(e.target.value)} 
+                                        className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-xl p-3 text-xs text-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all resize-y min-h-[70px]" 
+                                      />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                      <label className="block text-[10px] font-bold uppercase tracking-widest text-[#003527]/70">Assessment (Beurteilung)</label>
+                                      <textarea 
+                                        value={soapAssessment} 
+                                        onChange={(e) => setSoapAssessment(e.target.value)} 
+                                        className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-xl p-3 text-xs text-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all resize-y min-h-[70px]" 
+                                      />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                      <label className="block text-[10px] font-bold uppercase tracking-widest text-[#003527]/70">Plan (Fortsetzung)</label>
+                                      <textarea 
+                                        value={soapPlan} 
+                                        onChange={(e) => setSoapPlan(e.target.value)} 
+                                        className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-xl p-3 text-xs text-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all resize-y min-h-[70px]" 
+                                      />
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="border border-[#bfc9c3]/20 rounded-xl p-4 space-y-2 text-left bg-amber-50/5 hover:bg-amber-50/10 transition-colors">
+                                      <div className="flex items-center gap-2">
+                                        <span className="inline-flex items-center gap-1 text-[9px] font-extrabold text-amber-800 bg-amber-50 border border-amber-200/50 px-2 py-0.5 rounded-full uppercase tracking-wider">S</span>
+                                        <span className="block text-[10px] font-extrabold tracking-widest text-[#003527]/60 uppercase">Subjective (Befund)</span>
+                                      </div>
+                                      <p className="text-xs font-extrabold text-[#003527] leading-relaxed whitespace-pre-wrap italic">{note.subjective || 'Keine Angabe'}</p>
+                                    </div>
+                                    
+                                    <div className="border border-[#bfc9c3]/20 rounded-xl p-4 space-y-2 text-left bg-blue-50/5 hover:bg-blue-50/10 transition-colors">
+                                      <div className="flex items-center gap-2">
+                                        <span className="inline-flex items-center gap-1 text-[9px] font-extrabold text-blue-800 bg-blue-50 border border-blue-200/50 px-2 py-0.5 rounded-full uppercase tracking-wider">O</span>
+                                        <span className="block text-[10px] font-extrabold tracking-widest text-[#003527]/60 uppercase">Objective (Untersuchung)</span>
+                                      </div>
+                                      <p className="text-xs font-extrabold text-[#003527] leading-relaxed whitespace-pre-wrap">{note.objective || 'Keine Angabe'}</p>
+                                    </div>
+
+                                    <div className="border border-[#bfc9c3]/20 rounded-xl p-4 space-y-2 text-left bg-emerald-50/5 hover:bg-emerald-50/10 transition-colors">
+                                      <div className="flex items-center gap-2">
+                                        <span className="inline-flex items-center gap-1 text-[9px] font-extrabold text-emerald-800 bg-emerald-50 border border-emerald-200/50 px-2 py-0.5 rounded-full uppercase tracking-wider">A</span>
+                                        <span className="block text-[10px] font-extrabold tracking-widest text-[#003527]/60 uppercase">Assessment (Beurteilung)</span>
+                                      </div>
+                                      <p className="text-xs font-extrabold text-[#003527] leading-relaxed whitespace-pre-wrap">{note.assessment || 'Keine Angabe'}</p>
+                                    </div>
+
+                                    <div className="border border-[#bfc9c3]/20 rounded-xl p-4 space-y-2 text-left bg-purple-50/5 hover:bg-purple-50/10 transition-colors">
+                                      <div className="flex items-center gap-2">
+                                        <span className="inline-flex items-center gap-1 text-[9px] font-extrabold text-purple-800 bg-purple-50 border border-purple-200/50 px-2 py-0.5 rounded-full uppercase tracking-wider">P</span>
+                                        <span className="block text-[10px] font-extrabold tracking-widest text-[#003527]/60 uppercase">Plan (Fortsetzung)</span>
+                                      </div>
+                                      <p className="text-xs font-extrabold text-[#003527] leading-relaxed whitespace-pre-wrap">{note.plan || 'Keine Angabe'}</p>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
                             )}
                           </div>
-
-                          {soapEditId === note.id ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-left">
-                              <div className="space-y-1.5">
-                                <label className="block text-[9px] font-bold uppercase tracking-widest text-[#003527]/70">Subjective (Befund)</label>
-                                <textarea 
-                                  value={soapSubjective} 
-                                  onChange={(e) => setSoapSubjective(e.target.value)} 
-                                  className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-xl p-2.5 text-xs text-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all resize-y min-h-[60px]" 
-                                />
-                              </div>
-                              <div className="space-y-1.5">
-                                <label className="block text-[9px] font-bold uppercase tracking-widest text-[#003527]/70">Objective (Untersuchung)</label>
-                                <textarea 
-                                  value={soapObjective} 
-                                  onChange={(e) => setSoapObjective(e.target.value)} 
-                                  className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-xl p-2.5 text-xs text-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all resize-y min-h-[60px]" 
-                                />
-                              </div>
-                              <div className="space-y-1.5">
-                                <label className="block text-[9px] font-bold uppercase tracking-widest text-[#003527]/70">Assessment (Beurteilung)</label>
-                                <textarea 
-                                  value={soapAssessment} 
-                                  onChange={(e) => setSoapAssessment(e.target.value)} 
-                                  className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-xl p-2.5 text-xs text-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all resize-y min-h-[60px]" 
-                                />
-                              </div>
-                              <div className="space-y-1.5">
-                                <label className="block text-[9px] font-bold uppercase tracking-widest text-[#003527]/70">Plan (Fortsetzung)</label>
-                                <textarea 
-                                  value={soapPlan} 
-                                  onChange={(e) => setSoapPlan(e.target.value)} 
-                                  className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-xl p-2.5 text-xs text-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all resize-y min-h-[60px]" 
-                                />
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div className="border border-[#bfc9c3]/20 border-l-4 border-l-amber-400 rounded-xl p-3.5 space-y-1.5 text-left bg-amber-50/5">
-                                <div className="flex items-center gap-1.5">
-                                  <span className="inline-flex items-center gap-1 text-[8px] font-bold text-amber-800 bg-amber-50 border border-amber-200/50 px-1.5 py-0.5 rounded-md uppercase tracking-wider">S</span>
-                                  <span className="block text-[9px] font-extrabold tracking-widest text-zinc-400 uppercase">Subjective (Befund)</span>
-                                </div>
-                                <p className="text-xs text-[#404944] font-medium leading-relaxed italic">{note.subjective}</p>
-                              </div>
-                              <div className="border border-[#bfc9c3]/20 border-l-4 border-l-blue-400 rounded-xl p-3.5 space-y-1.5 text-left bg-blue-50/5">
-                                <div className="flex items-center gap-1.5">
-                                  <span className="inline-flex items-center gap-1 text-[8px] font-bold text-blue-800 bg-blue-50 border border-blue-200/50 px-1.5 py-0.5 rounded-md uppercase tracking-wider">O</span>
-                                  <span className="block text-[9px] font-extrabold tracking-widest text-zinc-400 uppercase">Objective (Untersuchung)</span>
-                                </div>
-                                <p className="text-xs text-[#404944] font-medium leading-relaxed">{note.objective}</p>
-                              </div>
-                              <div className="border border-[#bfc9c3]/20 border-l-4 border-l-emerald-400 rounded-xl p-3.5 space-y-1.5 text-left bg-emerald-50/5">
-                                <div className="flex items-center gap-1.5">
-                                  <span className="inline-flex items-center gap-1 text-[8px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200/50 px-1.5 py-0.5 rounded-md uppercase tracking-wider">A</span>
-                                  <span className="block text-[9px] font-extrabold tracking-widest text-zinc-400 uppercase">Assessment (Beurteilung)</span>
-                                </div>
-                                <p className="text-[#404944] text-xs font-medium leading-relaxed">{note.assessment}</p>
-                              </div>
-                              <div className="border border-[#bfc9c3]/20 border-l-4 border-l-purple-400 rounded-xl p-3.5 space-y-1.5 text-left bg-purple-50/5">
-                                <div className="flex items-center gap-1.5">
-                                  <span className="inline-flex items-center gap-1 text-[8px] font-bold text-purple-800 bg-purple-50 border border-purple-200/50 px-1.5 py-0.5 rounded-md uppercase tracking-wider">P</span>
-                                  <span className="block text-[9px] font-extrabold tracking-widest text-zinc-400 uppercase">Plan (Fortsetzung)</span>
-                                </div>
-                                <p className="text-[#404944] text-xs font-medium leading-relaxed">{note.plan}</p>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ))
+                        );
+                      })
                     ) : (
                       <div className="text-center py-12 text-xs text-zinc-400 font-semibold italic bg-white border border-[#bfc9c3]/20 rounded-2xl shadow-[0_4px_20px_rgba(0,53,39,0.01)] sm:col-span-2">
                         Keine Behandlungsberichte für diesen Klienten vorhanden.
