@@ -32,6 +32,51 @@ export default function GdprVerifyPage({ params }: { params: Promise<VerifyParam
   const [hasSigned, setHasSigned] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Kiosk-specific states
+  const [isKioskMode, setIsKioskMode] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !token) return;
+
+    const searchParams = new URLSearchParams(window.location.search);
+    const hasKioskParam = searchParams.get('kiosk') === 'true';
+
+    if (hasKioskParam) {
+      setIsVerifying(true);
+      // Verify if therapist is actually logged in on this browser (security check)
+      supabase.auth.getSession().then(async ({ data: { session } }) => {
+        if (session) {
+          setIsKioskMode(true);
+          try {
+            // Fetch client name & birthday using token
+            const { data, error } = await supabase
+              .from('clients')
+              .select('name, birthday')
+              .eq('gdpr_token', token)
+              .single();
+
+            if (error) throw error;
+            if (data) {
+              setClientName(data.name);
+              setBirthday(data.birthday); // Save the birthday so it can be passed to submit_gdpr_signature
+              setStep('document');
+            } else {
+              setErrorMessage('Klient konnte nicht gefunden werden.');
+            }
+          } catch (err: any) {
+            console.error('Kiosk auto-verification failed:', err);
+            setErrorMessage('Automatische Verifizierung fehlgeschlagen. Bitte manuell verifizieren.');
+          } finally {
+            setIsVerifying(false);
+          }
+        } else {
+          // No session - fall back to normal verification gate
+          setIsVerifying(false);
+        }
+      });
+    }
+  }, [token]);
+
   // Lockout Timer
   useEffect(() => {
     if (isLocked && lockTimeRemaining > 0) {
@@ -431,6 +476,17 @@ export default function GdprVerifyPage({ params }: { params: Promise<VerifyParam
               <p className="text-[10px] text-zinc-300 font-semibold">
                 Der Verifizierungslink wurde entwertet. Sie können dieses Browserfenster jetzt schließen.
               </p>
+
+              {isKioskMode && (
+                <div className="pt-2">
+                  <button
+                    onClick={() => window.close()}
+                    className="w-full bg-[#003527] hover:bg-[#0b513d] text-white py-3 px-4 rounded-xl font-bold text-xs transition-all active:scale-[0.99] shadow-md cursor-pointer border-none outline-none"
+                  >
+                    Kiosk-Modus beenden (Fenster schließen)
+                  </button>
+                </div>
+              )}
             </motion.div>
           )}
 

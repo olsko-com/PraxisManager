@@ -1,9 +1,10 @@
 'use client';
 
-import React from 'react';
-import { X, Mail, Tablet, Upload, Printer } from 'lucide-react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect } from 'react';
+import { X, Mail, Tablet, Upload, Printer, QrCode, Sparkles } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useDashboard } from '../context';
+import { QRCodeSVG } from 'qrcode.react';
 
 export default function GdprConsentModal() {
   const {
@@ -19,12 +20,22 @@ export default function GdprConsentModal() {
     showToast
   } = useDashboard();
 
-  if (!isGdprModalOpen || !gdprClientId) return null;
+  const [activeTab, setActiveTab] = useState<'device' | 'qrcode' | 'email'>('device');
 
   const client = clients.find(c => c.id === gdprClientId);
-  if (!client) return null;
+  const clientEmail = client?.email || 'klient@email.de';
 
-  const clientEmail = client.email || 'klient@email.de';
+  // Automatically pre-generate the GDPR token if missing or expired when the modal opens
+  useEffect(() => {
+    if (isGdprModalOpen && gdprClientId) {
+      const activeClient = clients.find(c => c.id === gdprClientId);
+      if (activeClient && (!activeClient.gdprToken || new Date(activeClient.gdprTokenExpiresAt || '') < new Date())) {
+        generateGdprLink(activeClient.id);
+      }
+    }
+  }, [isGdprModalOpen, gdprClientId, clients, generateGdprLink]);
+
+  if (!isGdprModalOpen || !gdprClientId || !client) return null;
 
   const closeGdprModal = () => {
     setIsGdprModalOpen(false);
@@ -32,21 +43,22 @@ export default function GdprConsentModal() {
   };
 
   const handleSendLink = async () => {
-    // Generate token and save it to the DB
-    const token = await generateGdprLink(client.id);
+    const token = client.gdprToken || await generateGdprLink(client.id);
     if (token) {
-      // Apply the 'dsgvo' mail template
       applyMailTemplate('dsgvo', undefined, undefined, client);
-      // Open the email modal
       setIsMailModalOpen(true);
       closeGdprModal();
     }
   };
 
-  const handleSignOnDevice = () => {
-    showToast(`Kiosk-Modus für ${client.name} gestartet... (Klienten-Tablet freigeschaltet)`, 'info');
-    toggleClientGdpr(client.id);
-    closeGdprModal();
+  const handleSignOnDevice = async () => {
+    const token = client.gdprToken || await generateGdprLink(client.id);
+    if (token) {
+      window.open(`/verify/${token}?kiosk=true`, '_blank');
+      closeGdprModal();
+    } else {
+      showToast('Fehler beim Generieren des Signatur-Links.', 'error');
+    }
   };
 
   const handleManualUpload = () => {
@@ -59,6 +71,15 @@ export default function GdprConsentModal() {
     showToast(`Druckansicht für leeres DSGVO-Formular wird geladen...`, 'info');
     closeGdprModal();
   };
+
+  const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
+  const verifyLink = `${origin}/verify/${client.gdprToken || 'loading_token'}`;
+
+  const tabs = [
+    { id: 'device', label: 'Dieses Gerät', icon: Tablet },
+    { id: 'qrcode', label: 'QR-Code', icon: QrCode },
+    { id: 'email', label: 'E-Mail', icon: Mail },
+  ] as const;
 
   return (
     <>
@@ -96,44 +117,128 @@ export default function GdprConsentModal() {
             </button>
           </div>
 
-          {/* Options Body */}
-          <div className="space-y-3">
-            {/* Primary Action: Send Link */}
-            <button
-              onClick={handleSendLink}
-              className="w-full bg-[#003527] hover:bg-[#0b513d] text-white py-3 px-4 rounded-xl font-bold text-xs transition-all cursor-pointer active:scale-[0.99] flex items-center justify-between border-none shadow-none text-left"
-            >
-              <div className="flex items-center gap-3">
-                <div className="p-1.5 bg-white/10 rounded-lg text-white">
-                  <Mail className="w-4 h-4" />
-                </div>
-                <div className="text-left">
-                  <span className="block text-[11px] font-extrabold">Link an Klient senden</span>
-                  <span className="block text-[9px] text-[#bfc9c3] font-semibold truncate max-w-[200px] sm:max-w-[240px]">
-                    E-Mail an {clientEmail}
-                  </span>
-                </div>
-              </div>
-              <span className="text-[9px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-md font-extrabold shrink-0 uppercase tracking-wide">
-                Empfohlen
-              </span>
-            </button>
+          {/* Segmented Control Tabs */}
+          <div className="flex bg-zinc-100 p-1 rounded-xl relative border border-zinc-200/50">
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[10px] font-bold transition-all relative z-10 cursor-pointer border-none bg-transparent outline-none ${
+                    isActive ? 'text-[#003527]' : 'text-zinc-400 hover:text-zinc-600'
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  <span>{tab.label}</span>
+                  {isActive && (
+                    <motion.div
+                      layoutId="active-gdpr-tab"
+                      className="absolute inset-0 bg-white rounded-lg shadow-sm -z-10 border border-zinc-200/20"
+                      transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+                    />
+                  )}
+                </button>
+              );
+            })}
+          </div>
 
-            {/* Secondary Action: Sign on tablet */}
-            <button
-              onClick={handleSignOnDevice}
-              className="w-full bg-zinc-100/60 hover:bg-zinc-100 text-[#003527] py-3 px-4 rounded-xl font-bold text-xs transition-all cursor-pointer active:scale-[0.99] flex items-center gap-3 border border-[#bfc9c3]/20 shadow-none text-left"
-            >
-              <div className="p-1.5 bg-[#003527]/5 rounded-lg text-[#003527]">
-                <Tablet className="w-4 h-4" />
-              </div>
-              <div className="text-left">
-                <span className="block text-[11px] font-extrabold">Jetzt auf diesem Gerät unterschreiben</span>
-                <span className="block text-[9px] text-zinc-400 font-semibold">
-                  Öffnet Kiosk-Modus für Tablet/iPad
-                </span>
-              </div>
-            </button>
+          {/* Content area based on selected tab */}
+          <div className="min-h-[160px] flex flex-col justify-center">
+            <AnimatePresence mode="wait">
+              {activeTab === 'device' && (
+                <motion.div
+                  key="device"
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -5 }}
+                  transition={{ duration: 0.15 }}
+                  className="space-y-4 text-center py-2"
+                >
+                  <div className="text-left space-y-1.5">
+                    <p className="text-[11px] text-zinc-500 font-semibold leading-relaxed">
+                      Lasse den Klienten die Erklärung direkt auf diesem Gerät (z.B. iPad oder Touchscreen) lesen und digital unterschreiben.
+                    </p>
+                    <div className="text-[9px] text-[#003527]/70 font-semibold bg-emerald-50 border border-emerald-100/50 p-2 rounded-lg flex items-start gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                      <span>
+                        <strong>Sicherer Kiosk-Modus:</strong> Öffnet ein separates Fenster ohne Navigation oder Zugriff auf deine restlichen Praxisdaten.
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleSignOnDevice}
+                    className="w-full bg-[#003527] hover:bg-[#0b513d] text-white py-3 px-4 rounded-xl font-bold text-xs transition-all cursor-pointer active:scale-[0.99] flex items-center justify-center gap-2 border-none shadow-none"
+                  >
+                    <Tablet className="w-4 h-4" />
+                    <span>Jetzt auf diesem Gerät unterschreiben</span>
+                  </button>
+                </motion.div>
+              )}
+
+              {activeTab === 'qrcode' && (
+                <motion.div
+                  key="qrcode"
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -5 }}
+                  transition={{ duration: 0.15 }}
+                  className="flex flex-col items-center text-center space-y-3 py-1"
+                >
+                  <p className="text-[11px] text-zinc-500 font-semibold leading-relaxed">
+                    Scanne den QR-Code mit dem Smartphone des Klienten oder einem separaten Tablet, um dort direkt zu unterschreiben.
+                  </p>
+                  
+                  <div className="bg-white border border-zinc-200 p-3 rounded-xl shadow-sm inline-block">
+                    {client.gdprToken ? (
+                      <QRCodeSVG
+                        value={verifyLink}
+                        size={120}
+                        level="M"
+                        includeMargin={false}
+                      />
+                    ) : (
+                      <div className="w-[120px] h-[120px] flex items-center justify-center text-[10px] text-zinc-400 font-bold">
+                        Erzeuge Token...
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="w-full bg-zinc-50 border border-zinc-200/60 rounded-lg p-2 text-center overflow-x-auto whitespace-nowrap scrollbar-none max-w-sm">
+                    <span className="text-[9px] font-mono text-zinc-400 font-semibold select-all">{verifyLink}</span>
+                  </div>
+                </motion.div>
+              )}
+
+              {activeTab === 'email' && (
+                <motion.div
+                  key="email"
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -5 }}
+                  transition={{ duration: 0.15 }}
+                  className="space-y-4 text-center py-2"
+                >
+                  <div className="text-left space-y-1.5">
+                    <p className="text-[11px] text-zinc-500 font-semibold leading-relaxed">
+                      Sende dem Klienten den Link per E-Mail zu, damit er das Formular in Ruhe zu Hause ausfüllen kann.
+                    </p>
+                    <p className="text-[9px] text-zinc-400 font-medium truncate">
+                      Empfänger: <strong className="text-[#003527]">{clientEmail}</strong>
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={handleSendLink}
+                    className="w-full bg-[#003527] hover:bg-[#0b513d] text-white py-3 px-4 rounded-xl font-bold text-xs transition-all cursor-pointer active:scale-[0.99] flex items-center justify-center gap-2 border-none shadow-none"
+                  >
+                    <Mail className="w-4 h-4" />
+                    <span>Link per E-Mail senden</span>
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           {/* Divider */}
