@@ -399,12 +399,18 @@ export default function CranioAnamnesisTab({ clientId }: CranioAnamnesisTabProps
                     .map((complaint, index) => (
                       <div key={index} className="space-y-0.5">
                         <span className="block text-[10px] font-medium text-zinc-400">Beschwerde {index + 1}</span>
-                        <span className="block text-xs font-extrabold text-[#003527] flex items-center gap-1.5">
-                          {complaint.description}
-                          <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-[#003527]/5 text-[#003527]">
+                        <div className="flex items-center gap-1.5">
+                          <span className="block text-xs font-extrabold text-[#003527]">{complaint.description}</span>
+                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border whitespace-nowrap ${
+                            complaint.painLevel >= 8 
+                              ? 'bg-rose-50 border-rose-200/50 text-rose-800' 
+                              : complaint.painLevel >= 4 
+                                ? 'bg-amber-50 border-amber-200/50 text-amber-800' 
+                                : 'bg-emerald-50 border-emerald-200/50 text-emerald-800'
+                          }`}>
                             Intensität: {complaint.painLevel}/10
                           </span>
-                        </span>
+                        </div>
                       </div>
                     ))
                 )}
@@ -537,7 +543,7 @@ export default function CranioAnamnesisTab({ clientId }: CranioAnamnesisTabProps
                   ) : (
                     <div className="flex flex-wrap gap-1.5">
                       {data.diseases.map(disease => (
-                        <span key={disease} className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-[#003527]/5 text-[#003527]">
+                        <span key={disease} className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-emerald-50 border border-emerald-200/50 text-emerald-800">
                           {disease}
                         </span>
                       ))}
@@ -737,17 +743,17 @@ export default function CranioAnamnesisTab({ clientId }: CranioAnamnesisTabProps
                     <span className="block text-[10px] font-medium text-zinc-400">Langzeit-Medikation (mind. 5 Jahre)</span>
                     <div className="flex flex-wrap gap-1.5 mb-1 mt-0.5">
                       {data.longtermCortison && (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-[#003527]/5 text-[#003527]">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-blue-50 border border-blue-200/50 text-blue-800">
                           Cortison
                         </span>
                       )}
                       {data.longtermRheuma && (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-[#003527]/5 text-[#003527]">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-blue-50 border border-blue-200/50 text-blue-800">
                           Rheumamittel
                         </span>
                       )}
                       {!data.longtermCortison && !data.longtermRheuma && (
-                        <span className="text-xs font-extrabold text-[#003527]">Keine (Cortison/Rheumamittel)</span>
+                        <span className="text-xs font-extrabold text-zinc-400">Keine (Cortison/Rheumamittel)</span>
                       )}
                     </div>
                     {data.otherLongtermMeds.trim() && (
@@ -878,15 +884,31 @@ export default function CranioAnamnesisTab({ clientId }: CranioAnamnesisTabProps
                 <div className="grid grid-cols-2 gap-3 border-t border-zinc-100 pt-2.5">
                   <div className="space-y-0.5">
                     <span className="block text-[10px] font-medium text-zinc-400">Schwanger?</span>
-                    <span className="block text-xs font-extrabold text-[#003527]">
-                      {data.pregnant || 'Keine Angabe'}
+                    <span className="block text-xs font-extrabold text-[#003527] mt-0.5">
+                      {data.pregnant === 'Ja' ? (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-pink-50 border border-pink-200/50 text-pink-800">
+                          Ja
+                        </span>
+                      ) : data.pregnant === 'Nein' ? (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-zinc-50 border border-zinc-200/50 text-zinc-500">
+                          Nein
+                        </span>
+                      ) : (
+                        <span className="text-zinc-400 font-normal">Keine Angabe</span>
+                      )}
                     </span>
                   </div>
                   
                   <div className="space-y-0.5">
                     <span className="block text-[10px] font-medium text-zinc-400">Fehlgeburten?</span>
-                    <span className="block text-xs font-extrabold text-[#003527]">
-                      {data.miscarriages.trim() ? data.miscarriages : 'Keine Angabe'}
+                    <span className="block text-xs font-extrabold text-[#003527] mt-0.5">
+                      {data.miscarriages.trim() ? (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-purple-50 border border-purple-200/50 text-purple-800">
+                          {data.miscarriages}
+                        </span>
+                      ) : (
+                        <span className="text-zinc-400 font-normal">Keine Angabe</span>
+                      )}
                     </span>
                   </div>
                 </div>
