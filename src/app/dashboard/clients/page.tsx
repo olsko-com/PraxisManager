@@ -734,10 +734,10 @@ export default function ClientsPage() {
                       : 'border-transparent text-zinc-400 hover:text-[#003527]'
                   }`}
                 >
-                  {tab === 'overview' && '📋 Stammdaten'}
-                  {tab === 'anamnesis' && '📝 Cranio-Anamnese'}
-                  {tab === 'soap' && '🩺 Behandlungsverlauf'}
-                  {tab === 'billing' && '📄 Abrechnung & Dokumente'}
+                  {tab === 'overview' && 'Stammdaten'}
+                  {tab === 'anamnesis' && 'Cranio-Anamnese'}
+                  {tab === 'soap' && 'Behandlungsverlauf'}
+                  {tab === 'billing' && 'Abrechnung & Dokumente'}
                 </button>
               ))}
             </div>
