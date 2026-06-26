@@ -107,12 +107,15 @@ function ClientListItem({
             onSelect();
           }
         }}
-        className={`px-6 py-4 cursor-pointer flex items-center justify-between bg-white relative z-10 select-none transition-colors group ${
+      className={`px-6 py-4 cursor-pointer flex items-center justify-between bg-white relative z-10 select-none transition-all group ${
           isSelected 
-            ? 'bg-[#003527]/5 text-[#003527]' 
-            : 'hover:bg-zinc-50 text-[#404944]'
+            ? 'bg-[#003527]/8 text-[#003527] font-semibold' 
+            : 'hover:bg-zinc-100/80 active:bg-[#003527]/8 text-[#404944]'
         }`}
       >
+        {isSelected && (
+          <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#003527] z-20" />
+        )}
         <div>
           <div className="flex items-center gap-1.5 text-left">
             <h4 className="font-bold text-xs">{client.name}</h4>
@@ -227,9 +230,9 @@ export default function ClientsPage() {
   return (
     <div className="relative flex-grow bg-[#eef0ed] rounded-none lg:rounded-[24px] border-0 lg:border border-[#003527]/10 m-0 lg:my-4 lg:mr-4 lg:ml-4 flex p-0 lg:p-6 gap-0 lg:gap-6 h-[calc(100vh-64px)] lg:h-[calc(100vh-32px)] overflow-hidden shadow-none transition-all duration-300">
       {/* Left Side: Client List as a secondary Sidebar */}
-      <div className={`absolute lg:relative top-0 bottom-0 left-0 z-45 w-80 max-w-[85vw] lg:w-80 lg:max-w-none bg-white border-r lg:border border-[#003527]/10 rounded-r-[20px] lg:rounded-[20px] flex flex-col flex-shrink-0 overflow-hidden h-full transition-transform duration-300 ease-in-out lg:translate-x-0 lg:flex ${
+      <div className={`absolute lg:relative top-0 bottom-0 left-0 z-45 w-full md:w-80 bg-white border-r lg:border border-[#003527]/10 rounded-r-[20px] lg:rounded-[20px] flex flex-col flex-shrink-0 overflow-hidden h-full transition-transform duration-300 ease-in-out lg:translate-x-0 lg:flex ${
         !currentClient
-          ? 'translate-x-0 w-full rounded-[20px]'
+          ? 'translate-x-0'
           : isSidebarOpen
             ? 'translate-x-0 shadow-2xl'
             : '-translate-x-full lg:translate-x-0'
@@ -431,7 +434,7 @@ export default function ClientsPage() {
       )}
 
       {/* Backdrop for sliding sidebar on mobile/tablet */}
-      {isSidebarOpen && currentClient && (
+      {isSidebarOpen && (
         <div 
           className="fixed inset-0 bg-[#003527]/20 backdrop-blur-sm z-40 lg:hidden cursor-pointer"
           onClick={() => setIsSidebarOpen(false)}
