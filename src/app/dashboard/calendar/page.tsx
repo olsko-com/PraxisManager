@@ -385,6 +385,55 @@ export default function CalendarPage() {
     };
   };
 
+  const handleDragStart = (e: React.DragEvent, appId: string) => {
+    setDraggedAppId(appId);
+    
+    // Hides browser default ghost image to keep layout clean and overlap-free
+    const img = new Image();
+    img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+    e.dataTransfer.setDragImage(img, 0, 0);
+  };
+
+  const handleDragOverCell = (e: React.DragEvent, dateStr: string, hour: number) => {
+    e.preventDefault();
+    const rect = e.currentTarget.getBoundingClientRect();
+    const relativeY = e.clientY - rect.top; // 0 to 88px
+    
+    // Snapping into 15-minute intervals (4 blocks of 22px)
+    let minutes = 0;
+    if (relativeY >= 22 && relativeY < 44) {
+      minutes = 15;
+    } else if (relativeY >= 44 && relativeY < 66) {
+      minutes = 30;
+    } else if (relativeY >= 66) {
+      minutes = 45;
+    }
+    
+    if (!dragOverSlot || dragOverSlot.dateStr !== dateStr || dragOverSlot.hour !== hour || dragOverSlot.minutes !== minutes) {
+      setDragOverSlot({ dateStr, hour, minutes });
+    }
+  };
+
+  const checkConflict = (appId: string, dateStr: string, hour: number, minutes: number, durationMinutes: number) => {
+    const targetStart = new Date(dateStr);
+    targetStart.setHours(hour, minutes, 0, 0);
+    const targetStartTime = targetStart.getTime();
+    const targetEndTime = targetStartTime + durationMinutes * 60000;
+
+    return appointments.some(app => {
+      if (app.id === appId) return false;
+      const appStart = new Date(app.startTime).getTime();
+      const appEnd = new Date(app.endTime).getTime();
+      
+      // Check overlap
+      return (
+        (targetStartTime >= appStart && targetStartTime < appEnd) ||
+        (targetEndTime > appStart && targetEndTime <= appEnd) ||
+        (targetStartTime <= appStart && targetEndTime >= appEnd)
+      );
+    });
+  };
+
   const handleCellClick = (dateStr: string, hour: number) => {
     setSheetMode('new');
     setNewAppDate(dateStr);
@@ -436,7 +485,7 @@ export default function CalendarPage() {
     }
   };
 
-  const handleDrop = (targetDateStr: string, targetHour: number) => {
+  const handleDrop = (targetDateStr: string, targetHour: number, targetMinutes: number = 0) => {
     if (!draggedAppId) return;
 
     const app = appointments.find(a => a.id === draggedAppId);
@@ -451,13 +500,14 @@ export default function CalendarPage() {
     const duration = origEnd.getTime() - origStart.getTime();
 
     const newStart = new Date(targetDateStr);
-    newStart.setHours(targetHour, 0, 0, 0);
+    newStart.setHours(targetHour, targetMinutes, 0, 0);
 
-    // Clamping to not run past 17:00
+    // Clamping to not run past 24:00
     const durationMins = duration / 60000;
     let finalStart = newStart;
-    if (targetHour * 60 + durationMins > 17 * 60) {
-      const shiftMinutes = (targetHour * 60 + durationMins) - 17 * 60;
+    const targetMinutesTotal = targetHour * 60 + targetMinutes;
+    if (targetMinutesTotal + durationMins > 24 * 60) {
+      const shiftMinutes = (targetMinutesTotal + durationMins) - 24 * 60;
       finalStart = new Date(newStart.getTime() - shiftMinutes * 60000);
     }
 
@@ -701,7 +751,14 @@ export default function CalendarPage() {
               </div>
 
               {/* Content column */}
-              <div className="relative h-[2112px] w-full pl-0">
+              <div 
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={() => {
+                  const dateStr = currentCalendarDate.toISOString().slice(0, 10);
+                  handleDrop(dateStr, dragOverSlot?.hour || 0, dragOverSlot?.minutes || 0);
+                }}
+                className="relative h-[2112px] w-full pl-0"
+              >
                 <div className="absolute inset-y-0 left-0 right-0 divide-y divide-zinc-100 flex flex-col pointer-events-none">
                   {Array.from({ length: 24 }).map((_, i) => (
                     <div key={i} className="h-[88px]" />
@@ -716,8 +773,7 @@ export default function CalendarPage() {
                       <div
                         key={hour}
                         onClick={() => handleCellClick(dateStr, hour)}
-                        onDragOver={(e) => e.preventDefault()}
-                        onDragEnter={() => setDragOverSlot({ dateStr, hour })}
+                        onDragOver={(e) => handleDragOverCell(e, dateStr, hour)}
                         className="h-[88px] hover:bg-[#003527]/3 transition-colors cursor-pointer"
                       />
                     );
@@ -738,7 +794,7 @@ export default function CalendarPage() {
                         <div
                           key={app.id}
                           draggable={!isResizing && isAppointmentMatching(app)}
-                          onDragStart={() => setDraggedAppId(app.id)}
+                          onDragStart={(e) => handleDragStart(e, app.id)}
                           onDragEnd={() => { setDraggedAppId(null); setDragOverSlot(null); }}
                           onContextMenu={(e) => handleContextMenu(e, app)}
                           onClick={(e) => {
@@ -877,22 +933,35 @@ export default function CalendarPage() {
                       if (!draggedApp) return null;
                       const dur = Math.round((new Date(draggedApp.endTime).getTime() - new Date(draggedApp.startTime).getTime()) / 60000);
                       
-                      const topPx = (dragOverSlot.hour - 9) * 88;
+                      const snapTopPx = (dragOverSlot.hour + (dragOverSlot.minutes || 0) / 60) * 88;
+                      const targetDate = new Date(currentCalendarDate);
+                      targetDate.setHours(dragOverSlot.hour, dragOverSlot.minutes || 0, 0, 0);
+                      const hasConflict = checkConflict(draggedApp.id, dragOverSlot.dateStr, dragOverSlot.hour, dragOverSlot.minutes || 0, dur);
                       const visualDur = Math.max(45, dur);
                       const heightPx = (visualDur / 60) * 88;
-
+                      
                       return (
                         <div
-                          style={{ top: `${topPx + 6}px`, height: `${heightPx - 12}px` }}
-                          className="absolute left-2 right-2 rounded-lg border-2 border-dashed border-[#003527]/30 bg-[#003527]/5 flex flex-col justify-between p-4 z-20"
+                          style={{ top: `${snapTopPx + 6}px`, height: `${heightPx - 12}px` }}
+                          className={`absolute left-2 right-2 rounded-lg border-2 border-dashed flex flex-col justify-between p-4 z-20 shadow-sm transition-all duration-150 ${
+                            hasConflict 
+                              ? 'border-rose-500 bg-rose-500/[0.08]' 
+                              : 'border-emerald-500 bg-emerald-500/[0.04]'
+                          }`}
                         >
                           <div>
-                            <h4 className="font-bold text-xs text-[#003527]/60">{draggedApp.serviceName}</h4>
-                            <p className="text-[10px] text-zinc-400 font-semibold mt-1">{draggedApp.clientName}</p>
+                            <h4 className={`font-extrabold text-xs ${hasConflict ? 'text-rose-900' : 'text-[#003527]'}`}>{draggedApp.serviceName}</h4>
+                            {draggedApp.clientId && <p className="text-[10px] text-zinc-500 font-bold mt-0.5">{draggedApp.clientName}</p>}
                           </div>
-                          <span className="text-[9px] font-bold text-[#003527]/70">
-                            Verschieben nach: {dragOverSlot.hour}:00 ({dur} Min)
-                          </span>
+                          <div className="flex flex-col gap-1 mt-2">
+                            <span className={`text-[9px] font-extrabold px-2 py-1 rounded-md self-start ${
+                              hasConflict 
+                                ? 'text-rose-900 bg-rose-500/20' 
+                                : 'text-[#003527] bg-emerald-500/20'
+                            }`}>
+                              {hasConflict ? '🚫 Konflikt! Überlappung' : '✓ Freies Zeitfenster'}: {formatAppTimeRange(targetDate.toISOString(), dur)} Uhr ({dur} Min)
+                            </span>
+                          </div>
                         </div>
                       );
                     })()
@@ -949,7 +1018,14 @@ export default function CalendarPage() {
               {getWeekDays(currentCalendarDate).map((dayDate) => {
                 const isToday = new Date().toDateString() === dayDate.toDateString();
                 return (
-                  <div key={dayDate.toISOString()} className="flex items-center justify-center gap-1.5 py-2.5 select-none relative">
+                  <div 
+                    key={dayDate.toISOString()} 
+                    onClick={() => {
+                      setCurrentCalendarDate(dayDate);
+                      setCalendarView('day');
+                    }}
+                    className="flex items-center justify-center gap-1.5 py-2.5 select-none relative cursor-pointer hover:bg-zinc-100/50 transition-colors"
+                  >
                     <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
                       {dayDate.toLocaleDateString('de-DE', { weekday: 'short' }).replace('.', '')}
                     </span>
@@ -995,7 +1071,7 @@ export default function CalendarPage() {
                     key={dateStr} 
                     className={`relative h-[2112px] w-full ${isToday ? 'bg-[#003527]/[0.015]' : ''}`}
                     onDragOver={(e) => e.preventDefault()}
-                    onDrop={() => handleDrop(dateStr, dragOverSlot?.hour || 0)}
+                    onDrop={() => handleDrop(dateStr, dragOverSlot?.hour || 0, dragOverSlot?.minutes || 0)}
                   >
                     {/* Background Slots */}
                     <div className="absolute inset-0 divide-y divide-zinc-100 flex flex-col pointer-events-none">
@@ -1012,7 +1088,7 @@ export default function CalendarPage() {
                           <div
                             key={hour}
                             onClick={() => handleCellClick(dateStr, hour)}
-                            onDragEnter={() => setDragOverSlot({ dateStr, hour })}
+                            onDragOver={(e) => handleDragOverCell(e, dateStr, hour)}
                             className="h-[88px] hover:bg-[#003527]/3 transition-colors cursor-pointer"
                           />
                         );
@@ -1034,7 +1110,7 @@ export default function CalendarPage() {
                             <div
                               key={app.id}
                               draggable={!isResizing && isAppointmentMatching(app)}
-                              onDragStart={() => setDraggedAppId(app.id)}
+                              onDragStart={(e) => handleDragStart(e, app.id)}
                               onDragEnd={() => { setDraggedAppId(null); setDragOverSlot(null); }}
                               onContextMenu={(e) => handleContextMenu(e, app)}
                               onClick={(e) => {
@@ -1143,19 +1219,36 @@ export default function CalendarPage() {
                           if (!draggedApp) return null;
                           const dur = Math.round((new Date(draggedApp.endTime).getTime() - new Date(draggedApp.startTime).getTime()) / 60000);
                           
-                          const topPx = ((dragOverSlot?.hour || 9) - 9) * 88;
+                          const snapTopPx = ((dragOverSlot?.hour || 0) + (dragOverSlot?.minutes || 0) / 60) * 88;
+                          const targetDate = new Date(dayDate);
+                          targetDate.setHours(dragOverSlot?.hour || 0, dragOverSlot?.minutes || 0, 0, 0);
+                          const hasConflict = checkConflict(draggedApp.id, dayDate.toISOString().slice(0, 10), dragOverSlot?.hour || 0, dragOverSlot?.minutes || 0, dur);
                           const visualDur = Math.max(45, dur);
                           const heightPx = (visualDur / 60) * 88;
-
+                          
                           return (
                             <div
-                              style={{ top: `${topPx + 6}px`, height: `${heightPx - 12}px` }}
-                              className="absolute left-1 right-1 rounded-lg border-2 border-dashed border-[#003527]/30 bg-[#003527]/5 flex flex-col justify-between p-2 z-20"
+                              style={{ top: `${snapTopPx + 6}px`, height: `${heightPx - 12}px` }}
+                              className={`absolute left-1 right-1 rounded-lg border-2 border-dashed flex flex-col justify-between p-2.5 z-20 shadow-sm transition-all duration-150 ${
+                                hasConflict 
+                                  ? 'border-rose-500 bg-rose-500/[0.08]' 
+                                  : 'border-emerald-500 bg-emerald-500/[0.04]'
+                              }`}
                             >
-                              <h4 className="font-bold text-[9px] text-[#003527]/60 truncate">{draggedApp.serviceName}</h4>
-                              <span className="text-[8px] font-bold text-[#003527]/70">
-                                {formatAppTimeRange(new Date(dayDate).setHours(dragOverSlot?.hour || 9, 0, 0, 0).toString(), dur)}
-                              </span>
+                              <div>
+                                <h4 className={`font-extrabold text-[9px] truncate leading-snug ${hasConflict ? 'text-rose-900' : 'text-[#003527]'}`}>{draggedApp.serviceName}</h4>
+                                {draggedApp.clientId && <p className="text-[8px] text-zinc-500 font-bold truncate leading-none mt-0.5">{draggedApp.clientName}</p>}
+                              </div>
+                              <div className="flex flex-col gap-1 mt-2.5">
+                                <span className={`text-[8px] font-extrabold px-1.5 py-0.5 rounded-md self-start leading-none uppercase tracking-wide text-white ${
+                                  hasConflict ? 'bg-rose-500' : 'bg-[#003527]'
+                                }`}>
+                                  {dayDate.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: 'short' })}
+                                </span>
+                                <span className={`text-[8px] font-bold leading-none ${hasConflict ? 'text-rose-700/80' : 'text-[#003527]/80'}`}>
+                                  {formatAppTimeRange(targetDate.toISOString(), dur)} Uhr {hasConflict && '🚫'}
+                                </span>
+                              </div>
                             </div>
                           );
                         })()
