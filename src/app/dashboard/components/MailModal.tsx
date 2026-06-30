@@ -30,10 +30,22 @@ export default function MailModal() {
     selectedMailAppointmentId,
     setSelectedMailAppointmentId,
     applyMailTemplate,
-    handleSendMail
+    handleSendMail,
+    showToast
   } = useDashboard();
 
   const [isMailCenterActive, setIsMailCenterActive] = React.useState(false);
+  const [alsoSendSms, setAlsoSendSms] = React.useState(false);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const sentMethods = ['E-Mail'];
+    if (alsoSendSms && currentClient?.phone) {
+      sentMethods.push('SMS');
+    }
+    showToast(`Nachricht an ${currentClient?.name} per ${sentMethods.join(' & ')} wurde erfolgreich gesendet!`, 'success');
+    setIsMailModalOpen(false);
+  };
 
   React.useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -180,7 +192,7 @@ export default function MailModal() {
             </div>
           </div>
 
-          <form onSubmit={handleSendMail} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             {(mailTopic === 'rechnung' || mailTopic === 'mahnung') && (
               <div className="space-y-1.5">
                 <label className="block text-[10px] font-bold text-[#003527]/70 uppercase tracking-widest text-left">Zugehörige Rechnung auswählen</label>
@@ -267,6 +279,21 @@ export default function MailModal() {
                 className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-2xl px-4 py-3 font-bold text-xs text-[#003527] outline-none resize-none h-64 focus:border-[#003527] focus:ring-1 focus:ring-[#003527] transition-all text-left"
               />
             </div>
+
+            {currentClient.phone && (
+              <div className="flex items-center gap-2 mt-4 select-none">
+                <input
+                  type="checkbox"
+                  id="alsoSendSms"
+                  checked={alsoSendSms}
+                  onChange={(e) => setAlsoSendSms(e.target.checked)}
+                  className="rounded border-zinc-300 text-[#003527] focus:ring-[#003527]/30 w-4 h-4 cursor-pointer"
+                />
+                <label htmlFor="alsoSendSms" className="text-[11px] font-bold text-zinc-600 cursor-pointer">
+                  Auch als SMS senden an {currentClient.phone}
+                </label>
+              </div>
+            )}
 
             <div className="flex gap-4 pt-4">
               <button

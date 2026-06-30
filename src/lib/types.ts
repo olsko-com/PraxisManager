@@ -25,6 +25,7 @@ export interface Client {
   city?: string;
   occupation?: string;
   maritalStatus?: string;
+  children?: string;
 }
 
 

@@ -60,7 +60,7 @@ export default function InvoicesPage() {
   // Filter invoices based on selected timeframe
   const filteredInvoicesByTime = invoices.filter(inv => {
     const invDate = new Date(inv.date);
-    const refDate = new Date('2026-06-01'); // Base context date
+    const refDate = new Date(); // Base context date
     if (timeframe === '30T') {
       const thirtyDaysAgo = new Date(refDate.getTime() - 30 * 24 * 60 * 60 * 1000);
       return invDate >= thirtyDaysAgo && invDate <= refDate;
@@ -90,7 +90,7 @@ export default function InvoicesPage() {
   const overdueCount = filteredInvoicesByTime.filter(i => i.status === 'overdue').length;
 
   const getChartData = () => {
-    const refDate = new Date('2026-06-01');
+    const refDate = new Date();
     if (timeframe === '30T') {
       // 4 weeks leading up to June 1st
       const data = [];
@@ -990,7 +990,7 @@ export default function InvoicesPage() {
                   <div className="divide-y divide-[#bfc9c3]/20 overflow-y-auto max-h-[260px]">
                     {outstandingInvoices.map((item) => {
                       const dueDate = new Date(item.date);
-                      const refDate = new Date('2026-06-01');
+                      const refDate = new Date();
                       const diffTime = Math.abs(refDate.getTime() - dueDate.getTime());
                       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
                       

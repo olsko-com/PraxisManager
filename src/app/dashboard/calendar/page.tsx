@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { 
-  ChevronLeft, ChevronRight, Clock, Plus, FileText, Calendar as CalendarIcon, PanelRight, Search, Mail
+  ChevronLeft, ChevronRight, Clock, Plus, FileText, Calendar as CalendarIcon, PanelRight, Search, Mail, RotateCcw, ChevronUp, MessageSquare, Edit2, X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDashboard } from '../context';
@@ -37,12 +37,32 @@ export default function CalendarPage() {
     setNewAppDate,
     setNewAppHour,
     setNewAppClientId,
-    setNewAppServiceId
+    setNewAppServiceId,
+    selectedClientId,
+    setSelectedClientId,
+    selectedMailAppointmentId,
+    setSelectedMailAppointmentId,
+    isMailModalOpen,
+    setIsMailModalOpen
   } = useDashboard();
 
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(true);
   const [mobileCalendarMode, setMobileCalendarMode] = React.useState<'week' | 'month' | 'year'>('week');
   const [eventSearch, setEventSearch] = React.useState('');
+  const [statusFilter, setStatusFilter] = React.useState<string>('all');
+
+  const isAppointmentMatching = (app: Appointment) => {
+    if (eventSearch) {
+      const searchLower = eventSearch.toLowerCase();
+      const clientMatch = app.clientName?.toLowerCase().includes(searchLower) || false;
+      const serviceMatch = app.serviceName?.toLowerCase().includes(searchLower) || false;
+      if (!clientMatch && !serviceMatch) return false;
+    }
+    if (statusFilter !== 'all') {
+      if (app.status !== statusFilter) return false;
+    }
+    return true;
+  };
   const [pendingMove, setPendingMove] = React.useState<{
     appId: string;
     originalStartTime: string;
@@ -50,6 +70,27 @@ export default function CalendarPage() {
     newStartTime: string;
     newEndTime: string;
   } | null>(null);
+
+  const [timerSeconds, setTimerSeconds] = React.useState(6);
+  const [isHoverToast, setIsHoverToast] = React.useState(false);
+  const [sendEmail, setSendEmail] = React.useState(true);
+  const [sendSms, setSendSms] = React.useState(true);
+  const [isToastDropdownOpen, setIsToastDropdownOpen] = React.useState(false);
+
+  // Close dropdown on click outside
+  React.useEffect(() => {
+    if (!isToastDropdownOpen) return;
+
+    const handleOutsideClick = (e: MouseEvent) => {
+      const toastEl = document.getElementById('global-toast');
+      if (toastEl && !toastEl.contains(e.target as Node)) {
+        setIsToastDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('click', handleOutsideClick);
+    return () => document.removeEventListener('click', handleOutsideClick);
+  }, [isToastDropdownOpen]);
 
   // Current time state for real-time indicator line
   const [currentTime, setCurrentTime] = React.useState(new Date());
@@ -83,14 +124,22 @@ export default function CalendarPage() {
     setIsSheetOpen(true);
   };
 
-  const commitPendingMove = (sendNotification: boolean) => {
+  const commitPendingMove = (sendEmailFlag: boolean, sendSmsFlag: boolean) => {
     if (!pendingMove) return;
 
     const app = appointments.find(a => a.id === pendingMove.appId);
-    if (app && sendNotification) {
+    if (app && (sendEmailFlag || sendSmsFlag)) {
       const client = clients.find(c => c.id === app.clientId);
-      const clientEmail = client?.email ? ` (${client.email})` : '';
-      showToast(`Benachrichtigung an ${app.clientName}${clientEmail} wurde gesendet!`, 'success');
+      
+      const sentMethods = [];
+      if (sendEmailFlag && client?.email) sentMethods.push("E-Mail");
+      if (sendSmsFlag && client?.phone) sentMethods.push("SMS");
+      
+      if (sentMethods.length > 0) {
+        showToast(`Terminbestätigung an ${app.clientName} per ${sentMethods.join(" & ")} wurde gesendet!`, 'success');
+      } else {
+        showToast(`Termin verschoben (ohne Benachrichtigung).`, 'info');
+      }
     }
 
     setPendingMove(null);
@@ -118,15 +167,33 @@ export default function CalendarPage() {
     setPendingMove(null);
   };
 
+  // Reset timer state when a new move is triggered
+  React.useEffect(() => {
+    if (pendingMove) {
+      setTimerSeconds(6);
+      setIsHoverToast(false);
+      setSendEmail(true);
+      setSendSms(true);
+      setIsToastDropdownOpen(false);
+    }
+  }, [pendingMove]);
+
+  // Interval timer ticking down by 0.1s every 100ms
   React.useEffect(() => {
     if (!pendingMove) return;
+    if (isHoverToast) return; // Pause ticking
 
-    const timer = setTimeout(() => {
-      commitPendingMove(false);
-    }, 6000);
+    if (timerSeconds <= 0) {
+      commitPendingMove(false, false);
+      return;
+    }
 
-    return () => clearTimeout(timer);
-  }, [pendingMove]);
+    const interval = setInterval(() => {
+      setTimerSeconds((prev) => Math.max(0, prev - 0.1));
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, [pendingMove, isHoverToast, timerSeconds]);
 
   // Helper Functions (Local Utilities)
   const formatTime = (dateStr: string) => {
@@ -487,8 +554,8 @@ export default function CalendarPage() {
       </div>
 
       {/* Calendar Controls (Sticky Header inside Card) - Full Width */}
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 pl-6 lg:pl-8 pr-6 lg:pr-8 pt-0 pb-3 bg-transparent flex-shrink-0">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 pl-6 lg:pl-8 pr-6 lg:pr-8 pt-0 pb-3 bg-transparent flex-shrink-0">
+        <div className="flex items-center gap-2 flex-wrap">
           <div className="flex border border-[#bfc9c3]/50 rounded-xl overflow-hidden bg-white">
             <button 
               onClick={handlePrevDate}
@@ -511,6 +578,21 @@ export default function CalendarPage() {
           </div>
           
           <h3 className="text-sm font-bold text-[#043F2D] pl-2">{getCalendarTitleText()}</h3>
+        </div>
+
+        {/* Calendar Grid Status Filter Dropdown */}
+        <div className="flex items-center flex-shrink-0">
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="bg-white border border-[#bfc9c3]/50 rounded-xl px-3.5 py-2 text-xs font-bold text-[#003527] focus:border-[#003527] focus:ring-1 focus:ring-[#003527] outline-none cursor-pointer h-[34px]"
+          >
+            <option value="all">Alle Status</option>
+            <option value="booked">Reserviert</option>
+            <option value="confirmed">Bestätigt</option>
+            <option value="noshow">Wahrgenommen</option>
+            <option value="cancelled">Storniert</option>
+          </select>
         </div>
 
         {/* Segmented Picker & Toggle Sidebar */}
@@ -630,7 +712,7 @@ export default function CalendarPage() {
                       return (
                         <div
                           key={app.id}
-                          draggable={!isResizing}
+                          draggable={!isResizing && isAppointmentMatching(app)}
                           onDragStart={() => setDraggedAppId(app.id)}
                           onDragEnd={() => { setDraggedAppId(null); setDragOverSlot(null); }}
                           onContextMenu={(e) => handleContextMenu(e, app)}
@@ -641,64 +723,96 @@ export default function CalendarPage() {
                             setIsSheetOpen(true);
                           }}
                           style={getAppointmentStyle(app)}
-                          className={`absolute left-2 right-2 rounded-lg px-4 py-2 border select-none cursor-grab flex items-center justify-between overflow-hidden pointer-events-auto group ${
-                            isDragging ? 'opacity-40 shadow-none' : 'hover:scale-[1.01]'
-                          } ${
-                            isResizing ? 'z-30 cursor-ns-resize ring-2 ring-[#003527]' : 'z-10'
-                          } ${
-                            isResizing || isDragging ? '' : 'transition-all duration-200 ease-out'
-                          } ${
-                            !app.clientId
-                              ? 'bg-zinc-100/90 border-zinc-200/70 text-zinc-800'
-                              : app.status === 'booked' 
-                              ? 'bg-amber-50/90 border-amber-200/60 text-amber-900' 
-                              : app.status === 'confirmed' 
-                              ? 'bg-blue-50/90 border-blue-200/60 text-blue-900'
-                              : app.status === 'noshow' 
-                              ? 'bg-emerald-50/90 border-emerald-200/80 text-emerald-900' 
-                              : 'bg-rose-50/90 border-rose-200/60 text-rose-900'
-                          } shadow-none`}
+                          className={(() => {
+                            const isMatched = isAppointmentMatching(app);
+                            return `absolute left-2 right-2 rounded-lg pl-5 pr-4 py-2 border select-none overflow-hidden pointer-events-auto group ${
+                              isDragging 
+                                ? 'opacity-40 shadow-none' 
+                                : isMatched 
+                                ? 'hover:scale-[1.01] cursor-grab' 
+                                : 'opacity-15 grayscale pointer-events-none'
+                            } ${
+                              isResizing ? 'z-30 cursor-ns-resize ring-2 ring-[#003527]' : 'z-10'
+                            } ${
+                              isResizing || isDragging || !isMatched ? '' : 'transition-all duration-200 ease-out'
+                            } ${
+                              !app.clientId
+                                ? 'bg-zinc-100/90 border-zinc-200/70 text-zinc-800'
+                                : app.status === 'booked' 
+                                ? 'bg-amber-50/90 border-amber-200/60 text-amber-900' 
+                                : app.status === 'confirmed' 
+                                ? 'bg-blue-50/90 border-blue-200/60 text-blue-900'
+                                : app.status === 'noshow' 
+                                ? 'bg-emerald-50/90 border-emerald-200/80 text-emerald-900' 
+                                : 'bg-rose-50/90 border-rose-200/60 text-rose-900'
+                            } shadow-none`;
+                          })()}
                         >
-                          {/* Left: Service & Client inline */}
-                          <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                            <h4 className="font-extrabold text-xs tracking-tight truncate">{app.serviceName}</h4>
+                          {/* Inner Status Indicator Accent Bar */}
+                          <div className={`absolute left-0 top-0 bottom-0 w-[5px] ${
+                            !app.clientId
+                              ? 'bg-zinc-400'
+                              : app.status === 'booked' 
+                              ? 'bg-amber-505' 
+                              : app.status === 'confirmed' 
+                              ? 'bg-blue-505'
+                              : app.status === 'noshow' 
+                              ? 'bg-emerald-600' 
+                              : 'bg-rose-505'
+                          }`} />
+
+                          {/* Left: Info details stacked vertically */}
+                          <div className="flex flex-col min-w-0 text-left">
+                            <h4 className="font-extrabold text-[12px] tracking-tight text-zinc-900 truncate leading-snug">
+                              {app.serviceName}
+                            </h4>
+                            
                             {app.clientId && (
-                              <>
-                                <span className="text-[10px] opacity-40 font-bold">•</span>
-                                <p className="text-[10px] font-bold opacity-80 truncate">{app.clientName}</p>
-                              </>
+                              <p className="text-[10px] font-bold text-zinc-500 truncate mt-0.5 leading-none">
+                                {app.clientName}
+                              </p>
                             )}
+
+                            <div className="flex items-center gap-2 mt-1.5 text-zinc-400 text-[9.5px] font-semibold leading-none">
+                              <span className="flex items-center gap-1">
+                                <Clock className="w-3 h-3 opacity-60" />
+                                {formatAppTimeRange(app.startTime, dur)} ({dur} Min)
+                              </span>
+                              {app.price > 0 && (
+                                <span className="bg-[#003527]/5 text-[#003527] px-1.5 py-0.5 rounded-md font-extrabold text-[9px] leading-none">
+                                  {app.price.toFixed(2)} €
+                                </span>
+                              )}
+                            </div>
                           </div>
 
-                          {/* Right: Time, Resize badge, Invoice actions */}
-                          <div className="flex items-center gap-4 flex-shrink-0">
-                            <span className="text-[9px] font-extrabold flex items-center gap-1 opacity-90">
-                              <Clock className="w-2.5 h-2.5 opacity-70" />
-                              {formatAppTimeRange(app.startTime, dur)}
-                            </span>
+                          {/* Right: Actions, Invoice states, and Resizing Badge */}
+                          <div className="flex items-center gap-3.5 flex-shrink-0">
                             {isResizing && (
-                              <span className="text-[9px] bg-[#003527] text-white px-1.5 py-0.5 rounded-full font-bold">
+                              <span className="text-[9px] bg-[#003527] text-white px-2 py-0.5 rounded-full font-bold">
                                 {dur} Min.
                               </span>
                             )}
+                            
                             {app.clientId && (
-                              <div className="flex items-center gap-1.5">
+                              <div className="flex items-center gap-2">
                                 {appInvoice ? (
                                   <span 
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       showToast('Rechnungsdetails geladen.', 'info');
                                     }}
-                                    className={`p-1 rounded border flex items-center justify-center cursor-pointer ${
+                                    className={`px-2.5 py-1 rounded-full border text-[9px] font-extrabold tracking-wider uppercase cursor-pointer flex items-center gap-1 shadow-none transition-all hover:scale-[1.02] ${
                                       appInvoice.status === 'paid'
                                         ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
                                         : appInvoice.status === 'overdue'
                                         ? 'bg-rose-50 border-rose-200 text-rose-800'
                                         : 'bg-amber-50 border-amber-200 text-amber-800'
                                     }`}
-                                    title={`Rechnung: ${appInvoice.invoiceNumber} (${appInvoice.status === 'paid' ? 'Bezahlt' : appInvoice.status === 'overdue' ? 'Überfällig' : 'Offen'})`}
+                                    title={`Rechnung: ${appInvoice.invoiceNumber}`}
                                   >
                                     <FileText className="w-2.5 h-2.5" />
+                                    <span>{appInvoice.status === 'paid' ? 'Bezahlt' : appInvoice.status === 'overdue' ? 'Überfällig' : 'Offen'}</span>
                                   </span>
                                 ) : (
                                   <button
@@ -712,10 +826,10 @@ export default function CalendarPage() {
                                         date: app.startTime.slice(0, 10)
                                       });
                                     }}
-                                    className="opacity-20 hover:opacity-100 p-1 bg-white hover:bg-zinc-100 border border-[#bfc9c3]/40 rounded text-[#003527] transition-all cursor-pointer flex items-center justify-center shadow-none"
+                                    className="opacity-0 group-hover:opacity-100 p-1 bg-white hover:bg-zinc-100 border border-[#bfc9c3]/40 rounded text-[#003527] transition-all cursor-pointer flex items-center justify-center shadow-none"
                                     title="Rechnung erstellen"
                                   >
-                                    <Plus className="w-2.5 h-2.5" />
+                                    <Plus className="w-3.5 h-3.5" />
                                   </button>
                                 )}
                               </div>
@@ -894,7 +1008,7 @@ export default function CalendarPage() {
                           return (
                             <div
                               key={app.id}
-                              draggable={!isResizing}
+                              draggable={!isResizing && isAppointmentMatching(app)}
                               onDragStart={() => setDraggedAppId(app.id)}
                               onDragEnd={() => { setDraggedAppId(null); setDragOverSlot(null); }}
                               onContextMenu={(e) => handleContextMenu(e, app)}
@@ -905,23 +1019,30 @@ export default function CalendarPage() {
                                 setIsSheetOpen(true);
                               }}
                               style={getAppointmentStyle(app)}
-                              className={`absolute left-1 inset-x-1 rounded-lg p-2.5 border select-none cursor-grab flex flex-col justify-between overflow-hidden pointer-events-auto group ${
-                                isDragging ? 'opacity-40 shadow-none' : 'hover:scale-[1.01]'
-                              } ${
-                                isResizing ? 'z-30 cursor-ns-resize ring-2 ring-[#003527]' : 'z-10'
-                              } ${
-                                isResizing || isDragging ? '' : 'transition-all duration-200 ease-out'
-                              } ${
-                                !app.clientId
-                                  ? 'bg-zinc-100/90 border-zinc-200/70 text-zinc-800'
-                                  : app.status === 'booked' 
-                                  ? 'bg-amber-50/90 border-amber-200/60 text-amber-900' 
-                                  : app.status === 'confirmed' 
-                                  ? 'bg-blue-50/90 border-blue-200/60 text-blue-900'
-                                  : app.status === 'noshow' 
-                                  ? 'bg-emerald-50/90 border-emerald-200/80 text-emerald-900' 
-                                  : 'bg-rose-50/90 border-rose-200/60 text-rose-900'
-                              } shadow-none`}
+                              className={(() => {
+                                const isMatched = isAppointmentMatching(app);
+                                return `absolute left-1 inset-x-1 rounded-lg p-2.5 border select-none overflow-hidden pointer-events-auto group ${
+                                  isDragging 
+                                    ? 'opacity-40 shadow-none' 
+                                    : isMatched 
+                                    ? 'hover:scale-[1.01] cursor-grab' 
+                                    : 'opacity-15 grayscale pointer-events-none'
+                                } ${
+                                  isResizing ? 'z-30 cursor-ns-resize ring-2 ring-[#003527]' : 'z-10'
+                                } ${
+                                  isResizing || isDragging || !isMatched ? '' : 'transition-all duration-200 ease-out'
+                                } ${
+                                  !app.clientId
+                                    ? 'bg-zinc-100/90 border-zinc-200/70 text-zinc-800'
+                                    : app.status === 'booked' 
+                                    ? 'bg-amber-50/90 border-amber-200/60 text-amber-900' 
+                                    : app.status === 'confirmed' 
+                                    ? 'bg-blue-50/90 border-blue-200/60 text-blue-900'
+                                    : app.status === 'noshow' 
+                                    ? 'bg-emerald-50/90 border-emerald-200/80 text-emerald-900' 
+                                    : 'bg-rose-50/90 border-rose-200/60 text-rose-900'
+                                } shadow-none`;
+                              })()}
                             >
                               <div>
                                 <div className="flex justify-between items-start">
@@ -1108,37 +1229,42 @@ export default function CalendarPage() {
                   </div>
 
                   <div className="space-y-1 mt-2">
-                    {dayApps.map((app) => (
-                      <div
-                        key={app.id}
-                        draggable
-                        onDragStart={(e) => {
-                          e.stopPropagation();
-                          setDraggedAppId(app.id);
-                        }}
-                        onDragEnd={() => setDraggedAppId(null)}
-                        onContextMenu={(e) => handleContextMenu(e, app)}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedAppointment(app);
-                          setSheetMode('edit');
-                          setIsSheetOpen(true);
-                        }}
-                        className={`px-1.5 py-0.5 rounded text-[8px] font-extrabold truncate border text-left ${
-                          !app.clientId
-                            ? 'bg-zinc-100/90 border-zinc-200/50 text-zinc-700 font-bold'
-                            : app.status === 'booked' 
-                            ? 'bg-amber-50/70 border-amber-200/50 text-amber-800' 
-                            : app.status === 'confirmed' 
-                            ? 'bg-blue-50/70 border-blue-200/50 text-blue-800'
-                            : app.status === 'noshow' 
-                            ? 'bg-emerald-50/70 border-emerald-200/50 text-emerald-800' 
-                            : 'bg-rose-50/70 border-rose-200/50 text-rose-800'
-                        }`}
-                      >
-                        {formatTime(app.startTime)} {!app.clientId ? app.serviceName : app.clientName.split(' ')[0]}
-                      </div>
-                    ))}
+                    {dayApps.map((app) => {
+                      const isMatched = isAppointmentMatching(app);
+                      return (
+                        <div
+                          key={app.id}
+                          draggable={isMatched}
+                          onDragStart={(e) => {
+                            e.stopPropagation();
+                            setDraggedAppId(app.id);
+                          }}
+                          onDragEnd={() => setDraggedAppId(null)}
+                          onContextMenu={(e) => handleContextMenu(e, app)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedAppointment(app);
+                            setSheetMode('edit');
+                            setIsSheetOpen(true);
+                          }}
+                          className={`px-1.5 py-0.5 rounded text-[8px] font-extrabold truncate border text-left ${
+                            isMatched ? 'hover:scale-[1.01] cursor-pointer' : 'opacity-15 grayscale pointer-events-none'
+                          } ${
+                            !app.clientId
+                              ? 'bg-zinc-100/90 border-zinc-200/50 text-zinc-700 font-bold'
+                              : app.status === 'booked' 
+                              ? 'bg-amber-50/70 border-amber-200/50 text-amber-800' 
+                              : app.status === 'confirmed' 
+                              ? 'bg-blue-50/70 border-blue-200/50 text-blue-800'
+                              : app.status === 'noshow' 
+                              ? 'bg-emerald-50/70 border-emerald-200/50 text-emerald-800' 
+                              : 'bg-rose-50/70 border-rose-200/50 text-rose-800'
+                          }`}
+                        >
+                          {formatTime(app.startTime)} {!app.clientId ? app.serviceName : app.clientName.split(' ')[0]}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               );
@@ -1159,20 +1285,13 @@ export default function CalendarPage() {
             className="hidden lg:flex absolute right-8 top-3 bottom-6 w-80 bg-white border border-[#003527]/10 flex-col z-30 shadow-none rounded-[20px] overflow-hidden"
           >
             {/* Sidebar Header (Matches Clients List layout style) */}
-            <div className="p-6 pt-8 space-y-4 border-b border-[#bfc9c3]/20 flex-shrink-0 bg-white">
+            <div className="p-6 pt-5 space-y-4 border-b border-[#bfc9c3]/20 flex-shrink-0 bg-white">
               <div className="flex justify-between items-center select-none">
                 {(() => {
                   const { todayEvents, tomorrowEvents, upcomingEvents } = getUpcomingEvents();
                   const count = todayEvents.length + tomorrowEvents.length + upcomingEvents.length;
                   return <h3 className="text-sm font-bold text-[#003527]">Anstehende Termine ({count})</h3>;
                 })()}
-                <button
-                  onClick={handleNewAppointmentClick}
-                  className="p-1.5 rounded-lg text-zinc-400 hover:text-[#003527] hover:bg-[#003527]/5 transition-all cursor-pointer animate-fade-in"
-                  title="Termin anlegen"
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
               </div>
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-zinc-400" />
@@ -1630,65 +1749,125 @@ export default function CalendarPage() {
           const client = clients.find(c => c.id === app.clientId);
 
           const newStart = new Date(pendingMove.newStartTime);
-          const formattedDate = newStart.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
+          const formattedDate = newStart.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: 'short' });
           const formattedTime = newStart.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
 
           return (
             <motion.div
-              initial={{ opacity: 0, y: 50, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 20, scale: 0.95 }}
-              className={`fixed bottom-6 z-50 flex flex-col bg-white/95 backdrop-blur-xl border border-[#bfc9c3]/30 w-full max-w-md rounded-2xl shadow-[0_12px_45px_rgba(0,53,39,0.14)] p-5 select-none overflow-hidden m-4 transition-all duration-300 ${
-                isSidebarOpen ? 'right-[400px]' : 'right-8'
-              }`}
+              key={`${pendingMove.appId}-${pendingMove.newStartTime}`}
+              initial={{ opacity: 0, y: 50, x: "-50%", scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, x: "-50%", scale: 1 }}
+              exit={{ opacity: 0, y: 20, x: "-50%", scale: 0.95 }}
+              onMouseEnter={() => setIsHoverToast(true)}
+              onMouseLeave={() => setIsHoverToast(false)}
+              id="global-toast"
+              className="fixed bottom-6 left-1/2 z-50 flex items-center bg-white/95 backdrop-blur-xl border border-[#bfc9c3]/30 rounded-2xl shadow-[0_20px_50px_rgba(0,53,39,0.08)] p-2 pl-4 text-[#003527] w-[510px] max-w-[calc(100vw-3rem)] m-0 select-none transition-all duration-300 relative animate-slide-up-toast"
             >
-              <div className="flex items-start justify-between gap-4">
-                {/* Left Column: Icon & Info */}
-                <div className="flex items-start gap-3 min-w-0 flex-grow">
-                  <div className="w-10 h-10 rounded-full bg-[#003527]/5 flex items-center justify-center flex-shrink-0 text-[#003527] mt-0.5">
-                    <Mail className="w-5 h-5" />
-                  </div>
-                  <div className="min-w-0 flex-grow text-left">
-                    <h4 className="font-bold text-xs text-[#003527] leading-snug">
-                      Terminbestätigung per E-Mail an <span className="font-extrabold">{app.clientName}</span> senden?
-                    </h4>
-                    <div className="text-[10px] text-zinc-400 font-semibold bg-zinc-50 border border-zinc-100 rounded-lg p-1.5 mt-2 inline-block">
-                      Neuer Termin: {formattedDate} um {formattedTime} Uhr
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right Column: Stacked Action Buttons */}
-                <div className="flex flex-col gap-1.5 flex-shrink-0 w-28 mt-0.5">
-                  <button
-                    onClick={() => commitPendingMove(true)}
-                    className="w-full bg-[#003527] hover:bg-[#003527]/90 text-white text-[10px] font-bold rounded-lg py-1.5 transition-all cursor-pointer active:scale-95 text-center"
-                  >
-                    Senden
-                  </button>
-                  <button
-                    onClick={() => commitPendingMove(false)}
-                    className="w-full bg-[#f3f4f3] hover:bg-zinc-100 border border-[#bfc9c3]/30 text-[#003527] text-[10px] font-bold rounded-lg py-1.5 transition-all cursor-pointer active:scale-95 text-center"
-                  >
-                    Nicht senden
-                  </button>
-                  <button
-                    onClick={revertPendingMove}
-                    className="w-full text-zinc-400 hover:text-rose-600 text-[9px] font-bold py-1 transition-colors cursor-pointer text-center"
-                  >
-                    Widerrufen
-                  </button>
-                </div>
+              {/* Left Column: Info Text */}
+              <div className="flex flex-col justify-center pr-4 min-w-[170px] text-left flex-grow">
+                <span className="text-[10.5px] font-bold text-zinc-500">
+                  Verschoben auf {formattedDate}, {formattedTime} Uhr
+                </span>
+                <span className="text-[13px] font-bold text-[#003527] mt-0.5">
+                  {app.clientName} benachrichtigen?
+                </span>
               </div>
 
+              {/* Splitter Divider */}
+              <div className="w-px h-8 bg-[#bfc9c3]/30 mx-1.5 flex-shrink-0" />
+
+              {/* Actions Section */}
+              <div className="relative flex items-center ml-1.5 flex-shrink-0">
+                <div className="flex items-center bg-[#003527] text-white rounded-xl shadow-sm border border-[#003527]">
+                  <button
+                    onClick={() => commitPendingMove(true, false)}
+                    className="flex items-center gap-1.5 px-4 py-2 text-[11px] font-extrabold hover:bg-white/10 rounded-l-xl transition-colors cursor-pointer text-white whitespace-nowrap justify-center"
+                  >
+                    <Mail className="w-3.5 h-3.5 text-white" />
+                    <span>Mail senden</span>
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsToastDropdownOpen(!isToastDropdownOpen);
+                    }}
+                    className="px-2 py-2 hover:bg-white/10 border-l border-white/10 rounded-r-xl transition-colors h-full flex items-center cursor-pointer text-white/80"
+                  >
+                    <ChevronUp className={`w-3.5 h-3.5 transition-transform duration-200 ${isToastDropdownOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                </div>
+
+                {/* Upward Dropdown */}
+                {isToastDropdownOpen && (
+                  <div className="absolute bottom-full left-0 mb-3 w-60 bg-white border border-zinc-200 shadow-2xl rounded-2xl p-1 z-[60] flex flex-col text-left text-zinc-800 animate-dropdown-up origin-bottom">
+                    <div className="px-2.5 py-1.5 text-[9.5px] font-extrabold text-zinc-400">
+                      Senden als
+                    </div>
+
+                    <button
+                      onClick={() => commitPendingMove(true, false)}
+                      className="w-full flex items-center justify-between px-2.5 py-2 text-xs font-semibold hover:bg-zinc-50 rounded-xl text-zinc-800 transition cursor-pointer text-left"
+                    >
+                      <span className="flex items-center gap-2"><Mail className="w-3.5 h-3.5 text-zinc-400" /> E-Mail</span>
+                      {client?.email && <span className="text-[10px] text-zinc-400 font-medium truncate max-w-[110px]">{client.email}</span>}
+                    </button>
+
+                    {client?.phone && (
+                      <>
+                        <button
+                          onClick={() => commitPendingMove(false, true)}
+                          className="w-full flex items-center justify-between px-2.5 py-2 text-xs font-semibold hover:bg-zinc-50 rounded-xl text-zinc-800 transition cursor-pointer text-left"
+                        >
+                          <span className="flex items-center gap-2"><MessageSquare className="w-3.5 h-3.5 text-zinc-400" /> SMS</span>
+                          <span className="text-[10px] text-zinc-400 font-medium truncate max-w-[110px]">{client.phone}</span>
+                        </button>
+
+                        <button
+                          onClick={() => commitPendingMove(true, true)}
+                          className="w-full flex items-center justify-between px-2.5 py-2 text-xs font-semibold hover:bg-zinc-50 rounded-xl text-zinc-800 transition cursor-pointer text-left"
+                        >
+                          <span className="flex items-center gap-2"><Mail className="w-3.5 h-3.5 text-zinc-400" /> E-Mail & SMS</span>
+                        </button>
+                      </>
+                    )}
+
+                    <div className="h-px bg-zinc-100 my-1 mx-2" />
+
+                    <button
+                      onClick={() => {
+                        setSelectedClientId(client?.id || '');
+                        setSelectedMailAppointmentId(pendingMove.appId);
+                        setIsMailModalOpen(true);
+                        setPendingMove(null);
+                      }}
+                      className="w-full flex items-start gap-2.5 px-2.5 py-2.5 text-xs font-semibold hover:bg-zinc-50 rounded-xl text-zinc-800 transition text-left cursor-pointer group"
+                    >
+                      <Edit2 className="w-3.5 h-3.5 mt-0.5 text-zinc-400 group-hover:text-[#003527]" />
+                      <div className="leading-tight">
+                        <span className="block text-zinc-900 font-bold mb-0.5">Vorschau bearbeiten</span>
+                        <span className="text-[10px] text-zinc-500 font-medium italic">"Hallo {client?.name || 'Klient'}, dein Termin..."</span>
+                      </div>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Undo Action */}
+              <button
+                onClick={revertPendingMove}
+                className="ml-2.5 p-2 text-zinc-400 hover:text-rose-600 hover:bg-rose-50/50 rounded-xl transition flex items-center justify-center cursor-pointer active:scale-95 flex-shrink-0"
+                title="Widerrufen"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </button>
+
               {/* Progress Countdown Line */}
-              <motion.div
-                key={pendingMove.appId} // forces resetting progress bar when a new drop occurs
-                initial={{ width: '100%' }}
-                animate={{ width: 0 }}
-                transition={{ duration: 6, ease: 'linear' }}
-                className="absolute bottom-0 left-0 h-0.5 bg-[#003527]/30"
-              />
+              <div className="absolute bottom-[1px] left-[1px] right-[1px] h-[2px] rounded-b-[15px] overflow-hidden pointer-events-none">
+                <div
+                  style={{ width: `${(timerSeconds / 6) * 100}%` }}
+                  className="h-full bg-[#003527] transition-all duration-100 ease-linear"
+                />
+              </div>
             </motion.div>
           );
         })()}

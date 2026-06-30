@@ -165,8 +165,8 @@ interface DashboardContextProps {
   // Drag-and-drop / Resizing
   draggedAppId: string | null;
   setDraggedAppId: (id: string | null) => void;
-  dragOverSlot: { dateStr: string; hour: number } | null;
-  setDragOverSlot: (slot: { dateStr: string; hour: number } | null) => void;
+  dragOverSlot: { dateStr: string; hour: number; minutes?: number } | null;
+  setDragOverSlot: (slot: { dateStr: string; hour: number; minutes?: number } | null) => void;
   resizingAppId: string | null;
   setResizingAppId: (id: string | null) => void;
   tempDuration: number | null;
@@ -190,7 +190,8 @@ interface DashboardContextProps {
     street?: string,
     houseNumber?: string,
     zipCode?: string,
-    city?: string
+    city?: string,
+    children?: string
   ) => Promise<boolean>;
   deleteClient: (id: string) => Promise<void>;
   archiveClient: (id: string) => Promise<void>;
@@ -261,50 +262,19 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const [isCmdkOpen, setIsCmdkOpen] = useState(false);
 
   // Client database state
-  const [clients, setClients] = useState<Client[]>([
-    { id: 'c1', name: 'Alexander Hoffmann', salutation: 'Herr', firstName: 'Alexander', lastName: 'Hoffmann', birthday: '1984-05-12', email: 'alex@hoffmann.de', phone: '+49 176 1234567', emergencyContact: 'Sarah Hoffmann (Ehefrau) - +49 176 7654321', notes: 'Rückenschmerzen im Lendenbereich, Schreibtischtätigkeit.', createdAt: '2026-01-10T10:00:00Z', gdprAccepted: true },
-    { id: 'c2', name: 'Emma Schmidt', salutation: 'Frau', firstName: 'Emma', lastName: 'Schmidt', birthday: '1992-11-23', email: 'emma.schmidt@gmx.de', phone: '+49 152 9887766', emergencyContact: 'Karl Schmidt (Vater) - +49 30 5551234', notes: 'Migräne-Klientin, wöchentliche Akupunktur.', createdAt: '2026-02-15T11:30:00Z', gdprAccepted: false },
-    { id: 'c3', name: 'Maximilian Müller', salutation: 'Herr', firstName: 'Maximilian', lastName: 'Müller', birthday: '1978-02-05', email: 'max.mueller@web.de', phone: '+49 171 5554433', emergencyContact: 'Dr. Becker (Hausarzt) - +49 171 1112223', notes: 'Reha nach Knie-OP, physiotherapeutische Betreuung.', createdAt: '2026-03-01T09:00:00Z', gdprAccepted: true }
-  ]);
+  const [clients, setClients] = useState<Client[]>([]);
 
   // Available Services
-  const [services, setServices] = useState<Service[]>([
-    { id: 's1', name: 'Physiotherapie Erstgespräch & Befund', duration: 60, price: 90.00 },
-    { id: 's2', name: 'Klassische Massagetherapie', duration: 30, price: 45.00 },
-    { id: 's3', name: 'Manuelle Therapie (MT)', duration: 45, price: 70.00 },
-    { id: 's4', name: 'Osteopathische Behandlung', duration: 60, price: 110.00 }
-  ]);
+  const [services, setServices] = useState<Service[]>([]);
 
   // Appointments
-  const [appointments, setAppointments] = useState<Appointment[]>([
-    { id: 'a1', clientId: 'c1', clientName: 'Alexander Hoffmann', serviceId: 's1', serviceName: 'Physiotherapie Erstgespräch & Befund', price: 90.00, startTime: '2026-06-01T09:00:00.000Z', endTime: '2026-06-01T10:00:00.000Z', status: 'confirmed', notes: 'Erstgespräch und Bewegungsanalyse.' },
-    { id: 'a2', clientId: 'c2', clientName: 'Emma Schmidt', serviceId: 's3', serviceName: 'Manuelle Therapie (MT)', price: 70.00, startTime: '2026-06-01T11:00:00.000Z', endTime: '2026-06-01T11:45:00.000Z', status: 'booked' },
-    { id: 'a3', clientId: 'c3', clientName: 'Maximilian Müller', serviceId: 's4', serviceName: 'Osteopathische Behandlung', price: 110.00, startTime: '2026-06-02T14:00:00.000Z', endTime: '2026-06-02T15:00:00.000Z', status: 'confirmed' },
-    { id: 'a4', clientId: 'c1', clientName: 'Alexander Hoffmann', serviceId: 's2', serviceName: 'Klassische Massagetherapie', price: 45.00, startTime: '2026-06-03T10:00:00.000Z', endTime: '2026-06-03T10:30:00.000Z', status: 'confirmed' },
-    { id: 'a5', clientId: 'c2', clientName: 'Emma Schmidt', serviceId: 's1', serviceName: 'Physiotherapie Erstgespräch & Befund', price: 90.00, startTime: '2026-06-04T15:30:00.000Z', endTime: '2026-06-04T16:30:00.000Z', status: 'booked' }
-  ]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
 
   // SOAP Notes
-  const [soapNotes, setSoapNotes] = useState<SoapNote[]>([
-    { 
-      id: 'sn1', 
-      appointmentId: 'a1', 
-      clientId: 'c1', 
-      date: '2026-06-01', 
-      subjective: 'Kläger klagt über anhaltende Lendenwirbelschmerzen (L4/L5) nach längerem Sitzen. Intensität 6/10.', 
-      objective: 'Eingeschränkte Flexion der LWS. Palpatorischer Hartspann M. erector spinae beidseitig.', 
-      assessment: 'Verdacht auf haltungsbedingtes LWS-Syndrom bei verkürztem Iliopsoas.', 
-      plan: 'Mobilisierung der LWS, Dehnung Iliopsoas, Eigenübungen für den Alltag mitgegeben (Katze-Kuh).' 
-    }
-  ]);
+  const [soapNotes, setSoapNotes] = useState<SoapNote[]>([]);
 
   // Invoices State
-  const [invoices, setInvoices] = useState<Invoice[]>([
-    { id: 'i1', appointmentId: 'a1', clientId: 'c1', clientName: 'Alexander Hoffmann', invoiceNumber: 'RE-2026-0001', amount: 90.00, date: '2026-06-01', status: 'paid' },
-    { id: 'i2', appointmentId: 'a3', clientId: 'c3', clientName: 'Maximilian Müller', invoiceNumber: 'RE-2026-0002', amount: 110.00, date: '2026-06-02', status: 'open' },
-    { id: 'i3', appointmentId: 'a2', clientId: 'c2', clientName: 'Emma Schmidt', invoiceNumber: 'RE-2026-0003', amount: 70.00, date: '2026-06-03', status: 'paid' },
-    { id: 'i4', appointmentId: 'a4', clientId: 'c1', clientName: 'Alexander Hoffmann', invoiceNumber: 'RE-2026-0004', amount: 45.00, date: '2026-05-15', status: 'overdue' }
-  ]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
 
   // Invoice Filters & UI States
   const [invoiceFilter, setInvoiceFilter] = useState<'all' | 'paid' | 'open' | 'overdue'>('all');
@@ -319,12 +289,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   };
 
   // Document attachments (Mock for GDPR uploads)
-  const [clientDocuments, setClientDocuments] = useState<Record<string, { name: string; size: string }[]>>({
-    c1: [
-      { name: 'Anamnesebogen_Alexander.pdf', size: '245 KB' },
-      { name: 'Befund_MRT_LWS_1.2MB.pdf', size: '1.2 MB' }
-    ]
-  });
+  const [clientDocuments, setClientDocuments] = useState<Record<string, { name: string; size: string }[]>>({});
 
   // Selected details sheet values
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
@@ -336,7 +301,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const [newAppServiceId, setNewAppServiceId] = useState('');
 
   // Selected client profile values (under CRM tab)
-  const [selectedClientId, setSelectedClientId] = useState<string>('c1');
+  const [selectedClientId, setSelectedClientId] = useState<string>('');
   const [clientSearch, setClientSearch] = useState('');
   const [clientFilter, setClientFilter] = useState<'all' | 'upcoming' | 'invoices' | 'archived'>('all');
   const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
@@ -385,12 +350,12 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; type: 'appointment' | 'client' | 'invoice'; appointment?: Appointment; client?: Client; invoice?: Invoice } | null>(null);
 
   // Selected calendar date
-  const [currentCalendarDate, setCurrentCalendarDate] = useState<Date>(new Date('2026-06-01'));
+  const [currentCalendarDate, setCurrentCalendarDate] = useState<Date>(new Date());
   const [calendarView, setCalendarView] = useState<'day' | 'week' | 'month'>('week');
 
   // Drag and Drop & Resizing State
   const [draggedAppId, setDraggedAppId] = useState<string | null>(null);
-  const [dragOverSlot, setDragOverSlot] = useState<{ dateStr: string; hour: number } | null>(null);
+  const [dragOverSlot, setDragOverSlot] = useState<{ dateStr: string; hour: number; minutes?: number } | null>(null);
   const [resizingAppId, setResizingAppId] = useState<string | null>(null);
   const [tempDuration, setTempDuration] = useState<number | null>(null);
 
@@ -456,6 +421,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
           const flags = JSON.parse(localStorage.getItem(`client_flags_${therapistId}`) || '[]');
           const gdpr = JSON.parse(localStorage.getItem(`client_gdpr_${therapistId}`) || '[]');
           const archived = JSON.parse(localStorage.getItem(`client_archived_${therapistId}`) || '[]');
+          const childrenMap = JSON.parse(localStorage.getItem(`client_children_${therapistId}`) || '{}');
 
           loadedClients = dbClients.map(c => {
             let salutation = 'Keine';
@@ -511,7 +477,8 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
               zipCode: c.zip_code || '',
               city: c.city || '',
               occupation: c.occupation || '',
-              maritalStatus: c.marital_status || ''
+              maritalStatus: c.marital_status || '',
+              children: childrenMap[c.id] || 'Keine Angabe'
             };
           });
           setClients(loadedClients);
@@ -770,7 +737,8 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     street: string = '',
     houseNumber: string = '',
     zipCode: string = '',
-    city: string = ''
+    city: string = '',
+    children: string = 'Keine Angabe'
   ): Promise<boolean> => {
     if (!firstName || !lastName || !therapistId) return false;
 
@@ -796,8 +764,14 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       zipCode,
       city,
       occupation,
-      maritalStatus
+      maritalStatus,
+      children
     };
+
+    // Save children status to localStorage since it's not in Postgres schema
+    const childrenMap = JSON.parse(localStorage.getItem(`client_children_${therapistId}`) || '{}');
+    childrenMap[clientId] = children;
+    localStorage.setItem(`client_children_${therapistId}`, JSON.stringify(childrenMap));
 
     const { error } = await supabase
       .from('clients')
@@ -922,6 +896,12 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     if (!therapistId) return false;
     const client = clients.find(c => c.id === id);
     if (!client) return false;
+
+    if (updatedFields.children !== undefined) {
+      const currentMap = JSON.parse(localStorage.getItem(`client_children_${therapistId}`) || '{}');
+      currentMap[id] = updatedFields.children;
+      localStorage.setItem(`client_children_${therapistId}`, JSON.stringify(currentMap));
+    }
 
     const dbUpdate: any = {};
     if (updatedFields.firstName !== undefined || updatedFields.lastName !== undefined || updatedFields.salutation !== undefined) {
@@ -1422,7 +1402,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       setMailBody(`${greeting},\n\nwir freuen uns, Ihren Termin für die Behandlung (${appService}) am ${appDateStr} um ${appTimeStr} Uhr zu bestätigen.\n\nSollten Sie den Termin nicht wahrnehmen können, sagen Sie diesen bitte mindestens 24 Stunden vorher ab.\n\nMit freundlichen Grüßen,\nIhr Praxis-Team`);
     } else if (topic === 'erinnerung') {
       const clientAppointments = appointments.filter(a => a.clientId === client.id);
-      const futureApps = clientAppointments.filter(a => new Date(a.startTime).getTime() >= new Date('2026-06-01').getTime());
+      const futureApps = clientAppointments.filter(a => new Date(a.startTime).getTime() >= new Date().getTime());
       const nextApp = futureApps.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())[0] || clientAppointments[0];
       
       const appDate = nextApp ? new Date(nextApp.startTime) : null;

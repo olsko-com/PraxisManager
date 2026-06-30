@@ -70,7 +70,7 @@ function ClientListItem({
   const xOffset = swipeState === 'left' ? -128 : swipeState === 'right' ? 64 : 0;
 
   return (
-    <div className="relative overflow-hidden border-b border-[#bfc9c3]/30 select-none bg-[#bfc9c3]/10">
+    <div className="relative overflow-hidden border-b border-[#bfc9c3]/20 select-none bg-white">
       {/* Behind layer left: Flag button (revealed when swiping right) */}
       <div className="absolute left-0 top-0 bottom-0 flex z-0">
         <button
@@ -137,14 +137,14 @@ function ClientListItem({
             onSelect();
           }
         }}
-      className={`px-6 py-4 cursor-pointer flex items-center justify-between relative z-10 select-none transition-all group ${
+      className={`px-6 py-4 cursor-pointer flex items-center justify-between relative z-10 select-none transition-all group bg-white hover:bg-zinc-50 ${
           isSelected 
-            ? 'bg-[#e6ebe7] text-[#003527] font-semibold' 
-            : 'bg-white hover:bg-[#f4f6f4] active:bg-[#dce3dd] text-[#404944]'
+            ? 'text-[#003527] font-semibold' 
+            : 'text-[#404944]'
         }`}
       >
         {isSelected && (
-          <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#003527] z-20" />
+          <div className="absolute right-0 top-0 bottom-0 w-1 bg-[#003527] z-20" />
         )}
         <div>
           <div className="flex items-center gap-1.5 text-left">
@@ -156,7 +156,7 @@ function ClientListItem({
               <Flag className="w-3 h-3 text-rose-500 fill-rose-500" />
             )}
           </div>
-          <p className="text-[10px] text-zinc-400 mt-0.5 text-left">Geb: {new Date(client.birthday).toLocaleDateString('de-DE')}</p>
+          <p className="text-[10px] text-zinc-400 mt-0.5 text-left">Geb: {client.birthday ? new Date(client.birthday).toLocaleDateString('de-DE') : 'Keine Angabe'}</p>
         </div>
         
         <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -400,6 +400,7 @@ export default function ClientsPage() {
 
   // Inline client editing state
   const [isEditingClient, setIsEditingClient] = React.useState(false);
+  const [isEditingAnamnesis, setIsEditingAnamnesis] = React.useState(false);
   const [editSalutation, setEditSalutation] = React.useState('');
   const [editFirstName, setEditFirstName] = React.useState('');
   const [editLastName, setEditLastName] = React.useState('');
@@ -413,6 +414,7 @@ export default function ClientsPage() {
   const [editCity, setEditCity] = React.useState('');
   const [editOccupation, setEditOccupation] = React.useState('');
   const [editMaritalStatus, setEditMaritalStatus] = React.useState('');
+  const [editChildren, setEditChildren] = React.useState('');
   const [editNotes, setEditNotes] = React.useState('');
 
   const calculateAge = (birthdayStr: string) => {
@@ -442,6 +444,7 @@ export default function ClientsPage() {
     setEditCity(currentClient.city || '');
     setEditOccupation(currentClient.occupation || '');
     setEditMaritalStatus(currentClient.maritalStatus || '');
+    setEditChildren(currentClient.children || 'Keine Angabe');
     setEditNotes(currentClient.notes || '');
     setIsEditingClient(true);
   };
@@ -462,6 +465,7 @@ export default function ClientsPage() {
       city: editCity,
       occupation: editOccupation,
       maritalStatus: editMaritalStatus,
+      children: editChildren,
       notes: editNotes
     });
     if (success) {
@@ -472,7 +476,8 @@ export default function ClientsPage() {
   // Reset editing mode when client changes
   React.useEffect(() => {
     setIsEditingClient(false);
-  }, [selectedClientId]);
+    setIsEditingAnamnesis(false);
+  }, [selectedClientId, activeTab]);
 
   // Auto-close sidebar when selected client changes
   React.useEffect(() => {
@@ -485,9 +490,9 @@ export default function ClientsPage() {
   const clientSoapNotes = soapNotes.filter(n => n.clientId === selectedClientId);
 
   return (
-    <div className="relative flex-grow bg-[#eef0ed] rounded-none lg:rounded-[24px] border-0 lg:border border-[#003527]/10 m-0 lg:my-4 lg:mr-4 lg:ml-4 flex p-0 gap-0 h-[calc(100vh-64px)] lg:h-[calc(100vh-32px)] overflow-hidden shadow-none transition-all duration-300">
+    <div className="relative flex-grow bg-[#eef0ed] rounded-none lg:rounded-[24px] border-0 lg:border border-[#003527]/10 m-0 lg:my-4 lg:mr-4 lg:ml-4 flex p-0 lg:p-6 gap-0 lg:gap-6 h-[calc(100vh-64px)] lg:h-[calc(100vh-32px)] overflow-hidden shadow-none transition-all duration-300">
       {/* Left Side: Client List as a secondary Sidebar */}
-      <div className={`absolute lg:relative top-0 bottom-0 left-0 z-45 w-full md:w-80 bg-white border-r border-[#003527]/10 rounded-r-[20px] lg:rounded-none flex flex-col flex-shrink-0 overflow-hidden h-full transition-transform duration-300 ease-in-out lg:translate-x-0 lg:flex ${
+      <div className={`absolute lg:relative top-0 bottom-0 left-0 z-45 w-full md:w-80 bg-white border-r border-[#003527]/10 lg:border lg:border-[#bfc9c3]/30 rounded-r-[20px] lg:rounded-2xl flex flex-col flex-shrink-0 overflow-hidden h-full transition-transform duration-300 ease-in-out lg:translate-x-0 lg:flex ${
         !currentClient
           ? 'translate-x-0'
           : isSidebarOpen
@@ -721,46 +726,70 @@ export default function ClientsPage() {
       )}
 
       {/* Right Side: Profile Details */}
-      <div className={`flex-grow flex flex-col min-h-0 overflow-hidden bg-[#eef0ed] ${currentClient ? 'flex' : 'hidden lg:flex'}`}>
+      <div className={`flex-grow flex flex-col min-h-0 overflow-hidden ${currentClient ? 'flex' : 'hidden lg:flex'}`}>
         {currentClient ? (
           <div className="flex-grow flex flex-col min-h-0">
-            {/* Klient Header */}
-            <div className="border-b border-[#bfc9c3]/30 mx-4 md:mx-6 pt-6 pb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-transparent z-20 flex-shrink-0 text-left px-0">
+            <div className="mx-4 md:mx-6 pt-6 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-transparent z-20 flex-shrink-0 text-left px-0">
               <div className="flex flex-col text-left">
                 <div className="text-left">
                   <h3 className="text-xl font-bold text-[#043F2D]">
                     {currentClient.name}
-                    {currentClient.birthday && (
-                      <span className="text-sm font-semibold text-zinc-400 ml-2">
-                        ({calculateAge(currentClient.birthday)} J.)
-                      </span>
-                    )}
                   </h3>
                   <div className="flex flex-wrap items-center gap-2 mt-1">
                     <span className="text-xs text-zinc-500">Klient seit {new Date(currentClient.createdAt).toLocaleDateString('de-DE')}</span>
-                    <span className="text-zinc-300 hidden sm:inline">•</span>
-                    <button
-                      onClick={() => {
-                        if (currentClient.gdprAccepted) {
-                          toggleClientGdpr(currentClient.id);
-                        } else {
-                          openGdprModal(currentClient.id);
-                        }
-                      }}
-                      className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full border transition-all cursor-pointer inline-flex items-center gap-0.5 outline-none ${
-                        currentClient.gdprAccepted
-                          ? 'bg-emerald-50 border-emerald-200/50 text-emerald-700 hover:bg-emerald-100'
-                          : 'bg-amber-50 border-amber-200/50 text-amber-700 hover:bg-amber-100'
-                      }`}
-                      title={currentClient.gdprAccepted ? "Klicken, um Einwilligung zu widerrufen" : "Klicken, um DSGVO-Einwilligung zu erteilen"}
-                    >
-                      {currentClient.gdprAccepted ? '✓ DSGVO erteilt' : '⚠ DSGVO ausstehend'}
-                    </button>
                   </div>
                 </div>
               </div>
               
               <div className="flex items-center gap-2">
+                {/* Bearbeiten Buttons in Header */}
+                {activeTab === 'overview' && (
+                  <>
+                    {isEditingClient ? (
+                      <div className="flex gap-2 animate-fade-in">
+                        <button
+                          onClick={() => setIsEditingClient(false)}
+                          className="bg-white hover:bg-zinc-50 text-zinc-500 hover:text-zinc-700 px-3.5 py-2 rounded-xl text-[10px] font-extrabold transition-all cursor-pointer border border-[#bfc9c3]/40 shadow-sm active:scale-95"
+                        >
+                          Abbrechen
+                        </button>
+                        <button
+                          onClick={saveEditing}
+                          className="bg-[#003527] hover:bg-[#0b513d] text-white px-3.5 py-2 rounded-xl text-[10px] font-extrabold transition-all cursor-pointer border-none shadow-sm active:scale-95"
+                        >
+                          Speichern
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={startEditing}
+                        className="p-2 bg-white border border-[#bfc9c3]/50 rounded-xl hover:bg-zinc-50 text-[#003527] transition-all cursor-pointer flex items-center justify-center active:scale-95"
+                        title="Akte bearbeiten"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </>
+                )}
+
+                {activeTab === 'anamnesis' && (
+                  <button
+                    onClick={() => setIsEditingAnamnesis(!isEditingAnamnesis)}
+                    className={`p-2 rounded-xl border transition-all cursor-pointer flex items-center justify-center active:scale-95 ${
+                      isEditingAnamnesis
+                        ? 'bg-[#003527] text-white border-[#003527] hover:bg-[#0b513d]'
+                        : 'bg-white text-[#003527] border-[#bfc9c3]/50 hover:bg-zinc-50'
+                    }`}
+                    title={isEditingAnamnesis ? "Leseansicht" : "Anamnese bearbeiten"}
+                  >
+                    {isEditingAnamnesis ? (
+                      <Check className="w-4 h-4" />
+                    ) : (
+                      <Edit2 className="w-4 h-4" />
+                    )}
+                  </button>
+                )}
+
                 <div className="relative">
                   <button
                     onClick={() => setIsDetailsMenuOpen(!isDetailsMenuOpen)}
@@ -885,23 +914,27 @@ export default function ClientsPage() {
             </div>
 
             {/* Sub-tab navigation */}
-            <div className="flex border-b border-[#bfc9c3]/30 mx-4 md:mx-6 bg-transparent select-none z-20 flex-shrink-0 px-0">
-              {(['overview', 'anamnesis', 'soap', 'billing'] as const).map((tab, idx) => (
+            <div className="flex gap-6 border-b border-[#bfc9c3]/30 mx-4 md:mx-6 bg-transparent select-none z-20 flex-shrink-0 px-0">
+              {(['overview', 'anamnesis', 'soap', 'billing'] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`py-3.5 pr-4 text-xs font-bold transition-all relative border-b-2 -mb-[2px] cursor-pointer outline-none bg-transparent ${
-                    idx === 0 ? 'pl-0' : 'pl-4'
-                  } ${
+                  className={`py-3.5 text-xs font-bold transition-all relative cursor-pointer outline-none bg-transparent ${
                     activeTab === tab
-                      ? 'border-[#003527] text-[#003527]'
-                      : 'border-transparent text-zinc-400 hover:text-[#003527]'
+                      ? 'text-[#003527]'
+                      : 'text-zinc-400 hover:text-[#003527]'
                   }`}
                 >
                   {tab === 'overview' && 'Stammdaten'}
                   {tab === 'anamnesis' && 'Anamnese'}
                   {tab === 'soap' && 'Behandlungsverlauf'}
                   {tab === 'billing' && 'Abrechnung & Dokumente'}
+                  {activeTab === tab && (
+                    <motion.div 
+                      layoutId="clientTabLine" 
+                      className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#003527]" 
+                    />
+                  )}
                 </button>
               ))}
             </div>
@@ -910,224 +943,190 @@ export default function ClientsPage() {
             <div className="flex-grow overflow-y-auto px-4 md:px-6 py-6 pb-24 md:pb-6">
               {activeTab === 'overview' && (
                 <div className="space-y-6 animate-fade-in text-left">
-                  {/* Tab Action Bar */}
-                  <div className="flex justify-between items-center pb-2 border-b border-[#bfc9c3]/20">
-                    <div>
-                      <h4 className="text-[10px] font-bold text-[#003527]/60 uppercase tracking-widest">Stammdaten</h4>
-                      <p className="text-[11px] text-zinc-400 mt-0.5">Demographische Daten, Beschäftigung und medizinisches Profil.</p>
-                    </div>
-                    {!isEditingClient ? (
-                      <button 
-                        onClick={startEditing}
-                        className="bg-white hover:bg-zinc-50 text-[#003527] border border-[#bfc9c3]/40 px-3.5 py-1.5 rounded-xl text-[10px] font-extrabold transition-all cursor-pointer flex items-center gap-1.5 shadow-sm active:scale-95"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" /> Akte bearbeiten
-                      </button>
-                    ) : (
-                      <div className="flex gap-2">
-                        <button 
-                          onClick={() => setIsEditingClient(false)}
-                          className="bg-white hover:bg-zinc-50 text-zinc-500 hover:text-zinc-700 px-3.5 py-1.5 rounded-xl text-[10px] font-extrabold transition-all cursor-pointer border border-[#bfc9c3]/40 shadow-sm active:scale-95"
-                        >
-                          Abbrechen
-                        </button>
-                        <button 
-                          onClick={saveEditing}
-                          className="bg-[#003527] hover:bg-[#0b513d] text-white px-3.5 py-1.5 rounded-xl text-[10px] font-extrabold transition-all cursor-pointer border-none shadow-sm active:scale-95"
-                        >
-                          Speichern
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
                   {isEditingClient ? (
                     /* EDIT MODE FORM */
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 text-left">
-                      {/* Linke Spalte Formular */}
-                      <div className="space-y-6">
-                        {/* Karte 1 Formular: Stammdaten */}
-                        <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5.5 space-y-4 shadow-[0_4px_20px_rgba(0,53,39,0.02)]">
-                          <div className="flex items-center gap-3 pb-3 border-b border-zinc-100/60">
-                            <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200/40 text-emerald-700">
-                              <User className="w-4 h-4" />
-                            </div>
-                            <div className="text-left">
-                              <h4 className="font-extrabold text-xs text-[#003527] uppercase tracking-wider">Stammdaten</h4>
-                              <p className="text-[10px] text-zinc-400 font-medium mt-0.5">Basisangaben zur Person</p>
-                            </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
+                      {/* Karte 1 Formular: Stammdaten (lg:col-span-1) */}
+                      <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4">
+                        <div className="flex items-center gap-3 pb-3 border-b border-zinc-100/60">
+                          <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200/40 text-emerald-700">
+                            <User className="w-4 h-4" />
                           </div>
-                          
-                          <div className="space-y-3.5">
-                            {/* Salutation */}
-                            <div className="space-y-1.5 text-left">
-                              <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400">Anrede</label>
-                              <div className="bg-zinc-100/80 p-0.5 rounded-xl border border-transparent flex relative overflow-hidden">
-                                {(['Keine', 'Frau', 'Herr'] as const).map((opt) => (
-                                  <button
-                                    key={opt}
-                                    type="button"
-                                    onClick={() => setEditSalutation(opt)}
-                                    className={`flex-1 py-1.5 text-xs font-bold rounded-lg relative z-10 transition-colors cursor-pointer bg-transparent border-none ${
-                                      editSalutation === opt ? 'text-[#003527]' : 'text-zinc-400 hover:text-zinc-505'
-                                    }`}
-                                  >
-                                    {opt}
-                                    {editSalutation === opt && (
-                                      <motion.div
-                                        layoutId="edit-salutation-pill"
-                                        className="absolute inset-0 bg-white rounded-lg border border-zinc-200/50 z-[-1] shadow-sm"
-                                        transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                                      />
-                                    )}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-
-                            {/* Vorname & Nachname */}
-                            <div className="grid grid-cols-2 gap-3">
-                              <div className="space-y-1">
-                                <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400">Vorname</label>
-                                <input
-                                  type="text"
-                                  value={editFirstName}
-                                  onChange={(e) => setEditFirstName(e.target.value)}
-                                  className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-semibold text-xs text-[#003527] outline-none transition-all"
-                                />
-                              </div>
-                              <div className="space-y-1">
-                                <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400">Nachname</label>
-                                <input
-                                  type="text"
-                                  value={editLastName}
-                                  onChange={(e) => setEditLastName(e.target.value)}
-                                  className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-semibold text-xs text-[#003527] outline-none transition-all"
-                                />
-                              </div>
-                            </div>
-
-                            {/* Geburtstag */}
-                            <div className="space-y-1">
-                              <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400">Geburtstag</label>
-                              <input
-                                type="date"
-                                value={editBirthday}
-                                onChange={(e) => setEditBirthday(e.target.value)}
-                                className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-bold text-xs text-[#003527] outline-none transition-all cursor-pointer"
-                              />
-                            </div>
-
-                            {/* Familienstand */}
-                            <div className="space-y-1">
-                              <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400">Familienstand</label>
-                              <input
-                                type="text"
-                                value={editMaritalStatus}
-                                onChange={(e) => setEditMaritalStatus(e.target.value)}
-                                className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-semibold text-xs text-[#003527] outline-none transition-all"
-                              />
-                            </div>
+                          <div className="text-left">
+                            <h4 className="font-extrabold text-xs text-[#003527] uppercase tracking-wider">Stammdaten</h4>
+                            <p className="text-[10px] text-zinc-400 font-medium mt-0.5">Basisangaben zur Person</p>
                           </div>
                         </div>
-
-                        {/* Karte 2 Formular: Kontakt & Anschrift */}
-                        <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5.5 space-y-4 shadow-[0_4px_20px_rgba(0,53,39,0.02)]">
-                          <div className="flex items-center gap-3 pb-3 border-b border-zinc-100/60">
-                            <div className="p-2 rounded-xl bg-blue-50 border border-blue-200/40 text-blue-700">
-                              <Phone className="w-4 h-4" />
-                            </div>
-                            <div className="text-left">
-                              <h4 className="font-extrabold text-xs text-[#003527] uppercase tracking-wider">Kontakt & Anschrift</h4>
-                              <p className="text-[10px] text-zinc-400 font-medium mt-0.5">Erreichbarkeit und Wohnort</p>
+                        
+                        <div className="space-y-3.5">
+                          {/* Salutation */}
+                          <div className="space-y-1.5 text-left">
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400">Anrede</label>
+                            <div className="bg-zinc-100/80 p-0.5 rounded-xl border border-transparent flex relative overflow-hidden">
+                              {(['Keine', 'Frau', 'Herr'] as const).map((opt) => (
+                                <button
+                                  key={opt}
+                                  type="button"
+                                  onClick={() => setEditSalutation(opt)}
+                                  className={`flex-1 py-1.5 text-xs font-bold rounded-lg relative z-10 transition-colors cursor-pointer bg-transparent border-none ${
+                                    editSalutation === opt ? 'text-[#003527]' : 'text-zinc-400 hover:text-[#003527]/50'
+                                  }`}
+                                >
+                                  {opt}
+                                  {editSalutation === opt && (
+                                    <motion.div
+                                      layoutId="edit-salutation-pill"
+                                      className="absolute inset-0 bg-white rounded-lg border border-zinc-200/50 z-[-1] shadow-sm"
+                                      transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                                    />
+                                  )}
+                                </button>
+                              ))}
                             </div>
                           </div>
-                          
-                          <div className="space-y-3.5">
-                            {/* Telefon */}
+
+                          {/* Vorname & Nachname */}
+                          <div className="grid grid-cols-2 gap-3">
                             <div className="space-y-1">
-                              <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400">Telefon</label>
+                              <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400">Vorname</label>
                               <input
-                                type="tel"
-                                value={editPhone}
-                                onChange={(e) => setEditPhone(e.target.value)}
+                                type="text"
+                                value={editFirstName}
+                                onChange={(e) => setEditFirstName(e.target.value)}
                                 className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-semibold text-xs text-[#003527] outline-none transition-all"
                               />
                             </div>
-
-                            {/* E-Mail */}
                             <div className="space-y-1">
-                              <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400">E-Mail</label>
+                              <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400">Nachname</label>
                               <input
-                                type="email"
-                                value={editEmail}
-                                onChange={(e) => setEditEmail(e.target.value)}
+                                type="text"
+                                value={editLastName}
+                                onChange={(e) => setEditLastName(e.target.value)}
                                 className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-semibold text-xs text-[#003527] outline-none transition-all"
                               />
                             </div>
+                          </div>
 
-                            {/* Straße & Hausnummer */}
-                            <div className="grid grid-cols-3 gap-3">
-                              <div className="col-span-2 space-y-1">
-                                <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400">Straße</label>
-                                <input
-                                  type="text"
-                                  value={editStreet}
-                                  onChange={(e) => setEditStreet(e.target.value)}
-                                  className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-semibold text-xs text-[#003527] outline-none transition-all"
-                                />
-                              </div>
-                              <div className="space-y-1">
-                                <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400">Hausnr.</label>
-                                <input
-                                  type="text"
-                                  value={editHouseNumber}
-                                  onChange={(e) => setEditHouseNumber(e.target.value)}
-                                  className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-semibold text-xs text-[#003527] outline-none transition-all"
-                                />
-                              </div>
+                          {/* Geburtstag */}
+                          <div className="space-y-1">
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400">Geburtstag</label>
+                            <input
+                              type="date"
+                              value={editBirthday}
+                              onChange={(e) => setEditBirthday(e.target.value)}
+                              className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-bold text-xs text-[#003527] outline-none transition-all cursor-pointer"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Karte 2 Formular: Kontakt & Anschrift (lg:col-span-1) */}
+                      <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 lg:col-span-1">
+                        <div className="flex items-center gap-3 pb-3 border-b border-zinc-100/60">
+                          <div className="p-2 rounded-xl bg-blue-50 border border-blue-200/40 text-blue-700">
+                            <Phone className="w-4 h-4" />
+                          </div>
+                          <div className="text-left">
+                            <h4 className="font-extrabold text-xs text-[#003527] uppercase tracking-wider">Kontakt & Anschrift</h4>
+                            <p className="text-[10px] text-zinc-400 font-medium mt-0.5">Erreichbarkeit und Wohnort</p>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-3.5">
+                          {/* Telefon */}
+                          <div className="space-y-1">
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400">Telefon</label>
+                            <input
+                              type="tel"
+                              value={editPhone}
+                              onChange={(e) => setEditPhone(e.target.value)}
+                              className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-semibold text-xs text-[#003527] outline-none transition-all"
+                            />
+                          </div>
+
+                          {/* E-Mail */}
+                          <div className="space-y-1">
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400">E-Mail</label>
+                            <input
+                              type="email"
+                              value={editEmail}
+                              onChange={(e) => setEditEmail(e.target.value)}
+                              className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-semibold text-xs text-[#003527] outline-none transition-all"
+                            />
+                          </div>
+
+                          {/* Straße & Hausnummer */}
+                          <div className="grid grid-cols-3 gap-3">
+                            <div className="col-span-2 space-y-1">
+                              <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400">Straße</label>
+                              <input
+                                type="text"
+                                value={editStreet}
+                                onChange={(e) => setEditStreet(e.target.value)}
+                                className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-semibold text-xs text-[#003527] outline-none transition-all"
+                              />
                             </div>
+                            <div className="space-y-1">
+                              <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400">Hausnr.</label>
+                              <input
+                                type="text"
+                                value={editHouseNumber}
+                                onChange={(e) => setEditHouseNumber(e.target.value)}
+                                className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-semibold text-xs text-[#003527] outline-none transition-all"
+                              />
+                            </div>
+                          </div>
 
-                            {/* PLZ & Ort */}
-                            <div className="grid grid-cols-3 gap-3">
-                              <div className="space-y-1">
-                                <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400">PLZ</label>
-                                <input
-                                  type="text"
-                                  value={editZipCode}
-                                  onChange={(e) => setEditZipCode(e.target.value)}
-                                  className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-semibold text-xs text-[#003527] outline-none transition-all"
-                                />
-                              </div>
-                              <div className="col-span-2 space-y-1">
-                                <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400">Ort</label>
-                                <input
-                                  type="text"
-                                  value={editCity}
-                                  onChange={(e) => setEditCity(e.target.value)}
-                                  className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-semibold text-xs text-[#003527] outline-none transition-all"
-                                />
-                              </div>
+                          {/* PLZ & Ort */}
+                          <div className="grid grid-cols-3 gap-3">
+                            <div className="space-y-1">
+                              <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400">PLZ</label>
+                              <input
+                                type="text"
+                                value={editZipCode}
+                                onChange={(e) => setEditZipCode(e.target.value)}
+                                className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-semibold text-xs text-[#003527] outline-none transition-all"
+                              />
+                            </div>
+                            <div className="col-span-2 space-y-1">
+                              <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400">Ort</label>
+                              <input
+                                type="text"
+                                value={editCity}
+                                onChange={(e) => setEditCity(e.target.value)}
+                                className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-semibold text-xs text-[#003527] outline-none transition-all"
+                              />
                             </div>
                           </div>
                         </div>
                       </div>
 
-                      {/* Rechte Spalte Formular: Lebensumstände & Anamnese */}
-                      <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5.5 space-y-4 shadow-[0_4px_20px_rgba(0,53,39,0.02)] flex flex-col justify-between h-full">
-                        <div className="space-y-4 w-full">
-                          <div className="flex items-center gap-3 pb-3 border-b border-zinc-100/60">
-                            <div className="p-2 rounded-xl bg-purple-50 border border-purple-200/40 text-purple-700">
-                              <Briefcase className="w-4 h-4" />
-                            </div>
-                            <div className="text-left">
-                              <h4 className="font-extrabold text-xs text-[#003527] uppercase tracking-wider">Lebensumstände & Anamnese</h4>
-                              <p className="text-[10px] text-zinc-400 font-medium mt-0.5">Berufliches und medizinische Notizen</p>
-                            </div>
+                      {/* Karte 3 Formular: Lebensumstände (lg:col-span-1) */}
+                      <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 lg:col-span-1">
+                        <div className="flex items-center gap-3 pb-3 border-b border-zinc-100/60">
+                          <div className="p-2 rounded-xl bg-purple-50 border border-purple-200/40 text-purple-700">
+                            <Briefcase className="w-4 h-4" />
                           </div>
-                          
-                          {/* Beschäftigung */}
+                          <div className="text-left">
+                            <h4 className="font-extrabold text-xs text-[#003527] uppercase tracking-wider">Lebensumstände</h4>
+                            <p className="text-[10px] text-zinc-400 font-medium mt-0.5">Berufliches und Privatleben</p>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-3.5">
+                          {/* Familienstand */}
                           <div className="space-y-1">
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400">Familienstand</label>
+                            <input
+                              type="text"
+                              value={editMaritalStatus}
+                              onChange={(e) => setEditMaritalStatus(e.target.value)}
+                              className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-semibold text-xs text-[#003527] outline-none transition-all"
+                            />
+                          </div>
+
+                          {/* Beschäftigung */}
+                          <div className="space-y-1 text-left">
                             <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400">Derzeitige Beschäftigung</label>
                             <input
                               type="text"
@@ -1137,151 +1136,180 @@ export default function ClientsPage() {
                             />
                           </div>
 
-                          {/* Medizinische Notizen */}
-                          <div className="space-y-1.5">
-                            <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400">Praxisnotizen & Anamnese</label>
+                          {/* Kinder */}
+                          <div className="space-y-1 text-left">
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400">Kinder</label>
+                            <input
+                              type="text"
+                              value={editChildren}
+                              onChange={(e) => setEditChildren(e.target.value)}
+                              className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-semibold text-xs text-[#003527] outline-none transition-all"
+                              placeholder="z.B. Keine, 1 Kind, 2 Kinder"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Karte 4 Formular: Praxisnotizen & Anamnese (lg:col-span-3) */}
+                      <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 col-span-1 md:col-span-3">
+                        <div className="space-y-4 w-full">
+                          <div className="flex items-center gap-3 pb-3 border-b border-zinc-100/60">
+                            <div className="p-2 rounded-xl bg-amber-50 border border-amber-200/40 text-amber-700">
+                              <ClipboardList className="w-4 h-4" />
+                            </div>
+                            <div className="text-left">
+                              <h4 className="font-extrabold text-xs text-[#003527] uppercase tracking-wider">Praxisnotizen & Anamnese</h4>
+                              <p className="text-[10px] text-zinc-400 font-medium mt-0.5">Medizinische Notizen und Vorgeschichte</p>
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-1.5 text-left">
                             <textarea
-                              rows={10}
+                              rows={5}
                               value={editNotes}
                               onChange={(e) => setEditNotes(e.target.value)}
-                              className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2.5 font-semibold text-xs text-[#003527] outline-none resize-y transition-all min-h-[220px]"
+                              className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2.5 font-semibold text-xs text-[#003527] outline-none resize-y transition-all min-h-[120px]"
                             />
                           </div>
                         </div>
                       </div>
                     </div>
                   ) : (
-                    /* VIEW MODE DISPLAY (2-Spalten-Layout mit 3 Kacheln) */
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 text-left">
-                      {/* Linke Spalte: Stammdaten und Kontakt gestapelt */}
-                      <div className="space-y-6">
-                        {/* Karte 1: Stammdaten */}
-                        <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5.5 space-y-4 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)] transition-all duration-300 relative group shadow-[0_4px_20px_rgba(0,53,39,0.02)]">
-                          <div className="flex justify-between items-start pb-3 border-b border-zinc-100/60">
-                            <div className="flex items-center gap-3">
-                              <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200/40 text-emerald-700">
-                                <User className="w-4 h-4" />
-                              </div>
-                              <div className="text-left">
-                                <h4 className="font-extrabold text-xs text-[#003527] uppercase tracking-wider">Stammdaten</h4>
-                                <p className="text-[10px] text-zinc-400 font-medium mt-0.5">Basisangaben zur Person</p>
-                              </div>
-                            </div>
+                    /* VIEW MODE DISPLAY (3-Spalten Bento Grid) */
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
+                      {/* Karte 1: Stammdaten (lg:col-span-1) */}
+                      <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 hover:border-[#bfc9c3]/60 transition-all duration-300 relative group">
+                        <div className="flex justify-between items-start">
+                          <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200/40 text-emerald-700">
+                            <User className="w-4 h-4" />
+                          </div>
+                          <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-500">
+                            Stammdaten
+                          </span>
+                        </div>
+                        
+                        <div className="space-y-3.5 pt-1">
+                          <div className="space-y-0.5">
+                            <span className="block text-[10px] font-medium text-zinc-400">Vor- & Nachname</span>
+                            <span className="block text-xs font-extrabold text-[#003527]">
+                              {currentClient.salutation && currentClient.salutation !== 'Keine' ? `${currentClient.salutation} ` : ''}
+                              {currentClient.name}
+                            </span>
                           </div>
                           
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3.5 pt-1">
-                            <div className="space-y-0.5">
-                              <span className="block text-[10px] font-medium text-zinc-400">Vor- & Nachname</span>
-                              <span className="block text-xs font-extrabold text-[#003527]">
-                                {currentClient.salutation && currentClient.salutation !== 'Keine' ? `${currentClient.salutation} ` : ''}
-                                {currentClient.name}
-                              </span>
-                            </div>
-                            
-                            <div className="space-y-0.5">
-                              <span className="block text-[10px] font-medium text-zinc-400">Geburtstag (Alter)</span>
-                              <span className="block text-xs font-extrabold text-[#003527]">
-                                {new Date(currentClient.birthday).toLocaleDateString('de-DE')} 
-                                {currentClient.birthday && ` (${calculateAge(currentClient.birthday)} Jahre)`}
-                              </span>
-                            </div>
-
-                            <div className="space-y-0.5 sm:col-span-2 border-t border-zinc-100 pt-2.5">
-                              <span className="block text-[10px] font-medium text-zinc-400">Familienstand</span>
-                              <span className="block text-xs font-extrabold text-[#003527]">
-                                {currentClient.maritalStatus || 'Keine Angabe'}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Karte 2: Kontakt & Anschrift */}
-                        <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5.5 space-y-4 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)] transition-all duration-300 relative group shadow-[0_4px_20px_rgba(0,53,39,0.02)]">
-                          <div className="flex justify-between items-start pb-3 border-b border-zinc-100/60">
-                            <div className="flex items-center gap-3">
-                              <div className="p-2 rounded-xl bg-blue-50 border border-blue-200/40 text-blue-700">
-                                <Phone className="w-4 h-4" />
-                              </div>
-                              <div className="text-left">
-                                <h4 className="font-extrabold text-xs text-[#003527] uppercase tracking-wider">Kontakt & Anschrift</h4>
-                                <p className="text-[10px] text-zinc-400 font-medium mt-0.5">Erreichbarkeit und Wohnort</p>
-                              </div>
-                            </div>
+                          <div className="space-y-0.5">
+                            <span className="block text-[10px] font-medium text-zinc-400">Geburtstag</span>
+                            <span className="block text-xs font-extrabold text-[#003527]">
+                              {currentClient.birthday ? new Date(currentClient.birthday).toLocaleDateString('de-DE') : 'Keine Angabe'}
+                            </span>
                           </div>
 
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3.5 pt-1">
-                            <div className="space-y-0.5">
-                              <span className="block text-[10px] font-medium text-zinc-400">Telefon</span>
-                              <span className="block text-xs font-extrabold text-[#003527] flex items-center gap-1.5">
-                                {currentClient.phone || 'Keine Angabe'}
-                                {currentClient.phone && (
-                                  <a href={`tel:${currentClient.phone}`} className="p-1 rounded bg-[#003527]/5 hover:bg-[#003527]/10 text-[#003527] transition-all">
-                                    <Phone className="w-2.5 h-2.5" />
-                                  </a>
-                                )}
-                              </span>
-                            </div>
-
-                            <div className="space-y-0.5">
-                              <span className="block text-[10px] font-medium text-zinc-400">E-Mail</span>
-                              <span className="block text-xs font-extrabold text-[#003527] flex items-center gap-1.5 min-w-0 pr-2">
-                                <span className="truncate" title={currentClient.email}>{currentClient.email}</span>
-                                <a href={`mailto:${currentClient.email}`} className="p-1 rounded bg-[#003527]/5 hover:bg-[#003527]/10 text-[#003527] transition-all flex-shrink-0">
-                                  <Mail className="w-2.5 h-2.5" />
-                                </a>
-                              </span>
-                            </div>
-
-                            <div className="space-y-0.5 sm:col-span-2 border-t border-zinc-100 pt-2.5 flex items-start gap-2">
-                              <MapPin className="w-4 h-4 text-zinc-400 mt-1 flex-shrink-0" />
-                              <div className="space-y-0.5">
-                                <span className="block text-[10px] font-medium text-zinc-400">Anschrift</span>
-                                <span className="block text-xs font-extrabold text-[#003527]">
-                                  {currentClient.street || currentClient.city ? (
-                                    <>
-                                      {currentClient.street} {currentClient.houseNumber}
-                                      {(currentClient.street || currentClient.houseNumber) && (currentClient.zipCode || currentClient.city) ? ', ' : ''}
-                                      {currentClient.zipCode} {currentClient.city}
-                                    </>
-                                  ) : (
-                                    currentClient.address || 'Keine Anschrift hinterlegt'
-                                  )}
-                                </span>
-                              </div>
-                            </div>
+                          <div className="space-y-0.5">
+                            <span className="block text-[10px] font-medium text-zinc-400">Alter</span>
+                            <span className="block text-xs font-extrabold text-[#003527]">
+                              {currentClient.birthday ? `${calculateAge(currentClient.birthday)} Jahre` : 'Keine Angabe'}
+                            </span>
                           </div>
                         </div>
                       </div>
 
-                      {/* Rechte Spalte: Lebensumstände & Anamnese */}
-                      <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5.5 flex flex-col justify-between transition-all duration-300 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)] relative group overflow-hidden shadow-[0_4px_20px_rgba(0,53,39,0.02)] h-full">
-                        <div className="space-y-4 w-full">
-                          <div className="flex justify-between items-start pb-3 border-b border-zinc-100/60">
-                            <div className="flex items-center gap-3">
-                              <div className="p-2 rounded-xl bg-purple-50 border border-purple-200/40 text-purple-700">
-                                <Briefcase className="w-4 h-4" />
-                              </div>
-                              <div className="text-left">
-                                <h4 className="font-extrabold text-xs text-[#003527] uppercase tracking-wider">Lebensumstände & Anamnese</h4>
-                                <p className="text-[10px] text-zinc-400 font-medium mt-0.5">Berufliches und medizinische Notizen</p>
-                              </div>
-                            </div>
+                      {/* Karte 2: Kontakt (lg:col-span-1) */}
+                      <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 hover:border-[#bfc9c3]/60 transition-all duration-300 relative group lg:col-span-1">
+                        <div className="flex justify-between items-start">
+                          <div className="p-2 rounded-xl bg-blue-50 border border-blue-200/40 text-blue-700">
+                            <Phone className="w-4 h-4" />
+                          </div>
+                          <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-500">
+                            Kontakt
+                          </span>
+                        </div>
+
+                        <div className="space-y-3.5 pt-1">
+                          <div className="space-y-0.5">
+                            <span className="block text-[10px] font-medium text-zinc-400">Telefon</span>
+                            <span className="block text-xs font-extrabold text-[#003527]">
+                              {currentClient.phone || 'Keine Angabe'}
+                            </span>
                           </div>
 
-                          <div className="grid grid-cols-1 gap-y-3.5 pt-1">
-                            <div className="space-y-0.5">
-                              <span className="block text-[10px] font-medium text-zinc-400">Beschäftigung</span>
-                              <span className="block text-xs font-extrabold text-[#003527]">
-                                {currentClient.occupation || 'Keine Angabe'}
-                              </span>
-                            </div>
+                          <div className="space-y-0.5">
+                            <span className="block text-[10px] font-medium text-zinc-400">E-Mail</span>
+                            <span className="block text-xs font-extrabold text-[#003527] break-all">
+                              {currentClient.email || 'Keine Angabe'}
+                            </span>
+                          </div>
 
-                            <div className="space-y-0.5 border-t border-zinc-100 pt-2.5">
-                              <span className="block text-[10px] font-medium text-zinc-400 mb-1">Praxisnotizen & Anamnese</span>
-                              <p className="text-xs font-semibold text-[#003527] border-l-2 border-[#003527]/20 pl-3 leading-relaxed whitespace-pre-wrap italic mt-1.5">
-                                {currentClient.notes || 'Keine medizinischen Notizen hinterlegt.'}
-                              </p>
+                          <div className="space-y-0.5">
+                            <span className="block text-[10px] font-medium text-zinc-400">Anschrift</span>
+                            {currentClient.street || currentClient.city ? (
+                              <div className="space-y-0.5">
+                                <span className="block text-xs font-extrabold text-[#003527]">
+                                  {currentClient.street} {currentClient.houseNumber}
+                                </span>
+                                <span className="block text-[11px] font-bold text-[#003527]/80">
+                                  {currentClient.zipCode} {currentClient.city}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="block text-xs font-extrabold text-[#003527]">
+                                {currentClient.address || 'Keine Anschrift hinterlegt'}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Karte 3: Lebensumstände (lg:col-span-1) */}
+                      <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 hover:border-[#bfc9c3]/60 transition-all duration-300 relative group lg:col-span-1">
+                        <div className="flex justify-between items-start">
+                          <div className="p-2 rounded-xl bg-purple-50 border border-purple-200/40 text-purple-700">
+                            <Briefcase className="w-4 h-4" />
+                          </div>
+                          <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-500">
+                            Lebensumstände
+                          </span>
+                        </div>
+
+                        <div className="space-y-3.5 pt-1">
+                          <div className="space-y-0.5">
+                            <span className="block text-[10px] font-medium text-zinc-400">Familienstand</span>
+                            <span className="block text-xs font-extrabold text-[#003527]">
+                              {currentClient.maritalStatus || 'Keine Angabe'}
+                            </span>
+                          </div>
+
+                          <div className="space-y-0.5">
+                            <span className="block text-[10px] font-medium text-zinc-400">Beschäftigung</span>
+                            <span className="block text-xs font-extrabold text-[#003527]">
+                              {currentClient.occupation || 'Keine Angabe'}
+                            </span>
+                          </div>
+
+                          <div className="space-y-0.5">
+                            <span className="block text-[10px] font-medium text-zinc-400">Kinder</span>
+                            <span className="block text-xs font-extrabold text-[#003527]">
+                              {currentClient.children || 'Keine Angabe'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Karte 4: Praxisnotizen & Anamnese (lg:col-span-3) */}
+                      <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 hover:border-[#bfc9c3]/60 transition-all duration-300 relative group col-span-1 md:col-span-3">
+                        <div className="space-y-4 w-full">
+                          <div className="flex justify-between items-start">
+                            <div className="p-2 rounded-xl bg-amber-50 border border-amber-200/40 text-amber-700">
+                              <ClipboardList className="w-4 h-4" />
                             </div>
+                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-500">
+                              Praxisnotizen & Anamnese
+                            </span>
+                          </div>
+
+                          <div className="space-y-1 text-left">
+                            <p className="text-xs font-semibold text-[#003527] border-l-2 border-[#003527]/20 pl-3 leading-relaxed whitespace-pre-wrap italic mt-1.5">
+                              {currentClient.notes || 'Keine medizinischen Notizen hinterlegt.'}
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -1337,388 +1365,423 @@ export default function ClientsPage() {
               )}
 
               {activeTab === 'anamnesis' && (
-                <CranioAnamnesisTab clientId={currentClient.id} />
+                <CranioAnamnesisTab clientId={currentClient.id} isEditing={isEditingAnamnesis} setIsEditing={setIsEditingAnamnesis} />
               )}
 
               {activeTab === 'soap' && (
-                <div className="space-y-6 text-left animate-fade-in">
-                  <div className="flex justify-between items-center pb-2 border-b border-[#bfc9c3]/20">
-                    <div>
-                      <h4 className="text-[10px] font-bold text-[#003527]/60 uppercase tracking-widest">Behandlungsverlauf</h4>
-                      <p className="text-[11px] text-zinc-400 mt-0.5">Chronologischer Verlauf der Behandlungssitzungen.</p>
+                <div className="text-left animate-fade-in">
+                  <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 overflow-hidden flex flex-col justify-between transition-all duration-300 hover:border-[#bfc9c3]/60">
+                    {/* Header */}
+                    <div className="px-5 py-4 border-b border-[#bfc9c3]/20 flex justify-between items-center bg-[#f9f9f8]/60">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-xl bg-[#003527]/5 border border-[#bfc9c3]/30 text-[#003527]">
+                          <ClipboardList className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-bold text-[#003527]">Behandlungsverlauf</h4>
+                          <p className="text-[10px] text-zinc-400 mt-0.5">Chronologische Dokumentation der Therapiesitzungen (SOAP).</p>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => {
+                          const tempId = `app-${Date.now()}`;
+                          createSoapNote(tempId, currentClient.id);
+                          // Auto-expand the newly created SOAP note
+                          setExpandedNoteIds(prev => ({ ...prev, [tempId]: true }));
+                        }}
+                        className="bg-[#003527] hover:bg-[#0b513d] text-white px-3.5 py-1.5 rounded-xl text-[10px] font-bold transition-all cursor-pointer border-none shadow-sm flex items-center gap-1.5"
+                      >
+                        <Plus className="w-3.5 h-3.5" /> Eintrag anlegen
+                      </button>
                     </div>
-                    <button 
-                      onClick={() => {
-                        const tempId = `app-${Date.now()}`;
-                        createSoapNote(tempId, currentClient.id);
-                        // Auto-expand the newly created SOAP note
-                        setExpandedNoteIds(prev => ({ ...prev, [tempId]: true }));
-                      }}
-                      className="bg-[#003527] hover:bg-[#0b513d] text-white px-3.5 py-1.5 rounded-xl text-[10px] font-bold transition-all cursor-pointer shadow-sm border-none flex items-center gap-1.5"
-                    >
-                      <Plus className="w-3.5 h-3.5" /> Eintrag anlegen
-                    </button>
-                  </div>
 
-                  <div className="relative pl-0 sm:pl-8 space-y-4">
-                    {/* Vertical timeline connector track */}
-                    <div className="absolute left-[15px] top-6 bottom-6 w-[1.5px] bg-[#bfc9c3]/25 z-0 hidden sm:block" />
+                    {/* SOAP Notes List Table */}
+                    <div className="overflow-x-auto">
+                      {clientSoapNotes.length > 0 ? (
+                        <table className="w-full text-left text-xs min-w-[600px]">
+                          <thead>
+                            <tr className="text-zinc-400 text-[10px] font-bold uppercase tracking-wider border-b border-[#bfc9c3]/20 bg-[#f9f9f8]/20">
+                              <th className="py-3 pl-5 font-semibold">Datum</th>
+                              <th className="py-3 font-semibold">Schmerz (VAS)</th>
+                              <th className="py-3 font-semibold">Vorschau</th>
+                              <th className="py-3 text-right pr-5 font-semibold">Aktionen</th>
+                            </tr>
+                          </thead>
+                          <tbody className="font-bold text-[#003527]">
+                            {clientSoapNotes.map((note) => {
+                              const isExpanded = !!expandedNoteIds[note.id] || soapEditId === note.id;
 
-                    {clientSoapNotes.length > 0 ? (
-                      clientSoapNotes.map((note) => {
-                        const isExpanded = !!expandedNoteIds[note.id] || soapEditId === note.id;
+                              return (
+                                <React.Fragment key={note.id}>
+                                  <tr 
+                                    onClick={() => toggleSoapNoteExpand(note.id)}
+                                    className={`hover:bg-[#003527]/3 transition-colors border-b border-zinc-100/60 last:border-b-0 cursor-pointer select-none group ${
+                                      isExpanded ? 'bg-[#003527]/[0.02]' : ''
+                                    }`}
+                                  >
+                                    {/* Date */}
+                                    <td className="py-3 pl-5 text-xs">
+                                      <span>
+                                        {new Date(note.date).toLocaleDateString('de-DE')}
+                                      </span>
+                                    </td>
 
-                        return (
-                          <div 
-                            key={note.id} 
-                            className="bg-white border border-[#bfc9c3]/30 rounded-2xl overflow-hidden hover:border-[#bfc9c3]/50 transition-all duration-300 relative group shadow-[0_4px_20px_rgba(0,53,39,0.02)]"
-                          >
-                            {/* Timeline dot */}
-                            <div className="absolute left-[-29px] top-[22px] w-3 h-3 rounded-full bg-[#003527] border-2 border-white z-10 hidden sm:block shadow-sm" />
+                                    {/* Schmerz (VAS) */}
+                                    <td className="py-3 text-xs">
+                                      {(() => {
+                                        const sub = parseSoapSubjective(note.subjective);
+                                        if (sub.complaints.length > 0) {
+                                          const highestPain = Math.max(...sub.complaints.map(c => c.painLevel));
+                                          return (
+                                            <span className={`text-[8px] px-1.5 py-0.5 rounded font-extrabold uppercase border whitespace-nowrap leading-none ${
+                                              highestPain >= 8 
+                                                ? 'bg-rose-50 border-rose-200 text-rose-800' 
+                                                : highestPain >= 4 
+                                                  ? 'bg-amber-50 border-amber-200 text-amber-800' 
+                                                  : 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                                            }`}>
+                                              {highestPain}/10
+                                            </span>
+                                          );
+                                        }
+                                        return <span className="text-zinc-300 font-normal">—</span>;
+                                      })()}
+                                    </td>
 
-                            {/* Accordion Header */}
-                            <div 
-                              onClick={() => toggleSoapNoteExpand(note.id)}
-                              className="flex items-center justify-between p-4 bg-[#f9f9f8]/40 border-b border-zinc-100/50 cursor-pointer select-none hover:bg-[#f9f9f8] transition-colors"
-                            >
-                              <div className="flex items-center gap-3 overflow-hidden mr-4">
-                                <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200/30 text-[#003527]">
-                                  <CalendarIcon className="w-4 h-4" />
-                                </div>
-                                <div className="flex flex-col text-left">
-                                  <span className="text-[10px] font-extrabold text-[#003527] uppercase tracking-wider">
-                                    Eintrag vom {new Date(note.date).toLocaleDateString('de-DE')}
-                                  </span>
-                                  {!isExpanded && note.subjective && (
-                                    <span className="text-[11px] text-zinc-400 font-medium truncate max-w-[200px] sm:max-w-[400px] mt-0.5">
+                                    {/* Vorschau */}
+                                    <td className="py-3 text-xs text-zinc-400 font-semibold max-w-[200px] sm:max-w-[400px] truncate">
                                       {(() => {
                                         const sub = parseSoapSubjective(note.subjective);
                                         const firstComp = sub.complaints[0]?.description;
                                         if (firstComp) {
                                           return firstComp + (sub.text ? ` - ${sub.text}` : '');
                                         }
-                                        return sub.text || 'Keine Notizen';
+                                        return sub.text || <span className="text-zinc-300 font-normal">Keine Notizen</span>;
                                       })()}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
+                                    </td>
 
-                              <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                                {soapEditId === note.id ? (
-                                  <button 
-                                    onClick={saveSoapNote} 
-                                    className="text-[10px] font-extrabold text-white bg-emerald-700 hover:bg-emerald-850 px-3 py-1.5 rounded-xl transition-all cursor-pointer shadow-sm border-none"
-                                  >
-                                    Speichern
-                                  </button>
-                                ) : (
-                                  <>
-                                    <button 
-                                      onClick={() => startEditSoap(note)} 
-                                      className="text-[10px] font-extrabold text-zinc-500 hover:text-[#003527] flex items-center gap-1 cursor-pointer border border-[#bfc9c3]/30 bg-white hover:bg-zinc-50 px-2.5 py-1.5 rounded-xl transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100 shadow-sm"
-                                    >
-                                      <Edit2 className="w-3.5 h-3.5" /> Bearbeiten
-                                    </button>
-                                    <button 
-                                      onClick={() => handleDeleteSoapNote(note.id)} 
-                                      className="text-[10px] font-extrabold text-rose-600 hover:text-rose-700 hover:bg-rose-50 flex items-center gap-1 cursor-pointer border border-rose-100 bg-white px-2.5 py-1.5 rounded-xl transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100 shadow-sm"
-                                    >
-                                      <Trash2 className="w-3.5 h-3.5" /> Löschen
-                                    </button>
-                                  </>
-                                )}
-                                
-                                <div 
-                                  onClick={() => toggleSoapNoteExpand(note.id)}
-                                  className="p-1.5 rounded-xl hover:bg-zinc-200/50 transition-colors text-zinc-400 ml-1 cursor-pointer"
-                                >
-                                  {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Accordion Body */}
-                            {isExpanded && (
-                              <div className="p-5 border-t border-zinc-100/50 bg-[#f9f9f8]/20 animate-fade-in">
-                                {soapEditId === note.id ? (
-                                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 text-xs text-left">
-                                    {/* Left Column */}
-                                    {(() => {
-                                      const sub = parseSoapSubjective(soapSubjective);
-                                      return (
-                                        <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 shadow-[0_4px_20px_rgba(0,53,39,0.02)] space-y-4">
-                                          <div className="flex justify-between items-center pb-3 border-b border-zinc-100/60">
-                                            <div className="flex items-center gap-3">
-                                              <div className="p-2 rounded-xl bg-amber-50 border border-amber-200/40 text-amber-700">
-                                                <Activity className="w-4 h-4" />
-                                              </div>
-                                              <div className="text-left">
-                                                <h4 className="font-extrabold text-xs text-[#003527] uppercase tracking-wider">Befinden & Symptome</h4>
-                                                <p className="text-[10px] text-zinc-400 font-medium mt-0.5">Symptome und Schmerzstärke verwalten</p>
-                                              </div>
-                                            </div>
-                                            <button
-                                              type="button"
-                                              onClick={() => {
-                                                const sub = parseSoapSubjective(soapSubjective);
-                                                const updated = [...sub.complaints, { description: '', painLevel: 5 }];
-                                                setSoapSubjective(serializeSoapSubjective(sub.text, updated));
-                                              }}
-                                              className="inline-flex items-center gap-1.5 text-[10px] font-bold bg-[#003527] hover:bg-[#0b513d] text-white px-3 py-1.5 rounded-xl transition-all cursor-pointer border-none shadow-sm active:scale-95"
+                                    {/* Actions */}
+                                    <td className="py-3 pr-5 text-xs text-right" onClick={(e) => e.stopPropagation()}>
+                                      <div className="flex items-center justify-end gap-2">
+                                        {soapEditId === note.id ? (
+                                          <button 
+                                            onClick={saveSoapNote} 
+                                            className="text-[10px] font-extrabold text-white bg-emerald-700 hover:bg-emerald-800 px-3 py-1.5 rounded-xl transition-all cursor-pointer border-none shadow-sm"
+                                          >
+                                            Speichern
+                                          </button>
+                                        ) : (
+                                          <div className="flex items-center gap-1.5 opacity-100 sm:opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-200">
+                                            <button 
+                                              onClick={() => startEditSoap(note)} 
+                                              className="text-[10px] font-extrabold text-zinc-500 hover:text-[#003527] flex items-center gap-1 cursor-pointer border border-[#bfc9c3]/30 bg-white hover:bg-zinc-50 px-2.5 py-1.5 rounded-xl transition-all shadow-sm"
                                             >
-                                              <Plus className="w-3.5 h-3.5" />
-                                              <span>Symptom</span>
+                                              <Edit2 className="w-3.5 h-3.5" /> Bearbeiten
+                                            </button>
+                                            <button 
+                                              onClick={() => handleDeleteSoapNote(note.id)} 
+                                              className="text-[10px] font-extrabold text-rose-600 hover:text-rose-700 hover:bg-rose-50 flex items-center gap-1 cursor-pointer border border-rose-100 bg-white px-2.5 py-1.5 rounded-xl transition-all shadow-sm"
+                                            >
+                                              <Trash2 className="w-3.5 h-3.5" /> Löschen
                                             </button>
                                           </div>
+                                        )}
+                                        
+                                        <div 
+                                          onClick={() => toggleSoapNoteExpand(note.id)}
+                                          className="p-1.5 rounded-xl hover:bg-zinc-200/50 transition-colors text-zinc-400 cursor-pointer"
+                                        >
+                                          {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                                        </div>
+                                      </div>
+                                    </td>
+                                  </tr>
 
-                                          <div className="space-y-3">
-                                            {sub.complaints.map((complaint, cIdx) => (
-                                              <div 
-                                                key={cIdx} 
-                                                className="p-3 bg-zinc-50 border border-zinc-200/50 rounded-xl space-y-2.5 relative group/item"
-                                              >
-                                                <div className="flex items-center justify-between gap-2">
-                                                  <input
-                                                    type="text"
-                                                    value={complaint.description}
-                                                    onChange={(e) => {
-                                                      const updated = sub.complaints.map((c, i) => i === cIdx ? { ...c, description: e.target.value } : c);
-                                                      setSoapSubjective(serializeSoapSubjective(sub.text, updated));
-                                                    }}
-                                                    placeholder="z.B. Nackenschmerzen / Verspannung..."
-                                                    className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-bold text-xs text-[#003527] outline-none transition-all"
-                                                  />
-                                                  <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                      const updated = sub.complaints.filter((_, i) => i !== cIdx);
-                                                      setSoapSubjective(serializeSoapSubjective(sub.text, updated));
-                                                    }}
-                                                    className="text-zinc-400 hover:text-rose-600 p-1.5 rounded border border-[#bfc9c3]/30 bg-white hover:bg-zinc-50 shadow-sm cursor-pointer transition-all active:scale-95"
-                                                    title="Symptom entfernen"
-                                                  >
-                                                    <Trash2 className="w-3.5 h-3.5" />
-                                                  </button>
+                                  {isExpanded && (
+                                    <tr onClick={(e) => e.stopPropagation()}>
+                                      <td colSpan={4} className="bg-[#f9f9f8]/40 border-b border-zinc-100/60 p-5">
+                                        {soapEditId === note.id ? (
+                                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 text-xs text-left">
+                                            {/* Left Column */}
+                                            {(() => {
+                                              const sub = parseSoapSubjective(soapSubjective);
+                                              return (
+                                                <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4">
+                                                  <div className="flex justify-between items-center pb-3 border-b border-zinc-100/60">
+                                                    <div className="flex items-center gap-3">
+                                                      <div className="p-2 rounded-xl bg-amber-50 border border-amber-200/40 text-amber-700">
+                                                        <Activity className="w-4 h-4" />
+                                                      </div>
+                                                      <div className="text-left">
+                                                        <h4 className="font-extrabold text-xs text-[#003527] uppercase tracking-wider">Befinden & Symptome</h4>
+                                                        <p className="text-[10px] text-zinc-400 font-medium mt-0.5">Symptome und Schmerzstärke verwalten</p>
+                                                      </div>
+                                                    </div>
+                                                    <button
+                                                      type="button"
+                                                      onClick={() => {
+                                                        const sub = parseSoapSubjective(soapSubjective);
+                                                        const updated = [...sub.complaints, { description: '', painLevel: 5 }];
+                                                        setSoapSubjective(serializeSoapSubjective(sub.text, updated));
+                                                      }}
+                                                      className="inline-flex items-center gap-1.5 text-[10px] font-bold bg-[#003527] hover:bg-[#0b513d] text-white px-3 py-1.5 rounded-xl transition-all cursor-pointer border-none shadow-sm active:scale-95"
+                                                    >
+                                                      <Plus className="w-3.5 h-3.5" />
+                                                      <span>Symptom</span>
+                                                    </button>
+                                                  </div>
+
+                                                  <div className="space-y-3">
+                                                    {sub.complaints.map((complaint, cIdx) => (
+                                                      <div 
+                                                        key={cIdx} 
+                                                        className="p-3 bg-[#f9f9f8] border border-zinc-200/50 rounded-xl space-y-2.5 relative group/item"
+                                                      >
+                                                        <div className="flex items-center justify-between gap-2">
+                                                          <input
+                                                            type="text"
+                                                            value={complaint.description}
+                                                            onChange={(e) => {
+                                                              const updated = sub.complaints.map((c, i) => i === cIdx ? { ...c, description: e.target.value } : c);
+                                                              setSoapSubjective(serializeSoapSubjective(sub.text, updated));
+                                                            }}
+                                                            placeholder="z.B. Nackenschmerzen / Verspannung..."
+                                                            className="w-full bg-white border border-[#bfc9c3]/30 focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3 py-2 font-bold text-xs text-[#003527] outline-none transition-all"
+                                                          />
+                                                          <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                              const updated = sub.complaints.filter((_, i) => i !== cIdx);
+                                                              setSoapSubjective(serializeSoapSubjective(sub.text, updated));
+                                                            }}
+                                                            className="text-zinc-400 hover:text-rose-600 p-1.5 rounded border border-[#bfc9c3]/30 bg-white hover:bg-zinc-50 shadow-sm cursor-pointer transition-all active:scale-95"
+                                                            title="Symptom entfernen"
+                                                          >
+                                                            <Trash2 className="w-3.5 h-3.5" />
+                                                          </button>
+                                                        </div>
+                                                        
+                                                        <div className="flex items-center gap-3 bg-white border border-zinc-200/40 px-3 py-2 rounded-xl">
+                                                          <span className="text-[10px] font-bold text-zinc-400 w-24">Schmerz (0-10):</span>
+                                                          <input
+                                                            type="range"
+                                                            min="0"
+                                                            max="10"
+                                                            value={complaint.painLevel}
+                                                            onChange={(e) => {
+                                                              const updated = sub.complaints.map((c, i) => i === cIdx ? { ...c, painLevel: parseInt(e.target.value) } : c);
+                                                              setSoapSubjective(serializeSoapSubjective(sub.text, updated));
+                                                            }}
+                                                            className="flex-grow accent-[#003527] h-1.5 bg-zinc-100 rounded-lg cursor-pointer"
+                                                          />
+                                                          <span className="text-xs font-extrabold text-rose-600 w-6 text-right select-none">
+                                                            {complaint.painLevel}
+                                                          </span>
+                                                        </div>
+                                                      </div>
+                                                    ))}
+                                                  </div>
+
+                                                  <div className="space-y-1">
+                                                    <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400">Weitere Anmerkungen</label>
+                                                    <textarea 
+                                                      rows={4}
+                                                      value={sub.text} 
+                                                      onChange={(e) => {
+                                                        setSoapSubjective(serializeSoapSubjective(e.target.value, sub.complaints));
+                                                      }} 
+                                                      placeholder="Weitere Details zum Befinden des Klienten..."
+                                                      className="w-full bg-[#f9f9f8] border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl p-3 text-xs text-[#003527] outline-none transition-all resize-y min-h-[90px]" 
+                                                    />
+                                                  </div>
                                                 </div>
-                                                
-                                                <div className="flex items-center gap-3 bg-white border border-zinc-200/40 px-3 py-2 rounded-xl">
-                                                  <span className="text-[10px] font-bold text-zinc-400 w-24">Schmerz (0-10):</span>
-                                                  <input
-                                                    type="range"
-                                                    min="0"
-                                                    max="10"
-                                                    value={complaint.painLevel}
-                                                    onChange={(e) => {
-                                                      const updated = sub.complaints.map((c, i) => i === cIdx ? { ...c, painLevel: parseInt(e.target.value) } : c);
-                                                      setSoapSubjective(serializeSoapSubjective(sub.text, updated));
-                                                    }}
-                                                    className="flex-grow accent-[#003527] h-1.5 bg-zinc-100 rounded-lg cursor-pointer"
-                                                  />
-                                                  <span className="text-xs font-extrabold text-rose-600 w-6 text-right select-none">
-                                                    {complaint.painLevel}
-                                                  </span>
+                                              );
+                                            })()}
+
+                                            {/* Right Column */}
+                                            <div className="space-y-4">
+                                              {/* Card 2: Beobachtung & Befund */}
+                                              <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-3">
+                                                <div className="flex items-center gap-3 pb-2 border-b border-zinc-100/60">
+                                                  <div className="p-2 rounded-xl bg-blue-50 border border-blue-200/40 text-blue-700">
+                                                    <ClipboardList className="w-4 h-4" />
+                                                  </div>
+                                                  <div className="text-left">
+                                                    <h4 className="font-extrabold text-xs text-[#003527] uppercase tracking-wider">Beobachtung & Befund</h4>
+                                                    <p className="text-[10px] text-zinc-400 font-medium mt-0.5">Tastbefunde & körperlicher Zustand</p>
+                                                  </div>
                                                 </div>
+                                                <textarea 
+                                                  rows={3}
+                                                  value={soapObjective} 
+                                                  onChange={(e) => setSoapObjective(e.target.value)} 
+                                                  placeholder="Tastbefund, Blockaden, Verspannungen..."
+                                                  className="w-full bg-[#f9f9f8] border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl p-3 text-xs text-[#003527] outline-none transition-all resize-y min-h-[80px]" 
+                                                />
                                               </div>
-                                            ))}
-                                          </div>
 
-                                          <div className="space-y-1">
-                                            <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400">Weitere Anmerkungen</label>
-                                            <textarea 
-                                              rows={4}
-                                              value={sub.text} 
-                                              onChange={(e) => {
-                                                setSoapSubjective(serializeSoapSubjective(e.target.value, sub.complaints));
-                                              }} 
-                                              placeholder="Weitere Details zum Befinden des Klienten..."
-                                              className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl p-3 text-xs text-[#003527] outline-none transition-all resize-y min-h-[90px]" 
-                                            />
-                                          </div>
-                                        </div>
-                                      );
-                                    })()}
-
-                                    {/* Right Column */}
-                                    <div className="space-y-4">
-                                      {/* Card 2: Beobachtung & Befund */}
-                                      <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 shadow-[0_4px_20px_rgba(0,53,39,0.02)] space-y-3">
-                                        <div className="flex items-center gap-3 pb-2 border-b border-zinc-100/60">
-                                          <div className="p-2 rounded-xl bg-blue-50 border border-blue-200/40 text-blue-700">
-                                            <ClipboardList className="w-4 h-4" />
-                                          </div>
-                                          <div className="text-left">
-                                            <h4 className="font-extrabold text-xs text-[#003527] uppercase tracking-wider">Beobachtung & Befund</h4>
-                                            <p className="text-[10px] text-zinc-400 font-medium mt-0.5">Tastbefunde & körperlicher Zustand</p>
-                                          </div>
-                                        </div>
-                                        <textarea 
-                                          rows={3}
-                                          value={soapObjective} 
-                                          onChange={(e) => setSoapObjective(e.target.value)} 
-                                          placeholder="Tastbefund, Blockaden, Verspannungen..."
-                                          className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl p-3 text-xs text-[#003527] outline-none transition-all resize-y min-h-[80px]" 
-                                        />
-                                      </div>
-
-                                      {/* Card 3: Klinische Einschätzung */}
-                                      <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 shadow-[0_4px_20px_rgba(0,53,39,0.02)] space-y-3">
-                                        <div className="flex items-center gap-3 pb-2 border-b border-zinc-100/60">
-                                          <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200/40 text-emerald-700">
-                                            <Brain className="w-4 h-4" />
-                                          </div>
-                                          <div className="text-left">
-                                            <h4 className="font-extrabold text-xs text-[#003527] uppercase tracking-wider">Klinische Einschätzung</h4>
-                                            <p className="text-[10px] text-zinc-400 font-medium mt-0.5">Therapeutische Hypothese & Entwicklung</p>
-                                          </div>
-                                        </div>
-                                        <textarea 
-                                          rows={3}
-                                          value={soapAssessment} 
-                                          onChange={(e) => setSoapAssessment(e.target.value)} 
-                                          placeholder="Interpretation der Reaktionen, Gewebezustand..."
-                                          className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl p-3 text-xs text-[#003527] outline-none transition-all resize-y min-h-[80px]" 
-                                        />
-                                      </div>
-
-                                      {/* Card 4: Weiteres Vorgehen & Plan */}
-                                      <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 shadow-[0_4px_20px_rgba(0,53,39,0.02)] space-y-3">
-                                        <div className="flex items-center gap-3 pb-2 border-b border-zinc-100/60">
-                                          <div className="p-2 rounded-xl bg-purple-50 border border-purple-200/40 text-purple-700">
-                                            <Target className="w-4 h-4" />
-                                          </div>
-                                          <div className="text-left">
-                                            <h4 className="font-extrabold text-xs text-[#003527] uppercase tracking-wider">Weiteres Vorgehen & Plan</h4>
-                                            <p className="text-[10px] text-zinc-400 font-medium mt-0.5">Fokus der nächsten Termine & Empfehlungen</p>
-                                          </div>
-                                        </div>
-                                        <textarea 
-                                          rows={3}
-                                          value={soapPlan} 
-                                          onChange={(e) => setSoapPlan(e.target.value)} 
-                                          placeholder="Nächste Schritte, Übungen für Zuhause, Terminintervalle..."
-                                          className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl p-3 text-xs text-[#003527] outline-none transition-all resize-y min-h-[80px]" 
-                                        />
-                                      </div>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
-                                    {/* Card 1: Befinden & Symptome */}
-                                    {(() => {
-                                      const sub = parseSoapSubjective(note.subjective);
-                                      return (
-                                        <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 relative transition-all duration-300 shadow-[0_4px_20px_rgba(0,53,39,0.02)] hover:border-[#bfc9c3]/60 flex flex-col justify-between">
-                                          <div className="space-y-3.5 w-full">
-                                            <div className="flex items-center gap-3 pb-2.5 border-b border-zinc-100">
-                                              <div className="p-2 rounded-xl bg-amber-50 border border-amber-200/40 text-amber-700">
-                                                <Activity className="w-4 h-4" />
+                                              {/* Card 3: Klinische Einschätzung */}
+                                              <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-3">
+                                                <div className="flex items-center gap-3 pb-2 border-b border-zinc-100/60">
+                                                  <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200/40 text-emerald-700">
+                                                    <Brain className="w-4 h-4" />
+                                                  </div>
+                                                  <div className="text-left">
+                                                    <h4 className="font-extrabold text-xs text-[#003527] uppercase tracking-wider">Klinische Einschätzung</h4>
+                                                    <p className="text-[10px] text-zinc-400 font-medium mt-0.5">Therapeutische Hypothese & Entwicklung</p>
+                                                  </div>
+                                                </div>
+                                                <textarea 
+                                                  rows={3}
+                                                  value={soapAssessment} 
+                                                  onChange={(e) => setSoapAssessment(e.target.value)} 
+                                                  placeholder="Interpretation der Reaktionen, Gewebezustand..."
+                                                  className="w-full bg-[#f9f9f8] border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl p-3 text-xs text-[#003527] outline-none transition-all resize-y min-h-[80px]" 
+                                                />
                                               </div>
-                                              <div className="text-left">
-                                                <h4 className="font-extrabold text-xs text-[#003527] uppercase tracking-wider">Befinden & Symptome</h4>
-                                                <p className="text-[10px] text-zinc-400 font-medium mt-0.5">Subjektives Empfinden & Schmerzangaben</p>
+
+                                              {/* Card 4: Weiteres Vorgehen & Plan */}
+                                              <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-3">
+                                                <div className="flex items-center gap-3 pb-2 border-b border-zinc-100/60">
+                                                  <div className="p-2 rounded-xl bg-purple-50 border border-purple-200/40 text-purple-700">
+                                                    <Target className="w-4 h-4" />
+                                                  </div>
+                                                  <div className="text-left">
+                                                    <h4 className="font-extrabold text-xs text-[#003527] uppercase tracking-wider">Weiteres Vorgehen & Plan</h4>
+                                                    <p className="text-[10px] text-zinc-400 font-medium mt-0.5">Fokus der nächsten Termine & Empfehlungen</p>
+                                                  </div>
+                                                </div>
+                                                <textarea 
+                                                  rows={3}
+                                                  value={soapPlan} 
+                                                  onChange={(e) => setSoapPlan(e.target.value)} 
+                                                  placeholder="Nächste Schritte, Übungen für Zuhause, Terminintervalle..."
+                                                  className="w-full bg-[#f9f9f8] border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl p-3 text-xs text-[#003527] outline-none transition-all resize-y min-h-[80px]" 
+                                                />
                                               </div>
                                             </div>
-                                            
-                                            {/* Complaints tags */}
-                                            {sub.complaints.length > 0 && (
-                                              <div className="flex flex-wrap gap-1.5">
-                                                {sub.complaints.map((complaint, cIdx) => (
-                                                  <div key={cIdx} className="flex items-center gap-1.5 bg-zinc-50 border border-zinc-200/40 px-2.5 py-1 rounded-xl text-[10px]">
-                                                    <span className="font-bold text-[#003527]">{complaint.description || 'Beschwerde'}</span>
-                                                    <span className={`text-[8px] font-extrabold px-1.5 py-0.5 rounded-md border whitespace-nowrap ${
-                                                      complaint.painLevel >= 8 
-                                                        ? 'bg-rose-50 border-rose-200/50 text-rose-800' 
-                                                        : complaint.painLevel >= 4 
-                                                          ? 'bg-amber-50 border-amber-200/50 text-amber-800' 
-                                                          : 'bg-emerald-50 border-emerald-200/50 text-emerald-800'
-                                                    }`}>
-                                                      VAS {complaint.painLevel}/10
-                                                    </span>
+                                          </div>
+                                        ) : (
+                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-left">
+                                            {/* Card 1: Befinden & Symptome */}
+                                            {(() => {
+                                              const sub = parseSoapSubjective(note.subjective);
+                                              return (
+                                                <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 flex flex-col justify-between transition-all duration-300 hover:border-[#bfc9c3]/60">
+                                                  <div className="space-y-3.5 w-full">
+                                                    <div className="flex items-center gap-3 pb-2.5 border-b border-zinc-100">
+                                                      <div className="p-2 rounded-xl bg-amber-50 border border-amber-200/40 text-amber-700">
+                                                        <Activity className="w-4 h-4" />
+                                                      </div>
+                                                      <div className="text-left">
+                                                        <h4 className="font-extrabold text-xs text-[#003527] uppercase tracking-wider">Befinden & Symptome</h4>
+                                                        <p className="text-[10px] text-zinc-400 font-medium mt-0.5">Subjektives Empfinden & Schmerzangaben</p>
+                                                      </div>
+                                                    </div>
+                                                    
+                                                    {/* Complaints tags */}
+                                                    {sub.complaints.length > 0 && (
+                                                      <div className="flex flex-wrap gap-1.5">
+                                                        {sub.complaints.map((complaint, cIdx) => (
+                                                          <div key={cIdx} className="flex items-center gap-1.5 bg-zinc-50 border border-zinc-200/40 px-2.5 py-1 rounded-xl text-[10px]">
+                                                            <span className="font-bold text-[#003527]">{complaint.description || 'Beschwerde'}</span>
+                                                            <span className={`text-[8px] font-extrabold px-1.5 py-0.5 rounded-md border whitespace-nowrap ${
+                                                              complaint.painLevel >= 8 
+                                                                ? 'bg-rose-50 border-rose-200/50 text-rose-800' 
+                                                                : complaint.painLevel >= 4 
+                                                                  ? 'bg-amber-50 border-amber-200/50 text-amber-800' 
+                                                                  : 'bg-emerald-50 border-emerald-200/50 text-emerald-800'
+                                                            }`}>
+                                                              VAS {complaint.painLevel}/10
+                                                            </span>
+                                                          </div>
+                                                        ))}
+                                                      </div>
+                                                    )}
+
+                                                    {sub.text.trim() && (
+                                                      <p className="text-xs font-semibold text-[#003527] leading-relaxed whitespace-pre-wrap pl-3 border-l-2 border-amber-500/20 italic">
+                                                        {sub.text}
+                                                      </p>
+                                                    )}
+
+                                                    {!sub.text.trim() && sub.complaints.length === 0 && (
+                                                      <p className="text-xs font-medium text-zinc-400 italic">Keine Angaben vorhanden.</p>
+                                                    )}
                                                   </div>
-                                                ))}
+                                                </div>
+                                              );
+                                            })()}
+                                            
+                                            {/* Card 2: Beobachtung & Befund */}
+                                            <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 flex flex-col justify-between transition-all duration-300 hover:border-[#bfc9c3]/60">
+                                              <div className="space-y-3.5 w-full">
+                                                <div className="flex items-center gap-3 pb-2.5 border-b border-zinc-100">
+                                                  <div className="p-2 rounded-xl bg-blue-50 border border-blue-200/40 text-blue-700">
+                                                    <ClipboardList className="w-4 h-4" />
+                                                  </div>
+                                                  <div className="text-left">
+                                                    <h4 className="font-extrabold text-xs text-[#003527] uppercase tracking-wider">Beobachtung & Befund</h4>
+                                                    <p className="text-[10px] text-zinc-400 font-medium mt-0.5">Objektiver Tastbefund & Körperspannung</p>
+                                                  </div>
+                                                </div>
+                                                <p className="text-xs font-semibold text-[#003527] leading-relaxed whitespace-pre-wrap">
+                                                  {note.objective?.trim() ? note.objective : 'Keine Angaben vorhanden.'}
+                                                </p>
                                               </div>
-                                            )}
+                                            </div>
 
-                                            {sub.text.trim() && (
-                                              <p className="text-xs font-semibold text-[#003527] leading-relaxed whitespace-pre-wrap pl-3 border-l-2 border-amber-500/20 italic">
-                                                {sub.text}
-                                              </p>
-                                            )}
+                                            {/* Card 3: Klinische Einschätzung */}
+                                            <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 flex flex-col justify-between transition-all duration-300 hover:border-[#bfc9c3]/60">
+                                              <div className="space-y-3.5 w-full">
+                                                <div className="flex items-center gap-3 pb-2.5 border-b border-zinc-100">
+                                                  <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200/40 text-emerald-700">
+                                                    <Brain className="w-4 h-4" />
+                                                  </div>
+                                                  <div className="text-left">
+                                                    <h4 className="font-extrabold text-xs text-[#003527] uppercase tracking-wider">Klinische Einschätzung</h4>
+                                                    <p className="text-[10px] text-zinc-400 font-medium mt-0.5">Therapeutische Hypothese & Gewebequalität</p>
+                                                  </div>
+                                                </div>
+                                                <p className="text-xs font-semibold text-[#003527] leading-relaxed whitespace-pre-wrap">
+                                                  {note.assessment?.trim() ? note.assessment : 'Keine Angaben vorhanden.'}
+                                                </p>
+                                              </div>
+                                            </div>
 
-                                            {!sub.text.trim() && sub.complaints.length === 0 && (
-                                              <p className="text-xs font-medium text-zinc-400 italic">Keine Angaben vorhanden.</p>
-                                            )}
+                                            {/* Card 4: Weiteres Vorgehen & Plan */}
+                                            <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 flex flex-col justify-between transition-all duration-300 hover:border-[#bfc9c3]/60">
+                                              <div className="space-y-3.5 w-full">
+                                                <div className="flex items-center gap-3 pb-2.5 border-b border-zinc-100">
+                                                  <div className="p-2 rounded-xl bg-purple-50 border border-purple-200/40 text-purple-700">
+                                                    <Target className="w-4 h-4" />
+                                                  </div>
+                                                  <div className="text-left">
+                                                    <h4 className="font-extrabold text-xs text-[#003527] uppercase tracking-wider">Weiteres Vorgehen & Plan</h4>
+                                                    <p className="text-[10px] text-zinc-400 font-medium mt-0.5">Empfehlungen & Behandlungsfokus für Folgesitzung</p>
+                                                  </div>
+                                                </div>
+                                                <p className="text-xs font-semibold text-[#003527] leading-relaxed whitespace-pre-wrap">
+                                                  {note.plan?.trim() ? note.plan : 'Keine Angaben vorhanden.'}
+                                                </p>
+                                              </div>
+                                            </div>
                                           </div>
-                                        </div>
-                                      );
-                                    })()}
-                                    
-                                    {/* Card 2: Beobachtung & Befund */}
-                                    <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 relative transition-all duration-300 shadow-[0_4px_20px_rgba(0,53,39,0.02)] hover:border-[#bfc9c3]/60 flex flex-col justify-between">
-                                      <div className="space-y-3.5 w-full">
-                                        <div className="flex items-center gap-3 pb-2.5 border-b border-zinc-100">
-                                          <div className="p-2 rounded-xl bg-blue-50 border border-blue-200/40 text-blue-700">
-                                            <ClipboardList className="w-4 h-4" />
-                                          </div>
-                                          <div className="text-left">
-                                            <h4 className="font-extrabold text-xs text-[#003527] uppercase tracking-wider">Beobachtung & Befund</h4>
-                                            <p className="text-[10px] text-zinc-400 font-medium mt-0.5">Objektiver Tastbefund & Körperspannung</p>
-                                          </div>
-                                        </div>
-                                        <p className="text-xs font-semibold text-[#003527] leading-relaxed whitespace-pre-wrap">
-                                          {note.objective?.trim() ? note.objective : 'Keine Angaben vorhanden.'}
-                                        </p>
-                                      </div>
-                                    </div>
-
-                                    {/* Card 3: Klinische Einschätzung */}
-                                    <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 relative transition-all duration-300 shadow-[0_4px_20px_rgba(0,53,39,0.02)] hover:border-[#bfc9c3]/60 flex flex-col justify-between">
-                                      <div className="space-y-3.5 w-full">
-                                        <div className="flex items-center gap-3 pb-2.5 border-b border-zinc-100">
-                                          <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200/40 text-emerald-700">
-                                            <Brain className="w-4 h-4" />
-                                          </div>
-                                          <div className="text-left">
-                                            <h4 className="font-extrabold text-xs text-[#003527] uppercase tracking-wider">Klinische Einschätzung</h4>
-                                            <p className="text-[10px] text-zinc-400 font-medium mt-0.5">Therapeutische Hypothese & Gewebequalität</p>
-                                          </div>
-                                        </div>
-                                        <p className="text-xs font-semibold text-[#003527] leading-relaxed whitespace-pre-wrap">
-                                          {note.assessment?.trim() ? note.assessment : 'Keine Angaben vorhanden.'}
-                                        </p>
-                                      </div>
-                                    </div>
-
-                                    {/* Card 4: Weiteres Vorgehen & Plan */}
-                                    <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 relative transition-all duration-300 shadow-[0_4px_20px_rgba(0,53,39,0.02)] hover:border-[#bfc9c3]/60 flex flex-col justify-between">
-                                      <div className="space-y-3.5 w-full">
-                                        <div className="flex items-center gap-3 pb-2.5 border-b border-zinc-100">
-                                          <div className="p-2 rounded-xl bg-purple-50 border border-purple-200/40 text-purple-700">
-                                            <Target className="w-4 h-4" />
-                                          </div>
-                                          <div className="text-left">
-                                            <h4 className="font-extrabold text-xs text-[#003527] uppercase tracking-wider">Weiteres Vorgehen & Plan</h4>
-                                            <p className="text-[10px] text-zinc-400 font-medium mt-0.5">Empfehlungen & Behandlungsfokus für Folgesitzung</p>
-                                          </div>
-                                        </div>
-                                        <p className="text-xs font-semibold text-[#003527] leading-relaxed whitespace-pre-wrap">
-                                          {note.plan?.trim() ? note.plan : 'Keine Angaben vorhanden.'}
-                                        </p>
-                                      </div>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })
-                    ) : (
-                      <div className="text-center py-12 text-xs text-zinc-400 font-semibold italic bg-white border border-[#bfc9c3]/20 rounded-2xl shadow-[0_4px_20px_rgba(0,53,39,0.01)] sm:col-span-2">
-                        Keine Behandlungsberichte für diesen Klienten vorhanden.
-                      </div>
-                    )}
+                                        )}
+                                      </td>
+                                    </tr>
+                                  )}
+                                </React.Fragment>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      ) : (
+                        <div className="text-center py-12 text-xs text-zinc-400 font-semibold italic">
+                          Keine Behandlungsberichte für diesen Klienten vorhanden.
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
@@ -1733,17 +1796,17 @@ export default function ClientsPage() {
                   <div className="space-y-6 text-left animate-fade-in">
                     {/* KPI Umsatz-Cards */}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                      <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-4 text-left flex flex-col justify-between hover:border-[#bfc9c3]/50 transition-all duration-300 shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
+                      <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-4 text-left flex flex-col justify-between hover:border-[#bfc9c3]/50 transition-all duration-300">
                         <span className="text-[10px] font-bold text-[#003527]/60 uppercase tracking-wider">Gesamtforderung</span>
                         <span className="text-lg font-extrabold text-[#003527] mt-1">{totalBilled.toFixed(2)} €</span>
                       </div>
-                      <div className="bg-[#003527]/2 rounded-2xl border border-emerald-200/20 p-4 text-left flex flex-col justify-between hover:border-emerald-200/40 transition-all duration-300 shadow-[0_2px_8px_rgba(0,0,0,0.01)] bg-emerald-50/10">
-                        <span className="text-[10px] font-bold text-emerald-700/80 uppercase tracking-wider">Bezahlt</span>
+                      <div className="bg-emerald-50/40 rounded-2xl border border-emerald-200/40 p-4 text-left flex flex-col justify-between hover:border-emerald-200/60 transition-all duration-300 text-emerald-800">
+                        <span className="text-[10px] font-bold text-emerald-750 uppercase tracking-wider">Bezahlt</span>
                         <span className="text-lg font-extrabold text-emerald-800 mt-1">{totalPaid.toFixed(2)} €</span>
                       </div>
-                      <div className={`rounded-2xl border p-4 text-left flex flex-col justify-between transition-all duration-300 shadow-[0_2px_8px_rgba(0,0,0,0.01)] ${
+                      <div className={`rounded-2xl border p-4 text-left flex flex-col justify-between transition-all duration-300 ${
                         totalOutstanding > 0 
-                          ? 'border-amber-200/30 bg-amber-50/10 text-amber-800' 
+                          ? 'border-amber-200/40 bg-amber-50/40 text-amber-800' 
                           : 'bg-white border-[#bfc9c3]/30 text-zinc-400'
                       }`}>
                         <span className="text-[10px] font-bold uppercase tracking-wider">Ausstehend</span>
@@ -1754,7 +1817,7 @@ export default function ClientsPage() {
                     </div>
 
                     {/* Document Locker */}
-                    <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 transition-all duration-300 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)] shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
+                    <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 transition-all duration-300 hover:border-[#bfc9c3]/60">
                       <div className="flex justify-between items-start pb-2 border-b border-zinc-100">
                         <div className="flex items-center gap-2">
                           <div className="p-2 rounded-xl bg-amber-50 border border-amber-200/40 text-amber-700">
@@ -1783,6 +1846,51 @@ export default function ClientsPage() {
                         </button>
                       </div>
 
+                      {/* DSGVO Consent Status Banner */}
+                      <div className={`p-4 rounded-xl border transition-all flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 ${
+                        currentClient.gdprAccepted
+                          ? 'bg-emerald-50/40 border-emerald-200/40 text-emerald-800'
+                          : 'bg-amber-50/40 border-amber-200/40 text-amber-800'
+                      }`}>
+                        <div className="flex items-start gap-2.5 text-left">
+                          {currentClient.gdprAccepted ? (
+                            <div className="p-1 rounded-md bg-emerald-100/80 text-emerald-700 mt-0.5">
+                              <Check className="w-3.5 h-3.5" />
+                            </div>
+                          ) : (
+                            <div className="p-1 rounded-md bg-amber-100 text-amber-700 mt-0.5">
+                              <ShieldAlert className="w-3.5 h-3.5 animate-pulse" />
+                            </div>
+                          )}
+                          <div>
+                            <p className="text-xs font-bold text-[#003527]">
+                              {currentClient.gdprAccepted ? 'DSGVO-Patienteneinwilligung erteilt' : 'DSGVO-Patienteneinwilligung ausstehend'}
+                            </p>
+                            <p className="text-[10px] text-zinc-500 mt-0.5 leading-relaxed font-semibold">
+                              {currentClient.gdprAccepted 
+                                ? 'Die datenschutzrechtliche Einwilligungserklärung liegt vor und wurde vom Klienten digital oder schriftlich unterzeichnet.' 
+                                : 'Die schriftliche oder digitale Einwilligung zur Speicherung und Verarbeitung gesundheitsbezogener Daten fehlt.'}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => {
+                            if (currentClient.gdprAccepted) {
+                              toggleClientGdpr(currentClient.id);
+                            } else {
+                              openGdprModal(currentClient.id);
+                            }
+                          }}
+                          className={`text-[10px] font-extrabold px-3 py-1.5 rounded-lg border transition-all cursor-pointer flex-shrink-0 active:scale-95 shadow-sm ${
+                            currentClient.gdprAccepted
+                              ? 'bg-white hover:bg-emerald-50 border-emerald-200/60 text-emerald-700'
+                              : 'bg-[#003527] hover:bg-[#0b513d] text-white border-transparent'
+                          }`}
+                        >
+                          {currentClient.gdprAccepted ? 'Widerrufen' : 'Jetzt unterzeichnen'}
+                        </button>
+                      </div>
+
                       <div className="space-y-2">
                         {(clientDocuments[currentClient.id] || []).length > 0 ? (
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1808,7 +1916,7 @@ export default function ClientsPage() {
                     </div>
 
                     {/* Invoices */}
-                    <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 transition-all duration-300 hover:border-[#bfc9c3]/60 hover:shadow-[0_4px_20px_rgba(0,53,39,0.02)] shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
+                    <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 transition-all duration-300 hover:border-[#bfc9c3]/60">
                       <div className="flex justify-between items-start pb-2 border-b border-zinc-100">
                         <div className="flex items-center gap-2">
                           <div className="p-2 rounded-xl bg-purple-50 border border-purple-200/40 text-purple-700">

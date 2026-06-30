@@ -109,12 +109,17 @@ const isAnamnesisEmpty = (data: AnamnesisData): boolean => {
 
 interface CranioAnamnesisTabProps {
   clientId: string;
+  isEditing?: boolean;
+  setIsEditing?: (val: boolean) => void;
 }
 
-export default function CranioAnamnesisTab({ clientId }: CranioAnamnesisTabProps) {
+export default function CranioAnamnesisTab({ clientId, isEditing: propIsEditing, setIsEditing: propSetIsEditing }: CranioAnamnesisTabProps) {
   const [isSaving, setIsSaving] = React.useState(false);
   const [isDiseasesExpanded, setIsDiseasesExpanded] = React.useState(false);
-  const [isEditing, setIsEditing] = React.useState(false);
+  
+  const [localIsEditing, setLocalIsEditing] = React.useState(false);
+  const isEditing = propIsEditing !== undefined ? propIsEditing : localIsEditing;
+  const setIsEditing = propSetIsEditing !== undefined ? propSetIsEditing : setLocalIsEditing;
   const [state, setState] = React.useState<{ clientId: string; data: AnamnesisData }>({
     clientId: '',
     data: defaultAnamnesis()
@@ -243,56 +248,20 @@ export default function CranioAnamnesisTab({ clientId }: CranioAnamnesisTabProps
   return (
     <div className="space-y-6 text-left animate-fade-in pb-12">
       {/* Title & Saving Status Bar */}
-      <div className="flex justify-between items-center pb-2 border-b border-[#bfc9c3]/20 flex-shrink-0">
-        <div>
-          <h4 className="text-[10px] font-bold text-[#003527]/60 uppercase tracking-widest">Anamnesebogen</h4>
-          <p className="text-[11px] text-zinc-400 mt-0.5">Spezifische Fragen vor der Behandlung.</p>
-        </div>
-        
+      <div className="flex justify-end items-center flex-shrink-0">
         <div className="flex items-center gap-3">
-          {isEditing && (
+          {isEditing && isSaving && (
             <div className="flex items-center gap-2 text-[10px] font-bold text-zinc-400 bg-white border border-[#bfc9c3]/30 px-3 py-1.5 rounded-xl shadow-sm transition-all duration-300">
-              {isSaving ? (
-                <>
-                  <Loader2 className="w-3.5 h-3.5 text-[#003527] animate-spin" />
-                  <span className="text-[#003527]">Speichere...</span>
-                </>
-              ) : (
-                <>
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  <span className="text-zinc-500">Alle Änderungen gespeichert</span>
-                </>
-              )}
+              <Loader2 className="w-3.5 h-3.5 text-[#003527] animate-spin" />
+              <span className="text-[#003527]">Speichere...</span>
             </div>
           )}
-          
-          <button
-            type="button"
-            onClick={() => setIsEditing(!isEditing)}
-            className={`flex items-center gap-1.5 text-[10px] font-bold px-3 py-1.5 rounded-xl border transition-all duration-300 cursor-pointer active:scale-95 shadow-sm ${
-              isEditing 
-                ? 'bg-[#003527] hover:bg-[#0b513d] border-[#003527] text-white' 
-                : 'bg-white hover:bg-zinc-50 border-[#bfc9c3]/40 text-[#003527]'
-            }`}
-          >
-            {isEditing ? (
-              <>
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>Fertig (Leseansicht)</span>
-              </>
-            ) : (
-              <>
-                <Pencil className="w-3.5 h-3.5" />
-                <span>Bearbeiten</span>
-              </>
-            )}
-          </button>
         </div>
       </div>
 
       {/* Main Content Layout */}
       {!isEditing && isAnamnesisEmpty(data) ? (
-        <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-10 text-center space-y-4 max-w-md mx-auto shadow-sm my-12">
+        <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-10 text-center space-y-4 max-w-md mx-auto my-12">
           <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-800 flex items-center justify-center mx-auto border border-emerald-200/50">
             <Sparkles className="w-6 h-6" />
           </div>
@@ -310,21 +279,10 @@ export default function CranioAnamnesisTab({ clientId }: CranioAnamnesisTabProps
           </button>
         </div>
       ) : (
-        <div className="space-y-10 animate-fade-in">
-          
-          {/* Sektion 1: Beschwerden & Anliegen */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <span className="text-[10px] font-extrabold tracking-widest text-[#003527]/70 uppercase">
-                Beschwerden & Anliegen
-              </span>
-              <div className="h-px bg-[#bfc9c3]/20 flex-1" />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in pb-12">
               
               {/* BOX 1: Aktuelle Beschwerden & Behandlungsziel (Col span 2) */}
-              <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 flex flex-col justify-between transition-all duration-300 relative group overflow-hidden md:col-span-2 shadow-[0_4px_20px_rgba(0,53,39,0.02)] hover:border-[#bfc9c3]/60">
+              <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 flex flex-col justify-between transition-all duration-300 relative group overflow-hidden md:col-span-2 hover:border-[#bfc9c3]/60">
                 <div className="w-full">
                   <div className="flex justify-between items-start mb-4 border-b border-zinc-100/60 pb-3">
                     <div className="flex items-center gap-3">
@@ -444,7 +402,7 @@ export default function CranioAnamnesisTab({ clientId }: CranioAnamnesisTabProps
               </div>
 
               {/* BOX 2: Ressourcen */}
-              <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 flex flex-col justify-between transition-all duration-300 relative group overflow-hidden md:col-span-1 shadow-[0_4px_20px_rgba(0,53,39,0.02)] hover:border-[#bfc9c3]/60">
+              <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 flex flex-col justify-between transition-all duration-300 relative group overflow-hidden md:col-span-1 hover:border-[#bfc9c3]/60">
                 <div className="w-full">
                   <div className="flex justify-between items-start mb-4 border-b border-zinc-100/60 pb-3">
                     <div className="flex items-center gap-3">
@@ -481,7 +439,7 @@ export default function CranioAnamnesisTab({ clientId }: CranioAnamnesisTabProps
               </div>
 
               {/* BOX 8: Cranio Erfahrung */}
-              <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 flex flex-col justify-between transition-all duration-300 relative group overflow-hidden md:col-span-3 shadow-[0_4px_20px_rgba(0,53,39,0.02)] hover:border-[#bfc9c3]/60 bg-gradient-to-br from-white to-teal-50/5">
+              <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 flex flex-col justify-between transition-all duration-300 relative group overflow-hidden md:col-span-3 hover:border-[#bfc9c3]/60 bg-gradient-to-br from-white to-teal-50/5">
                 <div className="w-full">
                   <div className="flex justify-between items-start mb-4 border-b border-zinc-100/60 pb-3">
                     <div className="flex items-center gap-3">
@@ -517,22 +475,10 @@ export default function CranioAnamnesisTab({ clientId }: CranioAnamnesisTabProps
                 </div>
               </div>
 
-            </div>
-          </div>
 
-          {/* Sektion 2: Medizinische Anamnese */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <span className="text-[10px] font-extrabold tracking-widest text-[#003527]/70 uppercase">
-                Medizinische Anamnese
-              </span>
-              <div className="h-px bg-[#bfc9c3]/20 flex-1" />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               
               {/* BOX 3: Spezifische Vorerkrankungen (Col span 3) */}
-              <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 flex flex-col justify-between transition-all duration-300 relative group overflow-hidden md:col-span-3 shadow-[0_4px_20px_rgba(0,53,39,0.02)] hover:border-[#bfc9c3]/60">
+              <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 flex flex-col justify-between transition-all duration-300 relative group overflow-hidden md:col-span-3 hover:border-[#bfc9c3]/60">
                 <div className="w-full">
                   <div className="flex justify-between items-start mb-4 border-b border-zinc-100/60 pb-3">
                     <div className="flex items-center gap-3">
@@ -637,7 +583,7 @@ export default function CranioAnamnesisTab({ clientId }: CranioAnamnesisTabProps
               </div>
 
               {/* BOX 4: Unfälle & OPs (Col span 2) */}
-              <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 flex flex-col justify-between transition-all duration-300 relative group overflow-hidden md:col-span-2 shadow-[0_4px_20px_rgba(0,53,39,0.02)] hover:border-[#bfc9c3]/60">
+              <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 flex flex-col justify-between transition-all duration-300 relative group overflow-hidden md:col-span-2 hover:border-[#bfc9c3]/60">
                 <div className="w-full">
                   <div className="flex justify-between items-start mb-4 border-b border-zinc-100/60 pb-3">
                     <div className="flex items-center gap-3">
@@ -767,7 +713,7 @@ export default function CranioAnamnesisTab({ clientId }: CranioAnamnesisTabProps
               </div>
 
               {/* BOX 5: Medikation (Col span 1) */}
-              <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 flex flex-col justify-between transition-all duration-300 relative group overflow-hidden md:col-span-1 shadow-[0_4px_20px_rgba(0,53,39,0.02)] hover:border-[#bfc9c3]/60">
+              <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 flex flex-col justify-between transition-all duration-300 relative group overflow-hidden md:col-span-1 hover:border-[#bfc9c3]/60">
                 <div className="w-full">
                   <div className="flex justify-between items-start mb-4 border-b border-zinc-100/60 pb-3">
                     <div className="flex items-center gap-3">
@@ -860,22 +806,10 @@ export default function CranioAnamnesisTab({ clientId }: CranioAnamnesisTabProps
                 </div>
               </div>
 
-            </div>
-          </div>
 
-          {/* Sektion 3: Systemische & Emotionale Faktoren */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <span className="text-[10px] font-extrabold tracking-widest text-[#003527]/70 uppercase">
-                Systemische & Emotionale Faktoren
-              </span>
-              <div className="h-px bg-[#bfc9c3]/20 flex-1" />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               
               {/* BOX 6: Emotionale Historie */}
-              <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 flex flex-col justify-between transition-all duration-300 relative group overflow-hidden shadow-[0_4px_20px_rgba(0,53,39,0.02)] hover:border-[#bfc9c3]/60">
+              <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 flex flex-col justify-between transition-all duration-300 relative group overflow-hidden md:col-span-1 hover:border-[#bfc9c3]/60">
                 <div className="w-full">
                   <div className="flex justify-between items-start mb-4 border-b border-zinc-100/60 pb-3">
                     <div className="flex items-center gap-3">
@@ -934,7 +868,7 @@ export default function CranioAnamnesisTab({ clientId }: CranioAnamnesisTabProps
               </div>
 
               {/* BOX 7: Geburt & Schwangerschaft */}
-              <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 flex flex-col justify-between transition-all duration-300 relative group overflow-hidden shadow-[0_4px_20px_rgba(0,53,39,0.02)] hover:border-[#bfc9c3]/60">
+              <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 flex flex-col justify-between transition-all duration-300 relative group overflow-hidden md:col-span-2 hover:border-[#bfc9c3]/60">
                 <div className="w-full">
                   <div className="flex justify-between items-start mb-4 border-b border-zinc-100/60 pb-3">
                     <div className="flex items-center gap-3">
@@ -1031,12 +965,8 @@ export default function CranioAnamnesisTab({ clientId }: CranioAnamnesisTabProps
                   )}
                 </div>
               </div>
-
             </div>
-          </div>
-          
+          )}
         </div>
-      )}
-    </div>
-  );
-}
+      );
+    }

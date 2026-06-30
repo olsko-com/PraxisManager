@@ -106,7 +106,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       icon: Plus,
       onSelect: () => {
         setSheetMode('new');
-        setNewAppDate(new Date('2026-06-01').toISOString().slice(0, 10));
+        setNewAppDate(new Date().toISOString().slice(0, 10));
         setNewAppHour(9);
         if (clients.length > 0) setNewAppClientId(clients[0].id);
         if (services.length > 0) setNewAppServiceId(services[0].id);
