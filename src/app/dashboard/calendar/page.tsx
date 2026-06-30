@@ -95,6 +95,8 @@ export default function CalendarPage() {
   // Current time state for real-time indicator line
   const [currentTime, setCurrentTime] = React.useState(new Date());
 
+  const scrollContainerRef = React.useRef<HTMLDivElement>(null);
+
   React.useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
@@ -102,17 +104,40 @@ export default function CalendarPage() {
     return () => clearInterval(timer);
   }, []);
 
+  React.useEffect(() => {
+    const handleScroll = () => {
+      if (scrollContainerRef.current) {
+        const now = new Date();
+        const isCurrentPeriod = calendarView === 'day' 
+          ? isSameDay(currentCalendarDate, now.toISOString())
+          : getWeekDays(currentCalendarDate).some(d => d.toDateString() === now.toDateString());
+
+        let targetHour = 8; // Default morning view (08:00)
+        if (isCurrentPeriod) {
+          // Scroll to 2 hours before the current hour to give context
+          targetHour = Math.max(0, now.getHours() - 2);
+          targetHour = Math.min(targetHour, 16); 
+        }
+        
+        const scrollOffset = targetHour * 88;
+        
+        scrollContainerRef.current.scrollTo({
+          top: scrollOffset,
+          behavior: 'smooth'
+        });
+      }
+    };
+
+    // Use a tiny timeout to ensure DOM layout has settled
+    const timer = setTimeout(handleScroll, 100);
+    return () => clearTimeout(timer);
+  }, [calendarView, currentCalendarDate]);
+
   const getNowIndicatorPosition = (time: Date) => {
     const hours = time.getHours();
     const minutes = time.getMinutes();
-    
-    // Calendar business hours: 09:00 to 17:00
-    if (hours < 9 || hours >= 17) {
-      return null;
-    }
-    
-    const minutesSince09 = (hours - 9) * 60 + minutes;
-    return (minutesSince09 / 60) * 88;
+    const minutesSinceStart = hours * 60 + minutes;
+    return (minutesSinceStart / 60) * 88;
   };
 
   const handleNewAppointmentClick = () => {
@@ -246,7 +271,7 @@ export default function CalendarPage() {
     const diff = current.getDate() - day + (day === 0 ? -6 : 1);
     const monday = new Date(current.setDate(diff));
     const days = [];
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 7; i++) {
       const d = new Date(monday);
       d.setDate(monday.getDate() + i);
       days.push(d);
@@ -345,12 +370,12 @@ export default function CalendarPage() {
     const hours = start.getHours();
     const minutes = start.getMinutes();
 
-    const minutesSince09 = (hours - 9) * 60 + minutes;
+    const minutesSinceStart = hours * 60 + minutes;
     const dur = resizingAppId === app.id && tempDuration !== null 
       ? tempDuration 
       : Math.round((end.getTime() - start.getTime()) / 60000);
 
-    const topPx = (minutesSince09 / 60) * 88;
+    const topPx = (minutesSinceStart / 60) * 88;
     const visualDur = Math.max(45, dur);
     const heightPx = (visualDur / 60) * 88;
 
@@ -400,7 +425,7 @@ export default function CalendarPage() {
   const getCalendarTitleText = () => {
     const days = getWeekDays(currentCalendarDate);
     const startStr = days[0].toLocaleDateString('de-DE', { day: '2-digit', month: 'long' });
-    const endStr = days[4].toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' });
+    const endStr = days[6].toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' });
 
     if (calendarView === 'day') {
       return currentCalendarDate.toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
@@ -645,7 +670,7 @@ export default function CalendarPage() {
               isSidebarOpen ? 'lg:pr-96' : 'lg:pr-8'
             }`}
           >
-            <div className="mt-3 bg-white border border-[#bfc9c3]/40 rounded-2xl flex-grow overflow-y-auto overflow-x-auto hide-scrollbar pt-0 pb-6 px-0 shadow-none flex flex-col min-h-0 min-w-0">
+            <div ref={scrollContainerRef} className="mt-3 bg-white border border-[#bfc9c3]/40 rounded-2xl flex-grow overflow-y-auto overflow-x-auto hide-scrollbar pt-0 pb-6 px-0 shadow-none flex flex-col min-h-0 min-w-0">
             {/* Header Row */}
             <div className="min-w-[600px] grid grid-cols-[80px_1fr] border-b border-[#bfc9c3]/20 bg-zinc-50/75 backdrop-blur-md rounded-t-2xl py-3 mb-0 sticky top-0 z-30">
               <div className="w-[80px]" />
@@ -661,8 +686,8 @@ export default function CalendarPage() {
 
             <div className="min-w-[600px] grid grid-cols-[80px_1fr] divide-x divide-zinc-200/50 relative">
               {/* Timeline column */}
-              <div className="relative h-[704px] select-none pr-4">
-                {['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'].map((time, idx) => (
+              <div className="relative h-[2112px] select-none pr-4">
+                {['00:00', '01:00', '02:00', '03:00', '04:00', '05:00', '06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00', '24:00'].map((time, idx) => (
                   <div 
                     key={time} 
                     className={`absolute right-4 text-[10px] font-bold text-zinc-400 ${
@@ -676,16 +701,16 @@ export default function CalendarPage() {
               </div>
 
               {/* Content column */}
-              <div className="relative h-[704px] w-full pl-0">
+              <div className="relative h-[2112px] w-full pl-0">
                 <div className="absolute inset-y-0 left-0 right-0 divide-y divide-zinc-100 flex flex-col pointer-events-none">
-                  {Array.from({ length: 8 }).map((_, i) => (
+                  {Array.from({ length: 24 }).map((_, i) => (
                     <div key={i} className="h-[88px]" />
                   ))}
                 </div>
 
-                <div className="absolute inset-y-0 left-0 right-0 grid grid-rows-8">
-                  {Array.from({ length: 8 }).map((_, hourIdx) => {
-                    const hour = hourIdx + 9;
+                <div className="absolute inset-y-0 left-0 right-0 flex flex-col">
+                  {Array.from({ length: 24 }).map((_, hourIdx) => {
+                    const hour = hourIdx;
                     const dateStr = currentCalendarDate.toISOString().slice(0, 10);
                     return (
                       <div
@@ -917,9 +942,9 @@ export default function CalendarPage() {
               isSidebarOpen ? 'lg:pr-96' : 'lg:pr-8'
             }`}
           >
-            <div className="mt-3 bg-white border border-[#bfc9c3]/40 rounded-2xl flex-grow overflow-y-auto overflow-x-auto hide-scrollbar pt-0 pb-6 px-0 shadow-none flex flex-col min-h-0 min-w-0">
+            <div ref={scrollContainerRef} className="mt-3 bg-white border border-[#bfc9c3]/40 rounded-2xl flex-grow overflow-y-auto overflow-x-auto hide-scrollbar pt-0 pb-6 px-0 shadow-none flex flex-col min-h-0 min-w-0">
             {/* Week Header Row */}
-            <div className="min-w-[800px] grid grid-cols-[80px_repeat(5,1fr)] divide-x divide-zinc-200/50 border-b border-[#bfc9c3]/20 bg-zinc-50/75 backdrop-blur-md rounded-t-2xl mb-0 sticky top-0 z-30">
+            <div className="min-w-[1000px] grid grid-cols-[80px_repeat(7,1fr)] divide-x divide-zinc-200/50 border-b border-[#bfc9c3]/20 bg-zinc-50/75 backdrop-blur-md rounded-t-2xl mb-0 sticky top-0 z-30">
               <div className="w-[80px]" />
               {getWeekDays(currentCalendarDate).map((dayDate) => {
                 const isToday = new Date().toDateString() === dayDate.toDateString();
@@ -943,10 +968,10 @@ export default function CalendarPage() {
               })}
             </div>
 
-            <div className="min-w-[800px] grid grid-cols-[80px_repeat(5,1fr)] divide-x divide-zinc-200/50 relative">
+            <div className="min-w-[1000px] grid grid-cols-[80px_repeat(7,1fr)] divide-x divide-zinc-200/50 relative">
               {/* Hours Column */}
-              <div className="relative h-[704px] select-none pr-4">
-                {['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'].map((time, idx) => (
+              <div className="relative h-[2112px] select-none pr-4">
+                {['00:00', '01:00', '02:00', '03:00', '04:00', '05:00', '06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00', '24:00'].map((time, idx) => (
                   <div 
                     key={time} 
                     className={`absolute right-4 text-[10px] font-bold text-zinc-400 ${
@@ -968,21 +993,21 @@ export default function CalendarPage() {
                 return (
                   <div 
                     key={dateStr} 
-                    className={`relative h-[704px] w-full ${isToday ? 'bg-[#003527]/[0.015]' : ''}`}
+                    className={`relative h-[2112px] w-full ${isToday ? 'bg-[#003527]/[0.015]' : ''}`}
                     onDragOver={(e) => e.preventDefault()}
-                    onDrop={() => handleDrop(dateStr, dragOverSlot?.hour || 9)}
+                    onDrop={() => handleDrop(dateStr, dragOverSlot?.hour || 0)}
                   >
                     {/* Background Slots */}
                     <div className="absolute inset-0 divide-y divide-zinc-100 flex flex-col pointer-events-none">
-                      {Array.from({ length: 8 }).map((_, i) => (
+                      {Array.from({ length: 24 }).map((_, i) => (
                         <div key={i} className="h-[88px]" />
                       ))}
                     </div>
 
                     {/* Interactive cell overlay slots */}
-                    <div className="absolute inset-0 grid grid-rows-8">
-                      {Array.from({ length: 8 }).map((_, hourIdx) => {
-                        const hour = hourIdx + 9;
+                    <div className="absolute inset-0 flex flex-col">
+                      {Array.from({ length: 24 }).map((_, hourIdx) => {
+                        const hour = hourIdx;
                         return (
                           <div
                             key={hour}
@@ -1151,7 +1176,7 @@ export default function CalendarPage() {
                 if (!isTodayInWeek || topPx === null) return null;
                 return (
                   <div 
-                    className="absolute left-0 right-0 z-20 pointer-events-none h-0 grid grid-cols-[80px_repeat(5,1fr)]" 
+                    className="absolute left-0 right-0 z-20 pointer-events-none h-0 grid grid-cols-[80px_repeat(7,1fr)]" 
                     style={{ top: `${topPx}px` }}
                   >
                     {/* Time Pill Column */}
