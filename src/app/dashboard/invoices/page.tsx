@@ -557,12 +557,31 @@ export default function InvoicesPage() {
                         </div>
                       </td>
                       <td className="py-3.5 px-3 font-mono border-b border-zinc-100 group-last:border-b-0 group-hover:bg-[#003527]/3 transition-colors text-left">
-                        <div className="font-semibold text-zinc-800">{inv.invoiceNumber}</div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            printInvoice(inv);
+                          }}
+                          className="font-bold text-[#003527] hover:underline cursor-pointer border-none bg-transparent p-0 block text-left font-mono text-xs"
+                        >
+                          {inv.invoiceNumber}
+                        </button>
                         {inv.relatedInvoiceId && (() => {
                           const rel = invoices.find(i => i.id === inv.relatedInvoiceId);
                           return rel ? (
                             <div className="text-[9px] font-bold text-zinc-400 mt-0.5 uppercase tracking-wide">
-                              {inv.invoiceNumber.startsWith('ST-') ? 'Storno für ' : 'Storniert durch '}{rel.invoiceNumber}
+                              {inv.invoiceNumber.startsWith('ST-') ? 'Storno für ' : 'Storniert durch '}
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  printInvoice(rel);
+                                }}
+                                className="font-bold text-zinc-500 hover:text-zinc-700 underline cursor-pointer border-none bg-transparent p-0 inline font-mono"
+                              >
+                                {rel.invoiceNumber}
+                              </button>
                             </div>
                           ) : null;
                         })()}
@@ -570,7 +589,17 @@ export default function InvoicesPage() {
                           const storno = invoices.find(i => i.relatedInvoiceId === inv.id);
                           return storno ? (
                             <div className="text-[9px] font-bold text-rose-500/75 mt-0.5 uppercase tracking-wide">
-                              Storniert durch {storno.invoiceNumber}
+                              Storniert durch{' '}
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  printInvoice(storno);
+                                }}
+                                className="font-bold text-rose-600 hover:text-rose-700 underline cursor-pointer border-none bg-transparent p-0 inline font-mono"
+                              >
+                                {storno.invoiceNumber}
+                              </button>
                             </div>
                           ) : null;
                         })()}
