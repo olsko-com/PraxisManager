@@ -1899,12 +1899,37 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     if (!therapistId) return;
 
     const soapId = crypto.randomUUID();
+
+    // Prefill subjective complaints from client's Anamnesis
+    let initialComplaints: Array<{ description: string; painLevel: number }> = [];
+    try {
+      const stored = localStorage.getItem('praxis_manager_cranio_anamnesis');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed && parsed[cliId] && Array.isArray(parsed[cliId].complaints)) {
+          initialComplaints = parsed[cliId].complaints
+            .filter((c: any) => c && c.description && c.description.trim() !== '')
+            .map((c: any) => ({
+              description: c.description.trim(),
+              painLevel: typeof c.painLevel === 'number' ? c.painLevel : 5
+            }));
+        }
+      }
+    } catch (e) {
+      console.error('Error loading initial complaints from anamnesis:', e);
+    }
+
+    const initialSubjective = JSON.stringify({
+      text: 'Klient berichtet...',
+      complaints: initialComplaints
+    });
+
     const newNote: SoapNote = {
       id: soapId,
       appointmentId: appId,
       clientId: cliId,
       date: new Date().toISOString().slice(0, 10),
-      subjective: 'Klient berichtet...',
+      subjective: initialSubjective,
       objective: 'Palpation zeigt...',
       assessment: 'Verdacht auf...',
       plan: 'Therapie fortsetzen...'
