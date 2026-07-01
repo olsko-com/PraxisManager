@@ -99,7 +99,15 @@ Rechnungsdaten.
 * **`invoice_number`** `text` (Rechnungsnummer, z.B. `RE-2026-0001`)
 * **`amount`** `numeric` (Rechnungsbetrag)
 * **`date`** `date` (Rechnungsdatum)
-* **`status`** `text` (`open`, `paid`, `overdue`)
+* **`status`** `text` (`open`, `paid`, `overdue`, `cancelled`)
+* **`due_date`** `date` (Fälligkeitsdatum)
+* **`service_date`** `text` (Leistungszeitraum)
+* **`client_snapshot`** `jsonb` (GoBD-konformer Adress-Snapshot des Klienten)
+* **`line_items`** `jsonb` (Rechnungspositionen)
+* **`is_small_business`** `boolean` (True, wenn Kleinunternehmer nach § 19 UStG)
+* **`is_reverse_charge`** `boolean` (True, wenn Steuerschuldumkehr nach § 13b UStG)
+* **`notes`** `text` (Zahlungshinweise)
+* **`related_invoice_id`** `uuid` (Verweis auf Ursprungsrechnung bei Storno)
 * **`created_at`** `timestamptz`
 
 * **Dynamische Joins (Clientside):**

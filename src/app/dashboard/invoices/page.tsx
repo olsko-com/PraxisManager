@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { 
   Plus, Search, Mail, Download, Printer, Check, Clock, Trash2, ChevronRight, 
   MoreVertical, CheckCircle2, Activity, TrendingUp, Receipt, 
-  AlertCircle, Bell, ArrowUpRight
+  AlertCircle, Bell, ArrowUpRight, Edit
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDashboard } from '../context';
@@ -40,7 +40,11 @@ export default function InvoicesPage() {
     cancelInvoice,
     handleOpenMahnung,
     handleInvoiceContextMenu,
-    showToast
+    showToast,
+    setIsEditingDraft,
+    isViewingInvoice,
+    setIsViewingInvoice,
+    deleteDraftInvoice
   } = useDashboard();
 
   // Timeframe state
@@ -53,7 +57,9 @@ export default function InvoicesPage() {
   const displayedInvoices = invoices.filter(inv => {
     const matchesSearch = inv.clientName.toLowerCase().includes(invoiceSearch.toLowerCase()) ||
                           inv.invoiceNumber.toLowerCase().includes(invoiceSearch.toLowerCase());
-    const matchesFilter = invoiceFilter === 'all' || inv.status === invoiceFilter;
+    const matchesFilter = invoiceFilter === 'all' 
+      ? inv.status !== 'draft' 
+      : inv.status === invoiceFilter;
     return matchesSearch && matchesFilter;
   });
 
@@ -62,6 +68,7 @@ export default function InvoicesPage() {
 
   // Filter invoices based on selected timeframe
   const filteredInvoicesByTime = invoices.filter(inv => {
+    if (inv.status === 'draft') return false;
     const invDate = new Date(inv.date);
     const refDate = new Date(); // Base context date
     if (timeframe === '30T') {
@@ -318,10 +325,10 @@ export default function InvoicesPage() {
                   Gesamt
                 </span>
                 <span className="font-extrabold text-[#003527] bg-[#003527]/5 border border-[#003527]/10 rounded-full px-2.5 py-0.5 text-[11px] font-sans">
-                  {invoices.reduce((sum, inv) => sum + inv.amount, 0).toFixed(2)} €
+                  {invoices.filter(i => i.status !== 'draft').reduce((sum, inv) => sum + inv.amount, 0).toFixed(2)} €
                 </span>
                 <span className="text-[10px] text-zinc-400 font-medium">
-                  ({invoices.length})
+                  ({invoices.filter(i => i.status !== 'draft').length})
                 </span>
               </button>
 
@@ -388,6 +395,28 @@ export default function InvoicesPage() {
                 </span>
                 <span className="text-[10px] text-zinc-400 font-medium">
                   ({invoices.filter(inv => inv.status === 'overdue').length})
+                </span>
+              </button>
+
+              <div className="w-px h-3 bg-[#bfc9c3]/40 hidden md:block" />
+
+              {/* Filter: Entwürfe */}
+              <button
+                onClick={() => setInvoiceFilter('draft')}
+                className="flex items-center gap-2 cursor-pointer bg-transparent border-none p-0 outline-none text-left"
+              >
+                <span className={invoiceFilter === 'draft' ? 'text-[#003527] font-bold underline decoration-2 underline-offset-8' : 'text-[#003527]/70 font-semibold hover:text-[#003527]'}>
+                  Entwürfe
+                </span>
+                <span className="font-extrabold text-zinc-700 bg-zinc-50 border border-zinc-200 rounded-full px-2.5 py-0.5 text-[11px] font-sans">
+                  {invoices
+                    .filter(inv => inv.status === 'draft')
+                    .reduce((sum, inv) => sum + inv.amount, 0)
+                    .toFixed(2)}{' '}
+                  €
+                </span>
+                <span className="text-[10px] text-zinc-400 font-medium">
+                  ({invoices.filter(inv => inv.status === 'draft').length})
                 </span>
               </button>
             </div>
@@ -535,17 +564,31 @@ export default function InvoicesPage() {
                       key={inv.id}
                       onContextMenu={(e) => handleInvoiceContextMenu(e, inv)}
                       onClick={() => {
-                        setSelectedInvoiceIds(prev => 
-                          prev.includes(inv.id) 
-                            ? prev.filter(id => id !== inv.id) 
-                            : [...prev, inv.id]
-                        );
+                        setPrefillInvoice(inv);
+                        if (inv.status === 'draft') {
+                          setIsEditingDraft(true);
+                          setIsViewingInvoice(false);
+                        } else {
+                          setIsEditingDraft(false);
+                          setIsViewingInvoice(true);
+                        }
+                        setIsNewInvoiceSheetOpen(true);
                       }}
                       className={`text-[#003527] group cursor-pointer transition-colors ${
                         isSelected ? 'bg-[#003527]/5' : ''
                       }`}
                     >
-                      <td className="py-3.5 pl-5 pr-3 border-b border-zinc-100 group-last:border-b-0 group-hover:bg-[#003527]/3 transition-colors text-left w-10">
+                      <td 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedInvoiceIds(prev => 
+                            prev.includes(inv.id) 
+                              ? prev.filter(id => id !== inv.id) 
+                              : [...prev, inv.id]
+                          );
+                        }}
+                        className="py-3.5 pl-5 pr-3 border-b border-zinc-100 group-last:border-b-0 group-hover:bg-[#003527]/3 transition-colors text-left w-10"
+                      >
                         <div
                           className={`w-4 h-4 rounded border flex items-center justify-center transition-all cursor-pointer outline-none bg-transparent ${
                             isSelected 
@@ -615,53 +658,73 @@ export default function InvoicesPage() {
                             ? 'bg-rose-50 border-rose-200 text-rose-800'
                             : inv.status === 'cancelled'
                             ? 'bg-zinc-50 border-zinc-200 text-zinc-400 line-through'
+                            : inv.status === 'draft'
+                            ? 'bg-zinc-100 border-zinc-300 text-zinc-600'
                             : 'bg-amber-50 border-amber-200 text-amber-800'
                         }`}>
                           {inv.status === 'paid' && (inv.invoiceNumber.startsWith('ST-') ? 'Storno-Beleg' : 'Bezahlt')}
                           {inv.status === 'overdue' && 'Überfällig'}
                           {inv.status === 'open' && 'Offen'}
                           {inv.status === 'cancelled' && 'Storniert'}
+                          {inv.status === 'draft' && 'Entwurf'}
                         </span>
                       </td>
                       <td className="py-3.5 pl-3 pr-5 text-right relative border-b border-zinc-100 group-last:border-b-0 group-hover:bg-[#003527]/3 transition-colors">
                         <div className="flex items-center justify-end gap-1 relative">
                           {/* Direct Actions */}
-                          {inv.status !== 'paid' ? (
+                          {inv.status !== 'draft' ? (
+                            <>
+                              {inv.status !== 'paid' ? (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    markInvoicePaid(inv.id);
+                                  }}
+                                  title="Als bezahlt markieren"
+                                  className="p-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700 transition-colors cursor-pointer flex items-center justify-center"
+                                >
+                                  <Check className="w-3.5 h-3.5" />
+                                </button>
+                              ) : (
+                                <div className="w-[28px] h-[28px]" />
+                              )}
+
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  sendInvoiceEmail(inv);
+                                }}
+                                title="Per E-Mail senden"
+                                className="p-1.5 rounded-lg bg-white border border-[#bfc9c3]/50 text-[#003527]/70 hover:bg-zinc-50 hover:text-[#003527] transition-colors cursor-pointer flex items-center justify-center"
+                              >
+                                <Mail className="w-3.5 h-3.5" />
+                              </button>
+
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  downloadInvoicePdf(inv);
+                                }}
+                                title="PDF laden"
+                                className="p-1.5 rounded-lg bg-white border border-[#bfc9c3]/50 text-[#003527]/70 hover:bg-zinc-50 hover:text-[#003527] transition-colors cursor-pointer flex items-center justify-center"
+                              >
+                                <Download className="w-3.5 h-3.5" />
+                              </button>
+                            </>
+                          ) : (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                markInvoicePaid(inv.id);
+                                setPrefillInvoice(inv);
+                                setIsEditingDraft(true);
+                                setIsNewInvoiceSheetOpen(true);
                               }}
-                              title="Als bezahlt markieren"
-                              className="p-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700 transition-colors cursor-pointer flex items-center justify-center"
+                              title="Entwurf bearbeiten"
+                              className="p-1.5 rounded-lg bg-[#bfc9c3]/20 border border-[#bfc9c3]/30 text-[#003527] hover:bg-[#bfc9c3]/35 transition-colors cursor-pointer flex items-center justify-center"
                             >
-                              <Check className="w-3.5 h-3.5" />
+                              <Edit className="w-3.5 h-3.5" />
                             </button>
-                          ) : (
-                            <div className="w-[28px] h-[28px]" />
                           )}
-
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              sendInvoiceEmail(inv);
-                            }}
-                            title="Per E-Mail senden"
-                            className="p-1.5 rounded-lg bg-white border border-[#bfc9c3]/50 text-[#003527]/70 hover:bg-zinc-50 hover:text-[#003527] transition-colors cursor-pointer flex items-center justify-center"
-                          >
-                            <Mail className="w-3.5 h-3.5" />
-                          </button>
-
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              downloadInvoicePdf(inv);
-                            }}
-                            title="PDF laden"
-                            className="p-1.5 rounded-lg bg-white border border-[#bfc9c3]/50 text-[#003527]/70 hover:bg-zinc-50 hover:text-[#003527] transition-colors cursor-pointer flex items-center justify-center"
-                          >
-                            <Download className="w-3.5 h-3.5" />
-                          </button>
 
                           {/* Dropdown for other actions */}
                           <div className="relative inline-block text-left">
@@ -686,47 +749,76 @@ export default function InvoicesPage() {
                                   exit={{ opacity: 0, scale: 0.95, y: -5 }}
                                   className="absolute right-0 mt-2 w-48 bg-white border border-[#bfc9c3]/50 rounded-2xl shadow-xl overflow-hidden py-1.5 flex flex-col z-50 text-left"
                                 >
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setActiveInvoiceActionMenuId(null);
-                                      printInvoice(inv);
-                                    }}
-                                    className="px-4 py-2 text-left text-xs font-bold text-[#003527] hover:bg-[#f3f4f3] transition-colors flex items-center gap-2 w-full cursor-pointer border-none bg-transparent"
-                                  >
-                                    <Printer className="w-3.5 h-3.5 text-[#003527]/60" /> Drucken
-                                  </button>
-            
-                                  {(inv.status === 'open' || inv.status === 'overdue') && (
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setActiveInvoiceActionMenuId(null);
-                                        sendInvoiceReminder(inv);
-                                      }}
-                                      className="px-4 py-2 text-left text-xs font-bold text-amber-700 hover:bg-[#f3f4f3] transition-colors flex items-center gap-2 w-full cursor-pointer border-none bg-transparent"
-                                    >
-                                      <Clock className="w-3.5 h-3.5 text-amber-600" /> Mahnung senden
-                                    </button>
-                                  )}
-            
-                                  {inv.status !== 'cancelled' && !inv.invoiceNumber.startsWith('ST-') && (
-                                    <button
-                                      onClick={async (e) => {
-                                        e.stopPropagation();
-                                        setActiveInvoiceActionMenuId(null);
-                                        const success = await cancelInvoice(inv.id);
-                                        if (success) {
-                                          if (confirm('Möchtest du einen korrigierten Entwurf auf Basis dieser stornierten Rechnung erstellen?')) {
-                                            setPrefillInvoice(inv);
-                                            setIsNewInvoiceSheetOpen(true);
-                                          }
-                                        }
-                                      }}
-                                      className="px-4 py-2 text-left text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors border-t border-zinc-100 flex items-center gap-2 w-full cursor-pointer border-none bg-transparent"
-                                    >
-                                      <Trash2 className="w-3.5 h-3.5 text-rose-500" /> Stornieren
-                                    </button>
+                                  {inv.status === 'draft' ? (
+                                    <>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setActiveInvoiceActionMenuId(null);
+                                          setPrefillInvoice(inv);
+                                          setIsEditingDraft(true);
+                                          setIsNewInvoiceSheetOpen(true);
+                                        }}
+                                        className="px-4 py-2 text-left text-xs font-bold text-[#003527] hover:bg-[#f3f4f3] transition-colors flex items-center gap-2 w-full cursor-pointer border-none bg-transparent"
+                                      >
+                                        <Printer className="w-3.5 h-3.5 text-[#003527]/60" /> Bearbeiten
+                                      </button>
+                                      <button
+                                        onClick={async (e) => {
+                                          e.stopPropagation();
+                                          setActiveInvoiceActionMenuId(null);
+                                          await deleteDraftInvoice(inv.id);
+                                        }}
+                                        className="px-4 py-2 text-left text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors border-t border-zinc-100 flex items-center gap-2 w-full cursor-pointer border-none bg-transparent"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5 text-rose-500" /> Löschen
+                                      </button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setActiveInvoiceActionMenuId(null);
+                                          printInvoice(inv);
+                                        }}
+                                        className="px-4 py-2 text-left text-xs font-bold text-[#003527] hover:bg-[#f3f4f3] transition-colors flex items-center gap-2 w-full cursor-pointer border-none bg-transparent"
+                                      >
+                                        <Printer className="w-3.5 h-3.5 text-[#003527]/60" /> Drucken
+                                      </button>
+                
+                                      {(inv.status === 'open' || inv.status === 'overdue') && (
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setActiveInvoiceActionMenuId(null);
+                                            sendInvoiceReminder(inv);
+                                          }}
+                                          className="px-4 py-2 text-left text-xs font-bold text-amber-700 hover:bg-[#f3f4f3] transition-colors flex items-center gap-2 w-full cursor-pointer border-none bg-transparent"
+                                        >
+                                          <Clock className="w-3.5 h-3.5 text-amber-600" /> Mahnung senden
+                                        </button>
+                                      )}
+                
+                                      {inv.status !== 'cancelled' && !inv.invoiceNumber.startsWith('ST-') && (
+                                        <button
+                                          onClick={async (e) => {
+                                            e.stopPropagation();
+                                            setActiveInvoiceActionMenuId(null);
+                                            const success = await cancelInvoice(inv.id);
+                                            if (success) {
+                                              if (confirm('Möchtest du einen korrigierten Entwurf auf Basis dieser stornierten Rechnung erstellen?')) {
+                                                setPrefillInvoice(inv);
+                                                setIsNewInvoiceSheetOpen(true);
+                                              }
+                                            }
+                                          }}
+                                          className="px-4 py-2 text-left text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors border-t border-zinc-100 flex items-center gap-2 w-full cursor-pointer border-none bg-transparent"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5 text-rose-500" /> Stornieren
+                                        </button>
+                                      )}
+                                    </>
                                   )}
                                 </motion.div>
                               )}

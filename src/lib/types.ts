@@ -88,7 +88,7 @@ export interface Invoice {
   invoiceNumber: string;
   amount: number;
   date: string;
-  status: 'paid' | 'open' | 'overdue' | 'cancelled';
+  status: 'draft' | 'paid' | 'open' | 'overdue' | 'cancelled';
   dueDate: string;
   serviceDate: string;
   clientSnapshot: ClientSnapshot;

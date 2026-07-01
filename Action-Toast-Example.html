@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cocoon Calendar - Smart Action UI</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F8FAFC;
+            /* Slate 50 */
+            overflow: hidden;
+            /* Prevent scrolling for this demo */
+        }
+
+        @keyframes float-in {
+            0% {
+                opacity: 0;
+                transform: translateY(10px) scale(0.95);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        @keyframes pop-out {
+            0% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+
+            100% {
+                opacity: 0;
+                transform: translateY(10px) scale(0.95);
+                pointer-events: none;
+            }
+        }
+
+        @keyframes slide-down {
+            0% {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes shrink-x {
+            from {
+                transform: scaleX(1);
+            }
+
+            to {
+                transform: scaleX(0);
+            }
+        }
+
+        @keyframes slide-up-toast {
+            0% {
+                opacity: 0;
+                transform: translate(-50%, 20px) scale(0.95);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translate(-50%, 0) scale(1);
+            }
+        }
+
+        @keyframes slide-down-toast {
+            0% {
+                opacity: 1;
+                transform: translate(-50%, 0) scale(1);
+            }
+
+            100% {
+                opacity: 0;
+                transform: translate(-50%, 20px) scale(0.95);
+                pointer-events: none;
+            }
+        }
+
+        @keyframes dropdown-up {
+            0% {
+                opacity: 0;
+                transform: translateY(10px) scale(0.95);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .animate-float-in {
+            animation: float-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .animate-pop-out {
+            animation: pop-out 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .animate-slide-down {
+            animation: slide-down 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .animate-slide-up-toast {
+            animation: slide-up-toast 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .animate-slide-down-toast {
+            animation: slide-down-toast 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .animate-dropdown-up {
+            animation: dropdown-up 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* The event card transition for the "Optimistic UI" move */
+        .event-card {
+            transition: top 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+        }
+
+        /* Custom scrollbar for absolute minimal look */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #CBD5E1;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+
+<body class="text-slate-800 h-screen w-screen flex flex-col">
+
+    <header
+        class="h-16 border-b border-slate-200 bg-white/80 backdrop-blur-md flex items-center justify-between px-6 z-10">
+        <div class="flex items-center gap-4">
+            <div
+                class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-sm">
+                C
+            </div>
+            <h1 class="font-semibold text-lg tracking-tight">Cocoon</h1>
+        </div>
+
+        <!-- Demo Trigger Button -->
+        <button id="demoTrigger"
+            class="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg shadow-slate-900/20 transition-all flex items-center gap-2 active:scale-95">
+            <i class="ph ph-cursor-click"></i> Simuliere Terminverschiebung
+        </button>
+
+        <div class="flex items-center gap-3 text-slate-500">
+            <button class="p-2 hover:bg-slate-100 rounded-full transition"><i
+                    class="ph ph-magnifying-glass text-xl"></i></button>
+            <button class="p-2 hover:bg-slate-100 rounded-full transition"><i class="ph ph-bell text-xl"></i></button>
+            <div class="w-8 h-8 rounded-full bg-slate-200 border border-slate-300 ml-2"></div>
+        </div>
+    </header>
+
+    <div class="flex flex-1 overflow-hidden relative">
+
+        <!-- Minimal Sidebar -->
+        <aside class="w-64 border-r border-slate-200 bg-slate-50/50 p-4 hidden md:flex flex-col gap-6">
+            <div>
+                <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Kalender</h2>
+                <div class="flex flex-col gap-1">
+                    <button
+                        class="flex items-center gap-3 text-sm font-medium bg-white text-indigo-600 px-3 py-2 rounded-lg shadow-sm border border-slate-100">
+                        <i class="ph ph-calendar-blank text-lg"></i> Meine Termine
+                    </button>
+                    <button
+                        class="flex items-center gap-3 text-sm font-medium text-slate-600 hover:bg-slate-100 px-3 py-2 rounded-lg transition">
+                        <i class="ph ph-users text-lg"></i> Team Übersicht
+                    </button>
+                </div>
+            </div>
+
+            <div>
+                <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Kategorien</h2>
+                <div class="flex flex-col gap-2 text-sm text-slate-600">
+                    <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked
+                            class="accent-indigo-500"> <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+                        Erstanamnese</label>
+                    <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked
+                            class="accent-teal-500"> <span class="w-2 h-2 rounded-full bg-teal-500"></span>
+                        Osteopathie</label>
+                    <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked
+                            class="accent-amber-500"> <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                        Akut-Termin</label>
+                </div>
+            </div>
+        </aside>
+
+        <main class="flex-1 bg-white relative overflow-hidden flex flex-col">
+            <!-- Day Headers -->
+            <div class="flex border-b border-slate-100">
+                <div class="w-16"></div> <!-- Time column spacer -->
+                <div class="flex-1 text-center py-3 border-r border-slate-50">
+                    <div class="text-xs font-medium text-slate-400">DO</div>
+                    <div class="text-xl font-semibold text-indigo-600 mt-1">29</div>
+                </div>
+                <div class="flex-1 text-center py-3">
+                    <div class="text-xs font-medium text-slate-400">FR</div>
+                    <div class="text-xl font-semibold text-slate-800 mt-1">30</div>
+                </div>
+            </div>
+
+            <!-- Time Grid (Scrollable area) -->
+            <div class="flex-1 overflow-y-auto relative" id="calendarScrollArea">
+
+                <!-- Background lines & Time labels -->
+                <div class="relative w-full h-[800px]">
+                    <!-- 10:00 -->
+                    <div class="absolute top-[100px] left-0 w-full flex items-start border-t border-slate-100">
+                        <span class="w-16 text-right pr-3 text-xs text-slate-400 -mt-2.5 bg-white">10:00</span>
+                    </div>
+                    <!-- 11:00 -->
+                    <div class="absolute top-[200px] left-0 w-full flex items-start border-t border-slate-100">
+                        <span class="w-16 text-right pr-3 text-xs text-slate-400 -mt-2.5 bg-white">11:00</span>
+                    </div>
+                    <!-- 12:00 -->
+                    <div class="absolute top-[300px] left-0 w-full flex items-start border-t border-slate-100">
+                        <span class="w-16 text-right pr-3 text-xs text-slate-400 -mt-2.5 bg-white">12:00</span>
+                    </div>
+                    <!-- 13:00 -->
+                    <div class="absolute top-[400px] left-0 w-full flex items-start border-t border-slate-100">
+                        <span class="w-16 text-right pr-3 text-xs text-slate-400 -mt-2.5 bg-white">13:00</span>
+                    </div>
+                    <!-- 14:00 -->
+                    <div class="absolute top-[500px] left-0 w-full flex items-start border-t border-slate-100">
+                        <span class="w-16 text-right pr-3 text-xs text-slate-400 -mt-2.5 bg-white">14:00</span>
+                    </div>
+
+                    <!-- Current Time Line -->
+                    <div class="absolute top-[140px] left-16 right-0 border-t-2 border-red-500 z-0">
+                        <div class="absolute -left-1.5 -top-1.5 w-3 h-3 bg-red-500 rounded-full"></div>
+                    </div>
+
+                    <!-- Original position is 10:30 (top: 150px) -->
+                    <div id="eventCard"
+                        class="event-card absolute left-20 w-[calc(50%-5rem)] h-[90px] bg-indigo-50 border border-indigo-200/60 rounded-xl p-3 cursor-grab hover:shadow-md hover:border-indigo-300 z-10"
+                        style="top: 150px;">
+
+                        <!-- Status Badges (The 2026 approach) -->
+                        <div class="absolute top-2 right-2 flex gap-1">
+                            <div class="w-2 h-2 rounded-full bg-emerald-500" title="DSGVO unterschrieben"></div>
+                        </div>
+
+                        <div class="text-xs font-semibold text-indigo-700 flex items-center gap-1 mb-0.5">
+                            <span id="eventTime">10:30 - 11:30</span>
+                        </div>
+                        <div class="font-medium text-slate-900 text-sm">Anna Meier</div>
+                        <div class="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                            <i class="ph ph-stethoscope"></i> Erstanamnese
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Global Action Toast (Bottom Center) -->
+    <div id="globalToast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 hidden">
+        <div
+            class="bg-slate-900/95 backdrop-blur-2xl shadow-[0_20px_40px_-10px_rgba(0,0,0,0.3)] border border-slate-700/50 rounded-2xl flex items-center p-1.5 pl-4 relative text-white">
+
+            <!-- Information Text -->
+            <div class="flex flex-col justify-center pr-3 min-w-[160px]">
+                <span class="text-[11px] font-medium text-slate-400">Termin verschoben auf 12:30</span>
+                <span class="text-sm font-semibold text-white">Anna benachrichtigen?</span>
+            </div>
+
+            <div class="w-px h-8 bg-slate-700/50 mx-1"></div>
+
+            <!-- Smart Actions -->
+            <div class="relative flex items-center ml-1">
+                <div class="flex items-center bg-white text-slate-900 rounded-xl shadow-sm" id="actionBtnGroup">
+                    <button id="sendBtn"
+                        class="flex items-center gap-2 px-3 py-2.5 text-sm font-medium border-r border-slate-200 hover:bg-slate-50 rounded-l-xl transition-colors w-[140px] justify-center">
+                        <i class="ph ph-envelope-simple text-lg" id="sendIcon"></i>
+                        <span id="sendText">Mail senden</span>
+                    </button>
+                    <button id="dropdownBtn"
+                        class="px-2 py-2 text-sm hover:bg-slate-50 rounded-r-xl transition-colors h-full flex items-center">
+                        <i class="ph ph-caret-up text-sm"></i>
+                    </button>
+                </div>
+
+                <!-- Micro Dropdown (Opens UPWARDS) -->
+                <div id="microDropdown"
+                    class="hidden absolute bottom-full left-0 mb-3 w-64 bg-white/95 backdrop-blur-xl border border-slate-200/60 shadow-2xl rounded-xl p-1 origin-bottom animate-dropdown-up text-slate-800">
+                    <div class="px-2 py-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Senden als
+                    </div>
+
+                    <button
+                        class="w-full flex items-center justify-between px-2 py-1.5 text-sm hover:bg-slate-50 rounded-lg text-slate-700 transition">
+                        <span class="flex items-center gap-2"><i class="ph ph-envelope-simple text-slate-400"></i>
+                            E-Mail</span>
+                        <span class="text-xs text-slate-400">anna@...</span>
+                    </button>
+
+                    <button
+                        class="w-full flex items-center justify-between px-2 py-1.5 text-sm hover:bg-slate-50 rounded-lg text-slate-700 transition">
+                        <span class="flex items-center gap-2"><i class="ph ph-chat-circle text-slate-400"></i>
+                            SMS</span>
+                        <span class="text-xs text-slate-400">+49 176...</span>
+                    </button>
+
+                    <div class="h-px bg-slate-100 my-1 mx-2"></div>
+
+                    <button
+                        class="w-full flex items-start gap-2 px-2 py-2 text-sm hover:bg-slate-50 rounded-lg text-slate-700 transition text-left group">
+                        <i class="ph ph-pencil-simple mt-0.5 text-slate-400 group-hover:text-indigo-500"></i>
+                        <div class="leading-snug">
+                            <span class="block text-slate-800 font-medium mb-0.5">Vorschau bearbeiten</span>
+                            <span class="text-xs text-slate-500 italic">"Hallo Anna, dein Termin wurde..."</span>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Undo Action -->
+            <button id="undoBtn"
+                class="ml-2 px-3 py-2 text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition flex items-center gap-1.5"
+                title="Rückgängig (Cmd+Z)">
+                <i class="ph ph-arrow-u-up-left text-lg"></i>
+            </button>
+
+            <!-- Time Bar Indicator -->
+            <div class="absolute bottom-0 left-0 h-[3px] w-full rounded-b-2xl overflow-hidden pointer-events-none">
+                <div id="timeBarIndicator" class="h-full bg-indigo-500 w-full origin-left"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const demoTrigger = document.getElementById('demoTrigger');
+            const eventCard = document.getElementById('eventCard');
+            const eventTime = document.getElementById('eventTime');
+            const globalToast = document.getElementById('globalToast');
+            const sendBtn = document.getElementById('sendBtn');
+            const sendIcon = document.getElementById('sendIcon');
+            const sendText = document.getElementById('sendText');
+            const dropdownBtn = document.getElementById('dropdownBtn');
+            const microDropdown = document.getElementById('microDropdown');
+            const undoBtn = document.getElementById('undoBtn');
+            const timeBarIndicator = document.getElementById('timeBarIndicator');
+
+            // Original State
+            const originalTop = '150px'; // 10:30
+            const originalTimeText = '10:30 - 11:30';
+
+            // New State
+            const newTop = '350px'; // 12:30
+            const newTimeText = '12:30 - 13:30';
+
+            let menuTimeout;
+
+            // 1. Simulating the Drag & Drop
+            demoTrigger.addEventListener('click', () => {
+                // Reset states
+                clearTimeout(menuTimeout);
+                globalToast.classList.add('hidden');
+                globalToast.classList.remove('animate-slide-up-toast', 'animate-slide-down-toast');
+                microDropdown.classList.add('hidden');
+                resetSendButton();
+
+                // Optimistic UI: Move card immediately
+                eventCard.style.top = newTop;
+                eventTime.textContent = newTimeText;
+                eventCard.classList.add('ring-2', 'ring-indigo-500', 'ring-offset-2'); // Highlight selection
+
+                // Change demo button text
+                demoTrigger.innerHTML = '<i class="ph ph-check text-emerald-400"></i> Verschoben!';
+                setTimeout(() => {
+                    demoTrigger.innerHTML = '<i class="ph ph-cursor-click"></i> Erneut simulieren';
+                }, 2000);
+
+                // Show global toast after a tiny delay
+                menuTimeout = setTimeout(() => {
+                    globalToast.classList.remove('hidden', 'animate-slide-down-toast');
+                    globalToast.classList.add('animate-slide-up-toast');
+
+                    timeBarIndicator.style.animation = 'none'; // Reset
+                    void timeBarIndicator.offsetWidth; // Trigger reflow
+                    timeBarIndicator.style.animation = 'shrink-x 6s linear forwards';
+                    timeBarIndicator.style.animationPlayState = 'running';
+
+                }, 400); // 400ms matches the CSS transition time of the card
+            });
+
+            // Wenn die Animation durchgelaufen ist, Menü schließen
+            timeBarIndicator.addEventListener('animationend', () => {
+                closeMenu();
+                eventCard.classList.remove('ring-2', 'ring-indigo-500', 'ring-offset-2');
+            });
+
+            // Pause den Timer, wenn die Maus über dem Menü ist
+            globalToast.addEventListener('mouseenter', () => {
+                timeBarIndicator.style.animationPlayState = 'paused';
+            });
+
+            // Setze Timer fort, wenn die Maus das Menü verlässt
+            globalToast.addEventListener('mouseleave', () => {
+                // Nur fortsetzen, wenn noch keine Aktion ausgeführt wurde (Dropdown nicht offen, nicht gesendet)
+                if (!sendBtn.disabled && microDropdown.classList.contains('hidden')) {
+                    timeBarIndicator.style.animationPlayState = 'running';
+                }
+            });
+
+            // 2. The Smart Action Button (Send Interaction)
+            sendBtn.addEventListener('click', () => {
+                // Prevent double click
+                if (sendBtn.disabled) return;
+
+                // Loading State
+                timeBarIndicator.style.animation = 'none'; // Timer sofort abbrechen
+                sendIcon.className = "ph ph-spinner-gap text-lg animate-spin text-slate-400";
+                sendText.textContent = "Sende...";
+                sendBtn.disabled = true;
+                dropdownBtn.disabled = true;
+
+                // Simulate Network Request
+                setTimeout(() => {
+                    // Success State
+                    sendIcon.className = "ph ph-check-circle text-lg text-emerald-500";
+                    sendText.textContent = "Gesendet";
+
+                    // Auto dismiss the menu after success
+                    setTimeout(() => {
+                        closeMenu();
+                        eventCard.classList.remove('ring-2', 'ring-indigo-500', 'ring-offset-2');
+                    }, 1200);
+
+                }, 800);
+            });
+
+            // 3. Dropdown Toggle
+            dropdownBtn.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent closing immediately
+                microDropdown.classList.toggle('hidden');
+
+                if (!microDropdown.classList.contains('hidden')) {
+                    timeBarIndicator.style.animationPlayState = 'paused';
+                } else {
+                    timeBarIndicator.style.animationPlayState = 'running';
+                }
+            });
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!globalToast.contains(e.target)) {
+                    microDropdown.classList.add('hidden');
+                    // Wenn Dropdown durch Klick nach draußen schließt, Timer weiterlaufen lassen (falls noch aktiv)
+                    if (!sendBtn.disabled && timeBarIndicator.style.animation) {
+                        timeBarIndicator.style.animationPlayState = 'running';
+                    }
+                }
+            });
+
+            // 4. The Undo Action (Rückgängig)
+            undoBtn.addEventListener('click', () => {
+                timeBarIndicator.style.animation = 'none'; // Timer abbrechen
+                // Move card back
+                eventCard.style.top = originalTop;
+                eventTime.textContent = originalTimeText;
+                eventCard.classList.remove('ring-2', 'ring-indigo-500', 'ring-offset-2');
+
+                closeMenu();
+            });
+
+            // Helper functions
+            function closeMenu() {
+                globalToast.classList.remove('animate-slide-up-toast');
+                globalToast.classList.add('animate-slide-down-toast');
+                microDropdown.classList.add('hidden');
+
+                // Set to hidden after animation completes
+                setTimeout(() => {
+                    globalToast.classList.add('hidden');
+                    resetSendButton();
+                }, 300);
+            }
+
+            function resetSendButton() {
+                sendIcon.className = "ph ph-envelope-simple text-lg";
+                sendText.textContent = "Mail senden";
+                sendBtn.disabled = false;
+                dropdownBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+
+</html>

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { 
-  X, ZoomOut, ZoomIn, ChevronDown, Plus, Trash2, Check, Search, AlertCircle, Calendar 
+  X, ZoomOut, ZoomIn, ChevronDown, Plus, Trash2, Check, Search, AlertCircle, Calendar, Save, Download, Printer 
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useDashboard } from '../context';
@@ -44,6 +44,15 @@ export default function NewInvoiceSheet() {
     setNewInvoiceAppointmentId,
     appointments,
     handleCreateInvoice,
+    handleUpdateDraftInvoice,
+    isEditingDraft,
+    setIsEditingDraft,
+    isViewingInvoice,
+    setIsViewingInvoice,
+    printInvoice,
+    downloadInvoicePdf,
+    markInvoicePaid,
+    cancelInvoice,
     setIsNewClientModalOpen,
     setNewClientName,
     showToast
@@ -129,14 +138,16 @@ export default function NewInvoiceSheet() {
   React.useEffect(() => {
     if (isNewInvoiceSheetOpen) {
       setZoomScale(100);
-      if (newInvoiceDate) {
+      if ((isEditingDraft || isViewingInvoice) && prefillInvoice?.dueDate) {
+        setNewInvoiceDueDate(prefillInvoice.dueDate);
+      } else if (newInvoiceDate) {
         setNewInvoiceDueDate(calculateDefaultDueDate(newInvoiceDate));
       } else {
         const today = new Date().toISOString().slice(0, 10);
         setNewInvoiceDueDate(calculateDefaultDueDate(today));
       }
     }
-  }, [isNewInvoiceSheetOpen, newInvoiceDate]);
+  }, [isNewInvoiceSheetOpen, newInvoiceDate, isEditingDraft, isViewingInvoice, prefillInvoice]);
 
   // Synchronize canvasClientSearch when newInvoiceClientId or clients changes
   React.useEffect(() => {
@@ -187,6 +198,22 @@ export default function NewInvoiceSheet() {
         setIsReverseCharge(!!prefillInvoice.isReverseCharge);
         setClientVatId(prefillInvoice.clientSnapshot?.vatId || '');
         setVatIdError('');
+        
+        if (isEditingDraft || isViewingInvoice) {
+          setNewInvoiceDate(prefillInvoice.date || '');
+          setNewInvoiceAmount(prefillInvoice.amount.toString());
+          setNewInvoiceDueDate(prefillInvoice.dueDate || '');
+          if (isViewingInvoice) {
+            setNewInvoiceNumber(prefillInvoice.invoiceNumber || '');
+          } else {
+            if (prefillInvoice.invoiceNumber && !prefillInvoice.invoiceNumber.startsWith('DRAFT-')) {
+              setNewInvoiceNumber(prefillInvoice.invoiceNumber);
+            } else {
+              setNewInvoiceNumber('');
+            }
+          }
+        }
+
         // Map line items back to positive values (absolute value) if they are copied from a storno
         const copiedItems = (prefillInvoice.lineItems || []).map((item, idx) => ({
           id: item.id || String(idx + 1),
@@ -273,6 +300,41 @@ export default function NewInvoiceSheet() {
     return '';
   };
 
+  const onSave = async (asDraft: boolean) => {
+    if (isReverseCharge) {
+      const err = validateVatId(clientVatId);
+      if (err) {
+        setVatIdError(err);
+        showToast(`Ungültige USt-IdNr.: ${err}`, 'error');
+        return;
+      }
+    }
+
+    if (isEditingDraft && prefillInvoice) {
+      await handleUpdateDraftInvoice(
+        prefillInvoice.id,
+        lineItems,
+        newInvoiceDueDate,
+        serviceDate,
+        notes,
+        isReverseCharge,
+        clientVatId,
+        !asDraft
+      );
+    } else {
+      await handleCreateInvoice(
+        null,
+        lineItems,
+        newInvoiceDueDate,
+        serviceDate,
+        notes,
+        isReverseCharge,
+        clientVatId,
+        asDraft
+      );
+    }
+  };
+
   if (!isNewInvoiceSheetOpen) return null;
 
   return (
@@ -305,9 +367,14 @@ export default function NewInvoiceSheet() {
           {/* Floating exit button */}
           <button
             type="button"
-            onClick={() => setIsNewInvoiceSheetOpen(false)}
+            onClick={() => {
+              setIsNewInvoiceSheetOpen(false);
+              setIsEditingDraft(false);
+              setIsViewingInvoice(false);
+              setPrefillInvoice(null);
+            }}
             className="absolute top-6 left-6 w-9 h-9 rounded-full bg-zinc-200/50 hover:bg-zinc-200/80 text-zinc-600 hover:text-zinc-900 flex items-center justify-center transition-all cursor-pointer z-20 border-none"
-            title="Abbrechen"
+            title="Schließen"
           >
             <X className="w-4 h-4" />
           </button>
@@ -353,7 +420,7 @@ export default function NewInvoiceSheet() {
                         {/* Autocomplete Search input */}
                         <div className="relative w-full flex items-center">
                           {/* Underlay text for suggestion */}
-                          {inlineSuggestion && (
+                          {inlineSuggestion && !isViewingInvoice && (
                             <div className="absolute left-0 right-0 px-2 py-1 pointer-events-none font-extrabold text-sm select-none text-zinc-300 whitespace-pre flex items-center">
                               <span className="opacity-0">{canvasClientSearch}</span>
                               <span>{inlineSuggestion.slice(canvasClientSearch.length)}</span>
@@ -363,7 +430,7 @@ export default function NewInvoiceSheet() {
                           <input
                             type="text"
                             value={canvasClientSearch}
-                            onFocus={() => setIsCanvasSearchFocused(true)}
+                            onFocus={() => !isViewingInvoice && setIsCanvasSearchFocused(true)}
                             onBlur={() => {
                               setTimeout(() => setIsCanvasSearchFocused(false), 200);
                             }}
@@ -375,13 +442,36 @@ export default function NewInvoiceSheet() {
                                 setNewInvoiceClientId('');
                               }
                             }}
-                            placeholder="Name des Klienten..."
-                            className="w-full bg-transparent border border-transparent hover:border-zinc-200 focus:border-[#003527] focus:bg-[#003527]/5 px-2 py-1 outline-none font-extrabold text-sm text-[#003527] transition-all rounded-lg z-10"
+                            placeholder={isViewingInvoice ? "" : "Name des Klienten..."}
+                            readOnly={isViewingInvoice}
+                            className={`w-full bg-transparent border border-transparent px-2 py-1 outline-none font-extrabold text-sm text-[#003527] transition-all rounded-lg z-10 ${
+                              isViewingInvoice ? 'cursor-default pointer-events-none' : 'hover:border-zinc-200 focus:border-[#003527] focus:bg-[#003527]/5'
+                            }`}
                           />
                         </div>
 
                         {/* Recipient Details display below input */}
-                        {(() => {
+                        {isViewingInvoice && prefillInvoice ? (
+                          <div className="space-y-0.5 text-xs text-zinc-500 font-semibold pl-2 text-left">
+                            <p className="text-[11px] text-[#003527] font-extrabold">{prefillInvoice.clientName}</p>
+                            {prefillInvoice.clientSnapshot?.street && (
+                              <p className="text-[11px] text-zinc-600">{prefillInvoice.clientSnapshot.street} {prefillInvoice.clientSnapshot.houseNumber}</p>
+                            )}
+                            {prefillInvoice.clientSnapshot?.zipCode && (
+                              <p className="text-[11px] text-zinc-600">{prefillInvoice.clientSnapshot.zipCode} {prefillInvoice.clientSnapshot.city}</p>
+                            )}
+                            {(prefillInvoice.clientSnapshot?.email || prefillInvoice.clientSnapshot?.phone) && (
+                              <p className="text-[10px] text-zinc-400 mt-1">
+                                {prefillInvoice.clientSnapshot.email} {prefillInvoice.clientSnapshot.phone ? `| ${prefillInvoice.clientSnapshot.phone}` : ''}
+                              </p>
+                            )}
+                            {isReverseCharge && prefillInvoice.clientSnapshot?.vatId && (
+                              <p className="text-[10px] text-zinc-500 font-bold mt-0.5">
+                                USt-IdNr.: {prefillInvoice.clientSnapshot.vatId}
+                              </p>
+                            )}
+                          </div>
+                        ) : (() => {
                           const client = clients.find(c => c.id === newInvoiceClientId);
                           if (client) {
                             const hasStreet = !!(client.street?.trim() && client.houseNumber?.trim());
@@ -466,7 +556,10 @@ export default function NewInvoiceSheet() {
                               required
                               value={newInvoiceNumber}
                               onChange={(e) => setNewInvoiceNumber(e.target.value)}
-                              className="w-28 bg-transparent border border-transparent hover:border-zinc-200 focus:border-[#003527] focus:bg-[#003527]/5 px-2 py-1 outline-none font-bold text-xs text-right text-[#003527] transition-all rounded-lg"
+                              readOnly={isViewingInvoice}
+                              className={`w-28 bg-transparent border border-transparent px-2 py-1 outline-none font-bold text-xs text-right text-[#003527] transition-all rounded-lg ${
+                                isViewingInvoice ? 'cursor-default pointer-events-none' : 'hover:border-zinc-200 focus:border-[#003527] focus:bg-[#003527]/5'
+                              }`}
                             />
                           </div>
                           <div className="flex items-center justify-between gap-4">
@@ -478,13 +571,17 @@ export default function NewInvoiceSheet() {
                                 value={newInvoiceDate}
                                 onChange={(e) => setNewInvoiceDate(e.target.value)}
                                 onClick={(e) => {
+                                  if (isViewingInvoice) return;
                                   try {
                                     e.currentTarget.showPicker();
                                   } catch (err) {}
                                 }}
-                                className="w-full bg-transparent border border-transparent hover:border-zinc-200 focus:border-[#003527] focus:bg-[#003527]/5 pl-2 pr-6 py-1 outline-none font-bold text-xs text-right text-[#003527] transition-all rounded-lg animate-none no-datepicker-icon cursor-pointer"
+                                readOnly={isViewingInvoice}
+                                className={`w-full bg-transparent border border-transparent px-2 py-1 outline-none font-bold text-xs text-right text-[#003527] transition-all rounded-lg animate-none no-datepicker-icon ${
+                                  isViewingInvoice ? 'cursor-default pointer-events-none pr-2' : 'hover:border-zinc-200 focus:border-[#003527] focus:bg-[#003527]/5 cursor-pointer pr-6'
+                                }`}
                               />
-                              <Calendar className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#003527]/40 pointer-events-none" />
+                              {!isViewingInvoice && <Calendar className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#003527]/40 pointer-events-none" />}
                             </div>
                           </div>
                           <div className="flex items-center justify-between gap-4">
@@ -501,13 +598,17 @@ export default function NewInvoiceSheet() {
                                 value={newInvoiceDueDate}
                                 onChange={(e) => setNewInvoiceDueDate(e.target.value)}
                                 onClick={(e) => {
+                                  if (isViewingInvoice) return;
                                   try {
                                     e.currentTarget.showPicker();
                                   } catch (err) {}
                                 }}
-                                className="w-full bg-transparent border border-transparent hover:border-zinc-200 focus:border-[#003527] focus:bg-[#003527]/5 pl-2 pr-6 py-1 outline-none font-bold text-xs text-right text-[#003527] transition-all rounded-lg no-datepicker-icon cursor-pointer"
+                                readOnly={isViewingInvoice}
+                                className={`w-full bg-transparent border border-transparent px-2 py-1 outline-none font-bold text-xs text-right text-[#003527] transition-all rounded-lg no-datepicker-icon ${
+                                  isViewingInvoice ? 'cursor-default pointer-events-none pr-2' : 'hover:border-zinc-200 focus:border-[#003527] focus:bg-[#003527]/5 cursor-pointer pr-6'
+                                }`}
                               />
-                              <Calendar className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#003527]/40 pointer-events-none" />
+                              {!isViewingInvoice && <Calendar className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#003527]/40 pointer-events-none" />}
                             </div>
                           </div>
                         </div>
@@ -540,7 +641,10 @@ export default function NewInvoiceSheet() {
                                     const updated = lineItems.map(li => li.id === item.id ? { ...li, description: e.target.value } : li);
                                     setLineItems(updated);
                                   }}
-                                  className="w-full bg-transparent border border-transparent hover:border-zinc-200 focus:border-[#003527] focus:bg-[#003527]/5 focus:ring-0 px-2 py-1 outline-none font-bold text-xs text-[#003527] transition-all text-left rounded-lg"
+                                  readOnly={isViewingInvoice}
+                                  className={`w-full bg-transparent border border-transparent px-2 py-1 outline-none font-bold text-xs text-[#003527] transition-all text-left rounded-lg ${
+                                    isViewingInvoice ? 'cursor-default pointer-events-none' : 'hover:border-zinc-200 focus:border-[#003527] focus:bg-[#003527]/5 focus:ring-0'
+                                  }`}
                                   placeholder="z.B. Osteopathische Behandlung"
                                 />
                               </td>
@@ -553,7 +657,10 @@ export default function NewInvoiceSheet() {
                                       const updated = lineItems.map(li => li.id === item.id ? { ...li, taxRate: rate } : li);
                                       setLineItems(updated);
                                     }}
-                                    className="bg-transparent border border-transparent hover:border-zinc-200 focus:border-[#003527] px-1.5 py-1 outline-none text-xs font-bold text-[#003527] rounded cursor-pointer"
+                                    disabled={isViewingInvoice}
+                                    className={`bg-transparent border border-transparent px-1.5 py-1 outline-none text-xs font-bold text-[#003527] rounded ${
+                                      isViewingInvoice ? 'cursor-default pointer-events-none appearance-none' : 'hover:border-zinc-200 focus:border-[#003527] cursor-pointer'
+                                    }`}
                                   >
                                     <option value={0}>0%</option>
                                     <option value={7}>7%</option>
@@ -573,14 +680,17 @@ export default function NewInvoiceSheet() {
                                       const updated = lineItems.map(li => li.id === item.id ? { ...li, price: val } : li);
                                       setLineItems(updated);
                                     }}
-                                    className="w-20 bg-transparent border border-transparent hover:border-zinc-200 focus:border-[#003527] focus:bg-[#003527]/5 focus:ring-0 px-2 py-1 outline-none font-bold text-right text-xs text-[#003527] transition-all rounded-lg"
+                                    readOnly={isViewingInvoice}
+                                    className={`w-20 bg-transparent border border-transparent px-2 py-1 outline-none font-bold text-right text-xs text-[#003527] transition-all rounded-lg ${
+                                      isViewingInvoice ? 'cursor-default pointer-events-none' : 'hover:border-zinc-200 focus:border-[#003527] focus:bg-[#003527]/5 focus:ring-0'
+                                    }`}
                                     placeholder="0,00"
                                   />
                                   <span className="ml-1 text-zinc-400 font-bold">€</span>
                                 </div>
                               </td>
                               <td className="py-2 text-right">
-                                {lineItems.length > 1 && (
+                                {!isViewingInvoice && lineItems.length > 1 && (
                                   <button
                                     type="button"
                                     onClick={() => {
@@ -599,18 +709,20 @@ export default function NewInvoiceSheet() {
                       </table>
 
                       {/* Add item button */}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setLineItems([
-                            ...lineItems,
-                            { id: `li-${Date.now()}`, description: 'Neue Leistung', price: 0, taxRate: 0 }
-                          ]);
-                        }}
-                        className="w-full mt-4 border border-dashed border-[#003527]/20 hover:border-[#003527]/40 bg-[#003527]/5 hover:bg-[#003527]/10 text-[#003527] px-4 py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-[0.99]"
-                      >
-                        <Plus className="w-4 h-4" /> Position hinzufügen
-                      </button>
+                      {!isViewingInvoice && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setLineItems([
+                              ...lineItems,
+                              { id: `li-${Date.now()}`, description: 'Neue Leistung', price: 0, taxRate: 0 }
+                            ]);
+                          }}
+                          className="w-full mt-4 border border-dashed border-[#003527]/20 hover:border-[#003527]/40 bg-[#003527]/5 hover:bg-[#003527]/10 text-[#003527] px-4 py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-[0.99]"
+                        >
+                          <Plus className="w-4 h-4" /> Position hinzufügen
+                        </button>
+                      )}
                     </div>
                   </div>
 
@@ -731,328 +843,408 @@ export default function NewInvoiceSheet() {
           </div>
 
           {/* Right Side: Sidebar Panel */}
-          <aside className="w-80 bg-white border-l border-[#bfc9c3]/30 p-6 flex flex-col justify-between overflow-y-auto flex-shrink-0">
-            <div className="space-y-6">
-              <div>
-                <h4 className="text-xs font-extrabold text-[#003527] uppercase tracking-wider mb-4 border-b border-[#bfc9c3]/20 pb-2">Rechnungsdaten</h4>
+          {isViewingInvoice && prefillInvoice ? (
+            <aside className="w-80 bg-white border-l border-[#bfc9c3]/30 p-6 flex flex-col justify-between overflow-y-auto flex-shrink-0">
+              <div className="space-y-6">
+                <div>
+                  <h4 className="text-xs font-extrabold text-[#003527] uppercase tracking-wider mb-4 border-b border-[#bfc9c3]/20 pb-2">Rechnungsdetails</h4>
+                </div>
+
+                <div className="space-y-5 text-left text-xs font-semibold text-zinc-500">
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-bold text-[#003527]/70 uppercase tracking-widest text-left">Rechnungsnummer</p>
+                    <p className="text-sm font-bold text-[#003527] font-mono text-left">{prefillInvoice.invoiceNumber}</p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-bold text-[#003527]/70 uppercase tracking-widest text-left">Rechnungsdatum</p>
+                    <p className="text-sm font-bold text-[#003527] text-left">{new Date(prefillInvoice.date).toLocaleDateString('de-DE')}</p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-bold text-[#003527]/70 uppercase tracking-widest text-left">Zahlungsstatus</p>
+                    <div className="text-left">
+                      <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase border inline-block mt-0.5 ${
+                        prefillInvoice.status === 'paid'
+                          ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                          : prefillInvoice.status === 'overdue'
+                          ? 'bg-rose-50 border-rose-200 text-rose-800'
+                          : prefillInvoice.status === 'cancelled'
+                          ? 'bg-zinc-50 border-zinc-200 text-zinc-400 line-through'
+                          : 'bg-amber-50 border-amber-200 text-amber-800'
+                      }`}>
+                        {prefillInvoice.status === 'paid' && 'Bezahlt'}
+                        {prefillInvoice.status === 'overdue' && 'Überfällig'}
+                        {prefillInvoice.status === 'open' && 'Offen'}
+                        {prefillInvoice.status === 'cancelled' && 'Storniert'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-bold text-[#003527]/70 uppercase tracking-widest text-left">Klient</p>
+                    <p className="text-sm font-bold text-[#003527] text-left">{prefillInvoice.clientName}</p>
+                  </div>
+
+                  {prefillInvoice.notes && (
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-bold text-[#003527]/70 uppercase tracking-widest text-left">Zahlungshinweis / Notiz</p>
+                      <p className="text-xs font-semibold text-zinc-500 bg-zinc-50 border border-zinc-150 p-2.5 rounded-xl leading-relaxed text-left">{prefillInvoice.notes}</p>
+                    </div>
+                  )}
+
+                  <div className="bg-[#f9f9f8] border border-[#bfc9c3]/30 p-4 rounded-2xl text-[10px] text-zinc-400 font-bold space-y-1">
+                    <p className="text-[#003527] uppercase tracking-wider text-[8px] mb-1 text-left">Bruttobetrag</p>
+                    <p className="text-base font-extrabold text-[#003527] text-left">{prefillInvoice.amount.toFixed(2)} €</p>
+                  </div>
+                </div>
               </div>
 
-              <div className="space-y-5 text-left">
-                <div className="space-y-2 relative" ref={dropdownRef}>
-                  <label className="block text-[10px] font-bold text-[#003527]/70 uppercase tracking-widest">Klient auswählen</label>
-                  
-                  {/* Custom Trigger */}
+              <div className="space-y-2.5 pt-6 border-t border-[#bfc9c3]/20">
+                <button
+                  type="button"
+                  onClick={() => printInvoice(prefillInvoice)}
+                  className="w-full bg-[#003527] hover:bg-[#0b513d] text-white py-3.5 rounded-xl font-bold text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5 border-none"
+                >
+                  <Printer className="w-3.5 h-3.5 text-white/80" /> Drucken
+                </button>
+                
+                {prefillInvoice.status !== 'paid' && prefillInvoice.status !== 'cancelled' && (
                   <button
                     type="button"
-                    onClick={() => {
-                      setIsClientDropdownOpen(!isClientDropdownOpen);
-                      setSidebarClientSearch('');
+                    onClick={async () => {
+                      await markInvoicePaid(prefillInvoice.id);
+                      setIsNewInvoiceSheetOpen(false);
+                      setIsViewingInvoice(false);
                     }}
-                    className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-2xl px-4 py-2.5 font-bold text-xs text-[#003527] outline-none focus:border-[#003527] hover:border-zinc-300 transition-all cursor-pointer flex items-center justify-between gap-2 text-left"
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3.5 rounded-xl font-bold text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5 border-none"
                   >
-                    <div className="flex items-center gap-2 min-w-0">
-                      {selectedClientForInvoice ? (
-                        <>
-                          <div className="w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-700 flex items-center justify-center text-[10px] font-extrabold flex-shrink-0">
-                            {getInitials(selectedClientForInvoice.name)}
-                          </div>
-                          <span className="truncate">{selectedClientForInvoice.name}</span>
-                        </>
-                      ) : (
-                        <span className="text-zinc-400">Klient auswählen...</span>
-                      )}
-                    </div>
-                    <ChevronDown className="w-4 h-4 text-zinc-400 flex-shrink-0" />
+                    <Check className="w-3.5 h-3.5" /> Als bezahlt markieren
                   </button>
+                )}
 
-                  {/* Custom Dropdown Menu */}
-                  {isClientDropdownOpen && (
-                    <div className="absolute left-0 right-0 mt-2 bg-white border border-zinc-200 rounded-2xl shadow-xl z-50 overflow-hidden text-left flex flex-col max-h-[300px]">
-                      {/* Search Input Container */}
-                      <div className="p-2.5 bg-zinc-50/60 border-b border-zinc-100">
-                        <div className="relative flex items-center">
-                          <Search className="absolute left-3 w-3.5 h-3.5 text-zinc-400 pointer-events-none" />
+                {prefillInvoice.status !== 'cancelled' && !prefillInvoice.invoiceNumber.startsWith('ST-') && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setIsNewInvoiceSheetOpen(false);
+                      setIsViewingInvoice(false);
+                      const success = await cancelInvoice(prefillInvoice.id);
+                      if (success) {
+                        if (confirm('Möchtest du einen korrigierten Entwurf auf Basis dieser stornierten Rechnung erstellen?')) {
+                          setPrefillInvoice(prefillInvoice);
+                          setIsNewInvoiceSheetOpen(true);
+                        }
+                      }
+                    }}
+                    className="w-full bg-rose-50 hover:bg-rose-100 text-rose-600 py-3.5 rounded-xl font-bold text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5 border border-rose-200"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-rose-500" /> Stornieren
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => downloadInvoicePdf(prefillInvoice)}
+                  className="w-full bg-zinc-100 hover:bg-zinc-200 text-[#003527] py-3.5 rounded-xl font-bold text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5 border-none"
+                >
+                  <Download className="w-3.5 h-3.5" /> PDF herunterladen
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsNewInvoiceSheetOpen(false);
+                    setIsViewingInvoice(false);
+                    setPrefillInvoice(null);
+                  }}
+                  className="w-full bg-transparent hover:bg-zinc-100 text-zinc-500 py-2.5 rounded-xl font-bold text-xs transition-colors cursor-pointer border-none"
+                >
+                  Schließen
+                </button>
+              </div>
+            </aside>
+          ) : (
+            <aside className="w-80 bg-white border-l border-[#bfc9c3]/30 p-6 flex flex-col justify-between overflow-y-auto flex-shrink-0">
+              <div className="space-y-6">
+                <div>
+                  <h4 className="text-xs font-extrabold text-[#003527] uppercase tracking-wider mb-4 border-b border-[#bfc9c3]/20 pb-2">Rechnungsdaten</h4>
+                </div>
+
+                <div className="space-y-5 text-left">
+                  <div className="space-y-2 relative" ref={dropdownRef}>
+                    <label className="block text-[10px] font-bold text-[#003527]/70 uppercase tracking-widest">Klient auswählen</label>
+                    
+                    {/* Custom Trigger */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsClientDropdownOpen(!isClientDropdownOpen);
+                        setSidebarClientSearch('');
+                      }}
+                      className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-2xl px-4 py-2.5 font-bold text-xs text-[#003527] outline-none focus:border-[#003527] hover:border-zinc-300 transition-all cursor-pointer flex items-center justify-between gap-2 text-left"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        {selectedClientForInvoice ? (
+                          <>
+                            <div className="w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-700 flex items-center justify-center text-[10px] font-extrabold flex-shrink-0">
+                              {getInitials(selectedClientForInvoice.name)}
+                            </div>
+                            <span className="truncate">{selectedClientForInvoice.name}</span>
+                          </>
+                        ) : (
+                          <span className="text-zinc-400">Klient auswählen...</span>
+                        )}
+                      </div>
+                      <ChevronDown className={`w-4 h-4 text-[#003527]/50 flex-shrink-0 transition-transform ${isClientDropdownOpen ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    {/* Dropdown Menu */}
+                    {isClientDropdownOpen && (
+                      <div className="absolute left-0 right-0 mt-1 bg-white border border-[#bfc9c3]/30 rounded-2xl shadow-xl z-50 overflow-hidden py-1 text-left flex flex-col max-h-64">
+                        <div className="px-3 py-2 border-b border-zinc-100 flex items-center gap-2 flex-shrink-0">
+                          <Search className="w-3.5 h-3.5 text-zinc-400 flex-shrink-0" />
                           <input
                             type="text"
+                            placeholder="Suchen..."
                             value={sidebarClientSearch}
                             onChange={(e) => setSidebarClientSearch(e.target.value)}
-                            placeholder="Klienten suchen..."
-                            autoFocus
-                            className="w-full bg-white border border-zinc-200/60 focus:border-zinc-300 rounded-lg pl-9 pr-3 py-1.5 font-bold text-xs text-[#003527] outline-none transition-all"
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-full bg-transparent text-xs font-bold text-[#003527] outline-none border-none p-0 placeholder-zinc-400"
                           />
                         </div>
-                      </div>
-                      
-                      {/* Patient Options List */}
-                      <div className="overflow-y-auto py-1 flex-grow">
-                        {filteredClientsForSidebar.length > 0 ? (
-                          filteredClientsForSidebar.map(client => {
-                            const isSelected = client.id === newInvoiceClientId;
-                            return (
+                        <div className="overflow-y-auto flex-grow max-h-48 py-1">
+                          {filteredClientsForSidebar.length === 0 ? (
+                            <p className="text-center py-4 text-[10px] text-zinc-400 font-bold">Keine Klienten gefunden</p>
+                          ) : (
+                            filteredClientsForSidebar.map(client => (
                               <button
-                                type="button"
                                 key={client.id}
+                                type="button"
                                 onClick={() => {
                                   setNewInvoiceClientId(client.id);
                                   setIsClientDropdownOpen(false);
-                                  setSidebarClientSearch('');
                                 }}
-                                className={`w-full px-4 py-2.5 flex items-center justify-between text-xs font-bold transition-colors cursor-pointer text-left border-none bg-transparent ${
-                                  isSelected 
-                                    ? 'bg-[#003527]/10 text-[#003527]' 
-                                    : 'text-[#003527] hover:bg-[#003527]/5 hover:text-[#003527]'
-                                }`}
+                                className="w-full px-4 py-2 hover:bg-[#f3f4f3] text-left text-xs font-bold text-[#003527] transition-colors flex items-center justify-between gap-2 border-none bg-transparent cursor-pointer"
                               >
-                                <div className="flex items-center gap-2.5 min-w-0">
-                                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-extrabold flex-shrink-0 ${
-                                    isSelected ? 'bg-[#003527]/20 text-[#003527]' : 'bg-zinc-100 text-zinc-500'
-                                  }`}>
-                                    {getInitials(client.name)}
-                                  </div>
-                                  <span className="truncate">{client.name}</span>
-                                </div>
-                                {isSelected && <Check className="w-4 h-4 text-[#003527] flex-shrink-0 ml-2" />}
+                                <span>{client.name}</span>
+                                {newInvoiceClientId === client.id && <Check className="w-3.5 h-3.5 text-[#003527]" />}
                               </button>
-                            );
-                          })
-                        ) : (
-                          <div className="px-4 py-3 text-xs text-zinc-400 font-semibold italic text-center">
-                            Keine Klienten gefunden
-                          </div>
-                        )}
+                            ))
+                          )}
+                        </div>
+                        <div className="border-t border-zinc-100 p-2 bg-[#f9f9f8] flex-shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsClientDropdownOpen(false);
+                              setIsNewClientModalOpen(true);
+                            }}
+                            className="w-full py-2 bg-[#003527] hover:bg-[#0b513d] text-white rounded-xl text-[10px] font-extrabold tracking-wider uppercase transition-colors cursor-pointer border-none"
+                          >
+                            Neuen Klienten anlegen
+                          </button>
+                        </div>
                       </div>
+                    )}
+                  </div>
 
-                      {/* Persistent Customer Add Button */}
-                      <div className="border-t border-zinc-100 p-1.5 bg-zinc-50/40">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (sidebarClientSearch) {
-                              setNewClientName(sidebarClientSearch);
-                            }
-                            setIsNewClientModalOpen(true);
-                            setIsClientDropdownOpen(false);
-                          }}
-                          className="w-full py-2 px-3 rounded-lg text-xs font-bold text-[#003527] hover:bg-[#003527]/5 hover:text-[#0b513d] flex items-center justify-center gap-1.5 cursor-pointer transition-colors border-none bg-transparent"
-                        >
-                          <Plus className="w-3.5 h-3.5" /> Klient hinzufügen
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <label className="block text-[10px] font-bold text-[#003527]/70 uppercase tracking-widest">Rechnungsnummer</label>
-                  <input
-                    type="text"
-                    required
-                    value={newInvoiceNumber}
-                    onChange={(e) => setNewInvoiceNumber(e.target.value)}
-                    className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-2xl px-4 py-3 font-bold text-xs text-[#003527] outline-none focus:border-[#003527] focus:ring-1 focus:ring-[#003527] transition-all text-left"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="block text-[10px] font-bold text-[#003527]/70 uppercase tracking-widest">Rechnungsdatum</label>
-                  <input
-                    type="date"
-                    required
-                    value={newInvoiceDate}
-                    onChange={(e) => setNewInvoiceDate(e.target.value)}
-                    className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-2xl px-4 py-3 font-bold text-xs text-[#003527] outline-none focus:border-[#003527] focus:ring-1 focus:ring-[#003527] transition-all text-left"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="block text-[10px] font-bold text-[#003527]/70 uppercase tracking-widest">Zahlungsstatus</label>
-                  <select
-                    required
-                    value={newInvoiceStatus}
-                    onChange={(e) => setNewInvoiceStatus(e.target.value as 'open' | 'paid' | 'overdue')}
-                    className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-2xl px-4 py-3 font-bold text-xs text-[#003527] outline-none focus:border-[#003527] focus:ring-1 focus:ring-[#003527] transition-all cursor-pointer"
-                  >
-                    <option value="open">Offen</option>
-                    <option value="paid">Bezahlt</option>
-                    <option value="overdue">Überfällig</option>
-                  </select>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="block text-[10px] font-bold text-[#003527]/70 uppercase tracking-widest">Leistungszeitraum</label>
-                  <input
-                    type="text"
-                    required
-                    value={serviceDate}
-                    onChange={(e) => setServiceDate(e.target.value)}
-                    placeholder="z.B. Juni 2026 oder 15.06.2026"
-                    className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-2xl px-4 py-3 font-bold text-xs text-[#003527] outline-none focus:border-[#003527] focus:ring-1 focus:ring-[#003527] transition-all text-left"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="block text-[10px] font-bold text-[#003527]/70 uppercase tracking-widest">Zahlungshinweis / Notiz</label>
-                  <textarea
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Zusätzliche Infos..."
-                    className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-2xl px-4 py-2.5 font-bold text-xs text-[#003527] outline-none focus:border-[#003527] focus:ring-1 focus:ring-[#003527] transition-all resize-none h-20"
-                  />
-                </div>
-
-                {/* Reverse-Charge Section */}
-                <div className="space-y-3 pt-3 border-t border-[#bfc9c3]/15">
-                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-bold text-[#003527]/70 uppercase tracking-widest">Rechnungsnummer</label>
                     <input
-                      type="checkbox"
-                      checked={isReverseCharge}
-                      onChange={(e) => {
-                        setIsReverseCharge(e.target.checked);
-                        if (!e.target.checked) {
-                          setClientVatId('');
-                          setVatIdError('');
-                        }
-                      }}
-                      className="rounded border-[#bfc9c3]/50 text-[#003527] focus:ring-[#003527] w-3.5 h-3.5"
+                      type="text"
+                      required
+                      value={newInvoiceNumber}
+                      onChange={(e) => setNewInvoiceNumber(e.target.value)}
+                      className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-2xl px-4 py-3 font-bold text-xs text-[#003527] outline-none focus:border-[#003527] focus:ring-1 focus:ring-[#003527] transition-all text-left"
                     />
-                    <span className="text-[10px] font-bold text-[#003527]/70 uppercase tracking-widest">
-                      Reverse-Charge (§ 13b UStG)
-                    </span>
-                  </label>
+                  </div>
 
-                  {isReverseCharge && (
-                    <div className="space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-200">
-                      <label className="block text-[8.5px] font-extrabold text-zinc-400 uppercase tracking-wider">
-                        USt-IdNr. des Klienten
-                      </label>
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-bold text-[#003527]/70 uppercase tracking-widest">Rechnungsdatum</label>
+                    <input
+                      type="date"
+                      required
+                      value={newInvoiceDate}
+                      onChange={(e) => setNewInvoiceDate(e.target.value)}
+                      className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-2xl px-4 py-3 font-bold text-xs text-[#003527] outline-none focus:border-[#003527] focus:ring-1 focus:ring-[#003527] transition-all text-left"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-bold text-[#003527]/70 uppercase tracking-widest">Zahlungsstatus</label>
+                    <select
+                      required
+                      value={newInvoiceStatus}
+                      onChange={(e) => setNewInvoiceStatus(e.target.value as 'open' | 'paid' | 'overdue')}
+                      className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-2xl px-4 py-3 font-bold text-xs text-[#003527] outline-none focus:border-[#003527] focus:ring-1 focus:ring-[#003527] transition-all cursor-pointer"
+                    >
+                      <option value="open">Offen</option>
+                      <option value="paid">Bezahlt</option>
+                      <option value="overdue">Überfällig</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-bold text-[#003527]/70 uppercase tracking-widest">Leistungszeitraum</label>
+                    <input
+                      type="text"
+                      required
+                      value={serviceDate}
+                      onChange={(e) => setServiceDate(e.target.value)}
+                      placeholder="z.B. Juni 2026 oder 15.06.2026"
+                      className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-2xl px-4 py-3 font-bold text-xs text-[#003527] outline-none focus:border-[#003527] focus:ring-1 focus:ring-[#003527] transition-all text-left"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-bold text-[#003527]/70 uppercase tracking-widest">Zahlungshinweis / Notiz</label>
+                    <textarea
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      placeholder="Zusätzliche Infos..."
+                      className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-2xl px-4 py-2.5 font-bold text-xs text-[#003527] outline-none focus:border-[#003527] focus:ring-1 focus:ring-[#003527] transition-all resize-none h-20"
+                    />
+                  </div>
+
+                  {/* Reverse-Charge Section */}
+                  <div className="space-y-3 pt-3 border-t border-[#bfc9c3]/15">
+                    <label className="flex items-center gap-2 cursor-pointer select-none">
                       <input
-                        type="text"
-                        required
-                        value={clientVatId}
+                        type="checkbox"
+                        checked={isReverseCharge}
                         onChange={(e) => {
-                          const val = e.target.value;
-                          setClientVatId(val);
-                          if (val.trim()) {
-                            setVatIdError(validateVatId(val));
-                          } else {
-                            setVatIdError('USt-IdNr. ist erforderlich.');
+                          setIsReverseCharge(e.target.checked);
+                          if (!e.target.checked) {
+                            setClientVatId('');
+                            setVatIdError('');
                           }
                         }}
-                        placeholder="z.B. ATU12345678"
-                        className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-2xl px-4 py-3 font-bold text-xs text-[#003527] outline-none focus:border-[#003527] focus:ring-1 focus:ring-[#003527] transition-all uppercase"
+                        className="rounded border-[#bfc9c3]/60 text-[#003527] focus:ring-[#003527] w-3.5 h-3.5 cursor-pointer"
                       />
-                      {vatIdError && (
-                        <p className="text-[9px] text-rose-600 font-semibold select-none flex items-center gap-1">
-                          <AlertCircle className="w-3.5 h-3.5 text-rose-500 shrink-0" /> {vatIdError}
-                        </p>
-                      )}
+                      <span className="text-[10px] font-bold text-[#003527] uppercase tracking-wider">§ 13b UStG (Reverse-Charge)</span>
+                    </label>
+
+                    {isReverseCharge && (
+                      <div className="space-y-1.5 animate-in fade-in duration-200">
+                        <label className="block text-[9px] font-bold text-[#003527]/60 uppercase tracking-wider">USt-IdNr. des Klienten</label>
+                        <input
+                          type="text"
+                          required
+                          value={clientVatId}
+                          onChange={(e) => {
+                            setClientVatId(e.target.value.toUpperCase());
+                            setVatIdError(validateVatId(e.target.value));
+                          }}
+                          placeholder="z.B. DE812345678"
+                          className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-2xl px-4 py-2.5 font-bold text-xs text-[#003527] outline-none focus:border-[#003527] focus:ring-1 focus:ring-[#003527] transition-all text-left"
+                        />
+                        {vatIdError ? (
+                          <p className="text-[9px] text-red-500 font-extrabold flex items-center gap-1"><AlertCircle className="w-3 h-3 flex-shrink-0" /> {vatIdError}</p>
+                        ) : (
+                          <p className="text-[8px] text-zinc-400 font-bold leading-normal">Bitte stellen Sie sicher, dass das Land des Empfängers mit dem Präfix übereinstimmt.</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Dynamic Warnings Checklist */}
+                  {selectedClientForInvoice && (isProfileIncomplete || isClientAddressIncomplete) && (
+                    <div className="bg-rose-50 border border-rose-200/50 p-4 rounded-2xl text-[9px] text-rose-800 font-bold space-y-2 animate-in slide-in-from-top-2 duration-200">
+                      <p className="flex items-center gap-1.5 text-[10px] border-b border-rose-200/50 pb-1.5 uppercase tracking-wider"><AlertCircle className="w-3.5 h-3.5 text-rose-600 flex-shrink-0" /> Pflichtangaben fehlen</p>
+                      <ul className="space-y-1 text-left list-none pl-0">
+                        {isProfileIncomplete && (
+                          <li className="flex items-center justify-between gap-2">
+                            <span className="flex items-center gap-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-rose-500" /> Bankverbindung fehlt
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsNewInvoiceSheetOpen(false);
+                                window.location.href = '/dashboard/settings';
+                              }}
+                              className="text-rose-800 hover:text-rose-950 font-extrabold hover:underline cursor-pointer border-none bg-transparent p-0 flex-shrink-0"
+                            >
+                              Hinzufügen →
+                            </button>
+                          </li>
+                        )}
+                        {selectedClientForInvoice && !(selectedClientForInvoice.street?.trim() && selectedClientForInvoice.houseNumber?.trim()) && (
+                          <li className="flex items-center justify-between gap-2">
+                            <span className="flex items-center gap-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-rose-500" /> Klienten-Straße fehlt
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsNewInvoiceSheetOpen(false);
+                                window.location.href = `/dashboard/clients`;
+                              }}
+                              className="text-rose-800 hover:text-rose-950 font-extrabold hover:underline cursor-pointer border-none bg-transparent p-0 flex-shrink-0"
+                            >
+                              Hinzufügen →
+                            </button>
+                          </li>
+                        )}
+                        {selectedClientForInvoice && !(selectedClientForInvoice.zipCode?.trim() && selectedClientForInvoice.city?.trim()) && (
+                          <li className="flex items-center justify-between gap-2">
+                            <span className="flex items-center gap-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-rose-500" /> Klienten-PLZ/Ort fehlt
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsNewInvoiceSheetOpen(false);
+                                window.location.href = `/dashboard/clients`;
+                              }}
+                              className="text-rose-800 hover:text-rose-950 font-extrabold hover:underline cursor-pointer border-none bg-transparent p-0 flex-shrink-0"
+                            >
+                              Hinzufügen →
+                            </button>
+                          </li>
+                        )}
+                      </ul>
                     </div>
                   )}
-                </div>
 
-                {/* Checklist of missing fields */}
-                {(isProfileIncomplete || isClientAddressIncomplete) && (
-                  <div className="bg-rose-50/40 border border-rose-200/50 rounded-2xl p-4 text-left space-y-3 mb-1 select-none">
-                    <p className="text-[10px] font-extrabold text-rose-800 uppercase tracking-wider flex items-center gap-1.5 border-b border-rose-200/40 pb-2">
-                      <AlertCircle className="w-3.5 h-3.5 text-rose-600 shrink-0" /> Offene Pflichtangaben
-                    </p>
-                    <ul className="space-y-2 text-[10px] text-rose-900/80 font-bold">
-                      {!taxNumber && (
-                        <li className="flex items-center justify-between gap-2">
-                          <span className="flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" /> Steuernummer fehlt
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setIsNewInvoiceSheetOpen(false);
-                              window.location.href = '/dashboard/settings';
-                            }}
-                            className="text-rose-800 hover:text-rose-950 font-extrabold hover:underline cursor-pointer border-none bg-transparent p-0 flex-shrink-0"
-                          >
-                            Hinzufügen →
-                          </button>
-                        </li>
-                      )}
-                      {(!iban || !bic) && (
-                        <li className="flex items-center justify-between gap-2">
-                          <span className="flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" /> Bankverbindung fehlt
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setIsNewInvoiceSheetOpen(false);
-                              window.location.href = '/dashboard/settings';
-                            }}
-                            className="text-rose-800 hover:text-rose-950 font-extrabold hover:underline cursor-pointer border-none bg-transparent p-0 flex-shrink-0"
-                          >
-                            Hinzufügen →
-                          </button>
-                        </li>
-                      )}
-                      {selectedClientForInvoice && !(selectedClientForInvoice.street?.trim() && selectedClientForInvoice.houseNumber?.trim()) && (
-                        <li className="flex items-center justify-between gap-2">
-                          <span className="flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" /> Klienten-Straße fehlt
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setIsNewInvoiceSheetOpen(false);
-                              window.location.href = `/dashboard/clients`;
-                            }}
-                            className="text-rose-800 hover:text-rose-950 font-extrabold hover:underline cursor-pointer border-none bg-transparent p-0 flex-shrink-0"
-                          >
-                            Hinzufügen →
-                          </button>
-                        </li>
-                      )}
-                      {selectedClientForInvoice && !(selectedClientForInvoice.zipCode?.trim() && selectedClientForInvoice.city?.trim()) && (
-                        <li className="flex items-center justify-between gap-2">
-                          <span className="flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" /> Klienten-PLZ/Ort fehlt
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setIsNewInvoiceSheetOpen(false);
-                              window.location.href = `/dashboard/clients`;
-                            }}
-                            className="text-rose-800 hover:text-rose-950 font-extrabold hover:underline cursor-pointer border-none bg-transparent p-0 flex-shrink-0"
-                          >
-                            Hinzufügen →
-                          </button>
-                        </li>
-                      )}
-                    </ul>
+                  <div className="bg-[#f9f9f8] border border-[#bfc9c3]/30 p-4 rounded-2xl text-[10px] text-zinc-400 font-bold space-y-1">
+                    <p className="text-[#003527] uppercase tracking-wider text-[8px] mb-1">Berechneter Gesamtbetrag</p>
+                    <p className="text-base font-extrabold text-[#003527]">{grossTotal.toFixed(2)} €</p>
+                    <p className="font-semibold text-zinc-400">({lineItems.length} Position(en))</p>
                   </div>
-                )}
-
-                <div className="bg-[#f9f9f8] border border-[#bfc9c3]/30 p-4 rounded-2xl text-[10px] text-zinc-400 font-bold space-y-1">
-                  <p className="text-[#003527] uppercase tracking-wider text-[8px] mb-1">Berechneter Gesamtbetrag</p>
-                  <p className="text-base font-extrabold text-[#003527]">{grossTotal.toFixed(2)} €</p>
-                  <p className="font-semibold text-zinc-400">({lineItems.length} Position(en))</p>
                 </div>
               </div>
-            </div>
 
-            <div className="space-y-3 pt-6 border-t border-[#bfc9c3]/20">
-              <button
-                type="submit"
-                className="w-full bg-[#003527] hover:bg-[#0b513d] text-white py-3.5 rounded-xl font-bold text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5 shadow-none border-none"
-              >
-                <Check className="w-4 h-4" /> Rechnung speichern
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsNewInvoiceSheetOpen(false)}
-                className="w-full bg-zinc-100 hover:bg-zinc-200 text-[#003527] py-3.5 rounded-xl font-bold text-xs transition-colors cursor-pointer border-none"
-              >
-                Abbrechen
-              </button>
-            </div>
-          </aside>
+              <div className="space-y-2.5 pt-6 border-t border-[#bfc9c3]/20">
+                <button
+                  type="button"
+                  onClick={() => onSave(false)}
+                  className="w-full bg-[#003527] hover:bg-[#0b513d] text-white py-3.5 rounded-xl font-bold text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5 shadow-none border-none"
+                >
+                  <Check className="w-4 h-4" /> Finalisieren & Sperren
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onSave(true)}
+                  className="w-full bg-[#bfc9c3]/20 hover:bg-[#bfc9c3]/30 text-[#003527] py-3.5 rounded-xl font-bold text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5 border-none"
+                >
+                  <Save className="w-4 h-4" /> {isEditingDraft ? 'Entwurf speichern' : 'Als Entwurf speichern'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsNewInvoiceSheetOpen(false);
+                    setIsEditingDraft(false);
+                    setPrefillInvoice(null);
+                  }}
+                  className="w-full bg-zinc-100 hover:bg-zinc-200 text-[#003527] py-3 rounded-xl font-bold text-xs transition-colors cursor-pointer border-none"
+                >
+                  Abbrechen
+                </button>
+              </div>
+            </aside>
+          )}
         </div>
       </form>
     </motion.div>

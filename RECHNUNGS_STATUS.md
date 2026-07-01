@@ -46,6 +46,7 @@ ALTER TABLE public.invoices
   ADD COLUMN client_snapshot JSONB,           -- Historischer Klienten-Snapshot (Name, Adresse zum Erstellungszeitpunkt)
   ADD COLUMN line_items JSONB DEFAULT '[]'::jsonb, -- Array von Rechnungspositionen (id, description, price, taxRate)
   ADD COLUMN is_small_business BOOLEAN DEFAULT false, -- Status des Ausstellers bei Rechnungserstellung
+  ADD COLUMN is_reverse_charge BOOLEAN DEFAULT false, -- True bei Steuerschuldumkehr (§ 13b UStG)
   ADD COLUMN notes TEXT DEFAULT '',           -- Zahlungshinweise / Notizen
   ADD COLUMN related_invoice_id UUID REFERENCES public.invoices(id); -- Für Storno-Bezug
 ```
@@ -86,5 +87,15 @@ ALTER TABLE public.invoices ADD CONSTRAINT invoices_status_check CHECK (status I
 
 Um eine vollständige GoBD-Zertifizierung oder strenge Wirtschaftsprüfung zu erfüllen, sollten folgende Punkte als Nächstes umgesetzt werden:
 
-1. **Festschreibung (Locking)**:
-   - Rechnungen können als "Entwurf" bearbeitet werden, müssen aber beim Export/Druck festgeschrieben (locked) werden.
+1. **Entwurfs- & Locking-Konzept (Drafts)**:
+   - Rechnungen können als "Entwurf" (Draft) bearbeitet und gelöscht werden, müssen aber beim Export/Druck festgeschrieben (locked) werden und erhalten erst dann eine finale Rechnungsnummer.
+
+2. **Automatisierte B2B/B2C-Validierungen**:
+   - Intelligente Erkennung von Unternehmenseigenschaften des Empfängers im CRM zur automatisierten Pflichten-Validierung.
+
+---
+
+## ✅ Kürzlich umgesetzte Compliance-Features (Juli 2026)
+
+*   **Dynamischer Fälligkeitsstatus (Overdue)**:
+    - Der Status `overdue` (Überfällig) wird nun dynamisch beim Laden der Daten im Dashboard-Context ([context.tsx](file:///Users/ivenruether/Downloads/PraxisManager/src/app/dashboard/context.tsx)) berechnet, wenn das Fälligkeitsdatum (`due_date`) überschritten wurde. Dies stellt sicher, dass offene Posten ohne statische Datenbankwerte stets korrekt und taggenau als überfällig markiert sind.

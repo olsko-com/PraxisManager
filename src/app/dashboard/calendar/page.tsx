@@ -233,11 +233,28 @@ export default function CalendarPage() {
   };
 
   const getUpcomingEvents = () => {
-    const todayStr = '2026-06-01';
-    const tomorrowStr = '2026-06-02';
+    const today = new Date();
+    
+    const getLocalDateString = (date: Date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
+    const todayStr = getLocalDateString(today);
+    
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+    const tomorrowStr = getLocalDateString(tomorrow);
+
+    const afterTomorrow = new Date(today);
+    afterTomorrow.setDate(today.getDate() + 2);
+    const afterTomorrowStr = getLocalDateString(afterTomorrow);
     
     const todayEvents: Appointment[] = [];
     const tomorrowEvents: Appointment[] = [];
+    const afterTomorrowEvents: Appointment[] = [];
     const upcomingEvents: Appointment[] = [];
     
     const filtered = appointments.filter(app => {
@@ -252,17 +269,25 @@ export default function CalendarPage() {
     const sorted = [...filtered].sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
     
     sorted.forEach(app => {
-      const appDateStr = new Date(app.startTime).toISOString().slice(0, 10);
+      const appDate = new Date(app.startTime);
+      const appDateStr = getLocalDateString(appDate);
       if (appDateStr === todayStr) {
         todayEvents.push(app);
       } else if (appDateStr === tomorrowStr) {
         tomorrowEvents.push(app);
-      } else if (appDateStr > tomorrowStr) {
+      } else if (appDateStr === afterTomorrowStr) {
+        afterTomorrowEvents.push(app);
+      } else if (appDateStr > afterTomorrowStr) {
         upcomingEvents.push(app);
       }
     });
     
-    return { todayEvents, tomorrowEvents, upcomingEvents: upcomingEvents.slice(0, 5) };
+    return { 
+      todayEvents, 
+      tomorrowEvents, 
+      afterTomorrowEvents, 
+      upcomingEvents: upcomingEvents.slice(0, 5) 
+    };
   };
 
   const getWeekDays = (date: Date) => {
@@ -1145,9 +1170,19 @@ export default function CalendarPage() {
                                 } shadow-none`;
                               })()}
                             >
+                              <div className="flex justify-between items-center text-[8px] font-bold mb-1">
+                                <span className="flex items-center gap-0.5 opacity-80">
+                                  <Clock className="w-2 h-2" />
+                                  {formatAppTimeRange(app.startTime, dur)}
+                                </span>
+                                {isResizing && (
+                                  <span className="bg-[#003527] text-white px-1 py-0.2 rounded font-bold">{dur} Min.</span>
+                                )}
+                              </div>
+
                               <div>
                                 <div className="flex justify-between items-start">
-                                  <div className="flex-grow">
+                                  <div className="flex-grow min-w-0">
                                     <h4 className="font-extrabold text-[10px] tracking-tight leading-tight line-clamp-1">{app.serviceName}</h4>
                                     {app.clientId && <p className="text-[9px] font-semibold opacity-75 mt-0.5 text-left">{app.clientName}</p>}
                                   </div>
@@ -1191,16 +1226,6 @@ export default function CalendarPage() {
                                     )}
                                   </div>
                                 </div>
-                              </div>
-                              
-                              <div className="flex justify-between items-center text-[8px] font-bold">
-                                <span className="flex items-center gap-0.5 opacity-80">
-                                  <Clock className="w-2 h-2" />
-                                  {formatAppTimeRange(app.startTime, dur)}
-                                </span>
-                                {isResizing && (
-                                  <span className="bg-[#003527] text-white px-1 py-0.2 rounded font-bold">{dur} Min.</span>
-                                )}
                               </div>
 
                               <div 
@@ -1406,8 +1431,8 @@ export default function CalendarPage() {
             <div className="p-6 pt-5 space-y-4 border-b border-[#bfc9c3]/20 flex-shrink-0 bg-white">
               <div className="flex justify-between items-center select-none">
                 {(() => {
-                  const { todayEvents, tomorrowEvents, upcomingEvents } = getUpcomingEvents();
-                  const count = todayEvents.length + tomorrowEvents.length + upcomingEvents.length;
+                  const { todayEvents, tomorrowEvents, afterTomorrowEvents, upcomingEvents } = getUpcomingEvents();
+                  const count = todayEvents.length + tomorrowEvents.length + afterTomorrowEvents.length + upcomingEvents.length;
                   return <h3 className="text-sm font-bold text-[#003527]">Anstehende Termine ({count})</h3>;
                 })()}
               </div>
@@ -1425,7 +1450,7 @@ export default function CalendarPage() {
 
             <div className="flex-grow overflow-y-auto py-5 space-y-6 hide-scrollbar">
               {(() => {
-                const { todayEvents, tomorrowEvents, upcomingEvents } = getUpcomingEvents();
+                const { todayEvents, tomorrowEvents, afterTomorrowEvents, upcomingEvents } = getUpcomingEvents();
                 
                 const renderEventCard = (app: Appointment) => (
                   <div
@@ -1460,7 +1485,7 @@ export default function CalendarPage() {
                   </div>
                 );
 
-                const hasAnyEvents = todayEvents.length > 0 || tomorrowEvents.length > 0 || upcomingEvents.length > 0;
+                const hasAnyEvents = todayEvents.length > 0 || tomorrowEvents.length > 0 || afterTomorrowEvents.length > 0 || upcomingEvents.length > 0;
 
                 if (!hasAnyEvents) {
                   return (
@@ -1488,6 +1513,16 @@ export default function CalendarPage() {
                         <h5 className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-widest px-4 mb-2 select-none">Morgen</h5>
                         <div className="space-y-2 px-4">
                           {tomorrowEvents.map(renderEventCard)}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Day after tomorrow (Übermorgen) */}
+                    {afterTomorrowEvents.length > 0 && (
+                      <div>
+                        <h5 className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-widest px-4 mb-2 select-none">Übermorgen</h5>
+                        <div className="space-y-2 px-4">
+                          {afterTomorrowEvents.map(renderEventCard)}
                         </div>
                       </div>
                     )}

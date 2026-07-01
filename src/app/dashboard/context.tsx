@@ -53,8 +53,8 @@ interface DashboardContextProps {
   setInvoices: React.Dispatch<React.SetStateAction<Invoice[]>>;
 
   // Invoice Filters & UI States
-  invoiceFilter: 'all' | 'paid' | 'open' | 'overdue';
-  setInvoiceFilter: (filter: 'all' | 'paid' | 'open' | 'overdue') => void;
+  invoiceFilter: 'all' | 'paid' | 'open' | 'overdue' | 'draft';
+  setInvoiceFilter: (filter: 'all' | 'paid' | 'open' | 'overdue' | 'draft') => void;
   invoiceSearch: string;
   setInvoiceSearch: (search: string) => void;
   invoiceSubTab: 'list' | 'analytics';
@@ -86,6 +86,10 @@ interface DashboardContextProps {
   setIsNewInvoiceSheetOpen: (open: boolean) => void;
   prefillInvoice: Invoice | null;
   setPrefillInvoice: (inv: Invoice | null) => void;
+  isEditingDraft: boolean;
+  setIsEditingDraft: (val: boolean) => void;
+  isViewingInvoice: boolean;
+  setIsViewingInvoice: (val: boolean) => void;
   isSheetOpen: boolean;
   setIsSheetOpen: (open: boolean) => void;
   isGdprModalOpen: boolean;
@@ -230,14 +234,26 @@ interface DashboardContextProps {
   handleClientContextMenu: (e: React.MouseEvent, client: Client) => void;
   handleInvoiceContextMenu: (e: React.MouseEvent, invoice: Invoice) => void;
   handleCreateInvoice: (
-    e: React.FormEvent,
+    e: React.FormEvent | null,
     lineItems: InvoiceLineItem[],
     dueDate: string,
     serviceDate: string,
     notes?: string,
     isReverseCharge?: boolean,
-    clientVatId?: string
+    clientVatId?: string,
+    asDraft?: boolean
   ) => Promise<boolean>;
+  handleUpdateDraftInvoice: (
+    invoiceId: string,
+    lineItems: InvoiceLineItem[],
+    dueDate: string,
+    serviceDate: string,
+    notes?: string,
+    isReverseCharge?: boolean,
+    clientVatId?: string,
+    finalize?: boolean
+  ) => Promise<boolean>;
+  deleteDraftInvoice: (invoiceId: string) => Promise<boolean>;
   generateGdprLink: (clientId: string) => Promise<string | null>;
   applyMailTemplate: (
     topic: 'rechnung' | 'stornierung' | 'bestaetigung' | 'custom' | 'mahnung' | 'erinnerung' | 'fragebogen' | 'dsgvo',
@@ -302,7 +318,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
 
   // Invoice Filters & UI States
-  const [invoiceFilter, setInvoiceFilter] = useState<'all' | 'paid' | 'open' | 'overdue'>('all');
+  const [invoiceFilter, setInvoiceFilter] = useState<'all' | 'paid' | 'open' | 'overdue' | 'draft'>('all');
   const [invoiceSearch, setInvoiceSearch] = useState('');
   const [invoiceSubTab, setInvoiceSubTab] = useState<'list' | 'analytics'>('list');
   const [hoveredBarIndex, setHoveredBarIndex] = useState<number | null>(null);
@@ -311,6 +327,16 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
   const showToast = (message: string, type: 'success' | 'info' | 'error' = 'success') => {
     setToast({ message, type });
+  };
+
+  const getInvoiceStatus = (status: string, dueDate?: string) => {
+    if (status === 'open' && dueDate) {
+      const todayStr = new Date().toISOString().slice(0, 10);
+      if (dueDate < todayStr) {
+        return 'overdue';
+      }
+    }
+    return status as 'open' | 'paid' | 'overdue' | 'cancelled';
   };
 
   // Document attachments (Mock for GDPR uploads)
@@ -360,6 +386,8 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const [isInvoiceMenuOpen, setIsInvoiceMenuOpen] = useState(false);
   const [isNewInvoiceSheetOpen, setIsNewInvoiceSheetOpen] = useState(false);
   const [prefillInvoice, setPrefillInvoice] = useState<Invoice | null>(null);
+  const [isEditingDraft, setIsEditingDraft] = useState(false);
+  const [isViewingInvoice, setIsViewingInvoice] = useState(false);
   const [newInvoiceClientId, setNewInvoiceClientId] = useState('');
   const [newInvoiceAmount, setNewInvoiceAmount] = useState('');
   const [newInvoiceDate, setNewInvoiceDate] = useState('');
@@ -638,7 +666,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
               invoiceNumber: inv.invoice_number,
               amount: inv.amount,
               date: inv.date,
-              status: inv.status,
+              status: getInvoiceStatus(inv.status, inv.due_date),
               dueDate: inv.due_date || '',
               serviceDate: inv.service_date || '',
               clientSnapshot: inv.client_snapshot || {
@@ -1274,6 +1302,9 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     setNewInvoiceDate(new Date().toISOString().slice(0, 10));
     setNewInvoiceStatus('open');
     setNewInvoiceAppointmentId(null);
+    setPrefillInvoice(null);
+    setIsEditingDraft(false);
+    setIsViewingInvoice(false);
     setIsNewInvoiceSheetOpen(true);
   };
 
@@ -1335,15 +1366,16 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
   // Creating new Invoice
   const handleCreateInvoice = async (
-    e: React.FormEvent,
+    e: React.FormEvent | null,
     lineItems: InvoiceLineItem[],
     dueDate: string,
     serviceDate: string,
     notes: string = '',
     isReverseCharge: boolean = false,
-    clientVatId: string = ''
+    clientVatId: string = '',
+    asDraft: boolean = false
   ) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     if (!newInvoiceClientId || !newInvoiceAmount || !therapistId) {
       showToast('Bitte Klient und Betrag eingeben.', 'error');
       return false;
@@ -1361,14 +1393,18 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       return false;
     }
 
-    const num = invoices.length + 1;
-    const invNum = newInvoiceNumber.trim() || `RE-2026-${num.toString().padStart(4, '0')}`;
+    const num = invoices.filter(i => i.status !== 'draft').length + 1;
+    const invNum = asDraft 
+      ? `DRAFT-${crypto.randomUUID().slice(0, 8).toUpperCase()}`
+      : (newInvoiceNumber.trim() || `RE-2026-${num.toString().padStart(4, '0')}`);
 
-    // Prevent duplicate invoice numbers (GoBD compliance)
-    const isDuplicate = invoices.some(i => i.invoiceNumber.trim().toLowerCase() === invNum.trim().toLowerCase());
-    if (isDuplicate) {
-      showToast(`Die Rechnungsnummer "${invNum}" ist bereits vergeben. Bitte wählen Sie eine andere Nummer.`, 'error');
-      return false;
+    // Prevent duplicate invoice numbers (GoBD compliance) only if not draft
+    if (!asDraft) {
+      const isDuplicate = invoices.some(i => i.invoiceNumber.trim().toLowerCase() === invNum.trim().toLowerCase());
+      if (isDuplicate) {
+        showToast(`Die Rechnungsnummer "${invNum}" ist bereits vergeben. Bitte wählen Sie eine andere Nummer.`, 'error');
+        return false;
+      }
     }
 
     const dateVal = newInvoiceDate || new Date().toISOString().slice(0, 10);
@@ -1388,6 +1424,8 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       vatId: clientVatId || undefined
     };
 
+    const statusVal = asDraft ? 'draft' : newInvoiceStatus;
+
     const { error } = await supabase
       .from('invoices')
       .insert({
@@ -1398,7 +1436,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         invoice_number: invNum,
         amount: amount,
         date: dateVal,
-        status: newInvoiceStatus,
+        status: statusVal,
         due_date: dueDate || null,
         service_date: serviceDate || null,
         client_snapshot: clientSnapshot,
@@ -1421,7 +1459,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       invoiceNumber: invNum,
       amount: amount,
       date: dateVal,
-      status: newInvoiceStatus as any,
+      status: asDraft ? 'draft' : getInvoiceStatus(newInvoiceStatus, dueDate),
       dueDate: dueDate,
       serviceDate: serviceDate,
       clientSnapshot: clientSnapshot,
@@ -1434,7 +1472,11 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     setInvoices(prev => [...prev, newInv]);
     setIsNewInvoiceSheetOpen(false);
     setPrefillInvoice(null);
-    showToast(`Rechnung ${invNum} über ${amount.toFixed(2)} € erstellt!`, 'success');
+    if (asDraft) {
+      showToast(`Entwurf ${invNum} erstellt!`, 'success');
+    } else {
+      showToast(`Rechnung ${invNum} über ${amount.toFixed(2)} € erstellt!`, 'success');
+    }
 
     // Reset fields
     setNewInvoiceClientId('');
@@ -1443,6 +1485,153 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     setNewInvoiceNumber('');
     setNewInvoiceStatus('open');
     setNewInvoiceAppointmentId(null);
+    return true;
+  };
+
+  const handleUpdateDraftInvoice = async (
+    invoiceId: string,
+    lineItems: InvoiceLineItem[],
+    dueDate: string,
+    serviceDate: string,
+    notes: string = '',
+    isReverseCharge: boolean = false,
+    clientVatId: string = '',
+    finalize: boolean = false
+  ) => {
+    if (!newInvoiceClientId || !newInvoiceAmount || !therapistId) {
+      showToast('Bitte Klient und Betrag eingeben.', 'error');
+      return false;
+    }
+
+    const selectedClient = clients.find(c => c.id === newInvoiceClientId);
+    if (!selectedClient) {
+      showToast('Ausgewählter Klient wurde nicht gefunden.', 'error');
+      return false;
+    }
+
+    const amount = parseFloat(newInvoiceAmount.replace(',', '.'));
+    if (isNaN(amount) || amount <= 0) {
+      showToast('Ungültiger Betrag.', 'error');
+      return false;
+    }
+
+    // Determine invoice number
+    let invNum = newInvoiceNumber.trim();
+    if (finalize) {
+      const num = invoices.filter(i => i.status !== 'draft').length + 1;
+      invNum = invNum || `RE-2026-${num.toString().padStart(4, '0')}`;
+      
+      // Prevent duplicates
+      const isDuplicate = invoices.some(i => i.id !== invoiceId && i.invoiceNumber.trim().toLowerCase() === invNum.trim().toLowerCase());
+      if (isDuplicate) {
+        showToast(`Die Rechnungsnummer "${invNum}" ist bereits vergeben. Bitte wählen Sie eine andere Nummer.`, 'error');
+        return false;
+      }
+    } else {
+      // Keep existing draft number or generate one if missing
+      const existing = invoices.find(i => i.id === invoiceId);
+      invNum = existing?.invoiceNumber.startsWith('DRAFT-') ? existing.invoiceNumber : `DRAFT-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+    }
+
+    const dateVal = newInvoiceDate || new Date().toISOString().slice(0, 10);
+    const statusVal = finalize ? getInvoiceStatus('open', dueDate) : 'draft';
+
+    const clientSnapshot: ClientSnapshot = {
+      name: selectedClient.name,
+      email: selectedClient.email,
+      phone: selectedClient.phone,
+      address: selectedClient.address || '',
+      street: selectedClient.street || '',
+      houseNumber: selectedClient.houseNumber || '',
+      zipCode: selectedClient.zipCode || '',
+      city: selectedClient.city || '',
+      vatId: clientVatId || undefined
+    };
+
+    const { error } = await supabase
+      .from('invoices')
+      .update({
+        client_id: selectedClient.id,
+        invoice_number: invNum,
+        amount: amount,
+        date: dateVal,
+        status: finalize ? 'open' : 'draft',
+        due_date: dueDate || null,
+        service_date: serviceDate || null,
+        client_snapshot: clientSnapshot,
+        line_items: lineItems,
+        is_small_business: isSmallBusiness,
+        is_reverse_charge: isReverseCharge,
+        notes: notes
+      })
+      .eq('id', invoiceId);
+
+    if (error) {
+      showToast(`Fehler beim Aktualisieren des Entwurfs: ${error.message}`, 'error');
+      return false;
+    }
+
+    setInvoices(prev => prev.map(inv => {
+      if (inv.id === invoiceId) {
+        return {
+          ...inv,
+          clientId: selectedClient.id,
+          clientName: selectedClient.name,
+          invoiceNumber: invNum,
+          amount: amount,
+          date: dateVal,
+          status: statusVal,
+          dueDate: dueDate,
+          serviceDate: serviceDate,
+          clientSnapshot: clientSnapshot,
+          lineItems: lineItems,
+          isSmallBusiness: isSmallBusiness,
+          isReverseCharge: isReverseCharge,
+          notes: notes
+        };
+      }
+      return inv;
+    }));
+
+    setIsNewInvoiceSheetOpen(false);
+    setPrefillInvoice(null);
+    setIsEditingDraft(false);
+    
+    if (finalize) {
+      showToast(`Rechnung ${invNum} über ${amount.toFixed(2)} € finalisiert und gesperrt!`, 'success');
+    } else {
+      showToast(`Entwurf ${invNum} aktualisiert!`, 'success');
+    }
+
+    // Reset fields
+    setNewInvoiceClientId('');
+    setNewInvoiceAmount('');
+    setNewInvoiceDate('');
+    setNewInvoiceNumber('');
+    setNewInvoiceStatus('open');
+    setNewInvoiceAppointmentId(null);
+    return true;
+  };
+
+  const deleteDraftInvoice = async (invoiceId: string) => {
+    if (!confirm('Möchtest du diesen Entwurf wirklich unwiderruflich löschen?')) {
+      return false;
+    }
+
+    const { error } = await supabase
+      .from('invoices')
+      .delete()
+      .eq('id', invoiceId)
+      .eq('status', 'draft');
+
+    if (error) {
+      showToast(`Fehler beim Löschen des Entwurfs: ${error.message}`, 'error');
+      return false;
+    }
+
+    setInvoices(prev => prev.filter(inv => inv.id !== invoiceId));
+    showToast('Entwurf gelöscht.', 'success');
+    setActiveInvoiceActionMenuId(null);
     return true;
   };
 
@@ -1715,7 +1904,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       invoiceNumber: invNum,
       amount: app.price,
       date: dateVal,
-      status: 'open',
+      status: getInvoiceStatus('open', dueVal),
       dueDate: dueVal,
       serviceDate: serviceDateVal,
       clientSnapshot: clientSnapshot,
@@ -2155,6 +2344,8 @@ Vielen Dank fuer Ihr Vertrauen!
       isInvoiceMenuOpen, setIsInvoiceMenuOpen,
       isNewInvoiceSheetOpen, setIsNewInvoiceSheetOpen,
       prefillInvoice, setPrefillInvoice,
+      isEditingDraft, setIsEditingDraft,
+      isViewingInvoice, setIsViewingInvoice,
       isSheetOpen, setIsSheetOpen,
       selectedAppointment, setSelectedAppointment,
       sheetMode, setSheetMode,
@@ -2218,6 +2409,8 @@ Vielen Dank fuer Ihr Vertrauen!
       handleClientContextMenu,
       handleInvoiceContextMenu,
       handleCreateInvoice,
+      handleUpdateDraftInvoice,
+      deleteDraftInvoice,
       generateGdprLink,
       deleteService,
       updateService,
