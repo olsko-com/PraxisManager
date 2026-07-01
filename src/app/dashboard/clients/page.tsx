@@ -1569,7 +1569,7 @@ export default function ClientsPage() {
                         </div>
                         <div className="text-left">
                           <h4 className="text-xs font-bold text-[#003527]">Behandlungsverlauf</h4>
-                          <p className="text-[10px] text-zinc-400 mt-0.5">Chronologische Dokumentation der Therapiesitzungen (SOAP).</p>
+                          <p className="text-[10px] text-zinc-400 mt-0.5">Chronologische Dokumentation der Therapiesitzungen.</p>
                         </div>
                       </div>
                       
@@ -1615,9 +1615,10 @@ export default function ClientsPage() {
                             // Auto-expand the newly created SOAP note
                             setExpandedNoteIds(prev => ({ ...prev, [tempId]: true }));
                           }}
-                          className="bg-[#003527] hover:bg-[#0b513d] text-white px-3.5 py-1.5 rounded-xl text-[10px] font-bold transition-all cursor-pointer border-none shadow-sm flex items-center gap-1.5"
+                          className="bg-[#003527] hover:bg-[#0b513d] text-white w-8 h-8 rounded-xl transition-all cursor-pointer border-none shadow-sm flex items-center justify-center active:scale-95 shrink-0"
+                          title="Eintrag anlegen"
                         >
-                          <Plus className="w-3.5 h-3.5" /> Eintrag anlegen
+                          <Plus className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
