@@ -54,37 +54,26 @@ export default function DashboardOverviewPage() {
     return therapistName.split(/\s+/)[0];
   };
 
-  const getTodayAppointmentsCount = () => {
-    const todayStr = new Date().toISOString().slice(0, 10);
-    return appointments.filter(app => app.startTime.slice(0, 10) === todayStr).length;
-  };
+  // Get today's appointments sorted chronologically
+  const todayAppointments = React.useMemo(() => {
+    const today = new Date();
+    return appointments
+      .filter(app => {
+        const appDate = new Date(app.startTime);
+        return today.getFullYear() === appDate.getFullYear() &&
+               today.getMonth() === appDate.getMonth() &&
+               today.getDate() === appDate.getDate();
+      })
+      .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+  }, [appointments]);
 
-
-
-  const todayCount = getTodayAppointmentsCount();
+  const todayCount = todayAppointments.length;
 
   const filteredClients = clients.filter(c =>
     c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     c.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (c.phone && c.phone.toLowerCase().includes(searchQuery.toLowerCase()))
   );
-
-  // Get upcoming appointments sorted chronologically
-  const upcomingAppointments = React.useMemo(() => {
-    const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    
-    let upcoming = appointments
-      .filter(app => new Date(app.startTime) >= todayStart)
-      .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
-
-    if (upcoming.length === 0) {
-      upcoming = [...appointments]
-        .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
-    }
-
-    return upcoming.slice(0, 4);
-  }, [appointments]);
 
   const formatAppointmentTime = (isoString: string) => {
     const date = new Date(isoString);
@@ -212,10 +201,10 @@ export default function DashboardOverviewPage() {
           </div>
         </div>
 
-        {/* Nächste Termine Row (Full Width) */}
+        {/* Heutige Termine Row (Full Width) */}
         <div className="bg-white border border-[#bfc9c3]/40 rounded-2xl p-6 shadow-none text-left space-y-4">
           <div className="flex justify-between items-center pb-3 border-b border-[#bfc9c3]/20">
-            <h3 className="text-sm font-bold text-[#003527]">Nächste Termine</h3>
+            <h3 className="text-sm font-bold text-[#003527]">Heutige Termine</h3>
             <button
               onClick={() => router.push('/dashboard/calendar')}
               className="text-[10px] font-extrabold text-[#003527] hover:underline cursor-pointer flex items-center gap-0.5 bg-transparent border-none p-0 outline-none"
@@ -225,8 +214,8 @@ export default function DashboardOverviewPage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {upcomingAppointments.length > 0 ? (
-              upcomingAppointments.map((app) => (
+            {todayAppointments.length > 0 ? (
+              todayAppointments.map((app) => (
                 <div 
                   key={app.id} 
                   className="p-3.5 bg-[#f9f9f8] border border-[#bfc9c3]/30 rounded-xl flex flex-col gap-1 hover:border-[#bfc9c3]/60 transition-all text-left group cursor-pointer"
@@ -261,7 +250,7 @@ export default function DashboardOverviewPage() {
               ))
             ) : (
               <div className="col-span-full py-8 text-center text-zinc-400 italic text-xs font-semibold">
-                Keine anstehenden Termine.
+                Keine Termine für heute.
               </div>
             )}
           </div>
