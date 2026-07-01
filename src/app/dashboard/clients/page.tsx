@@ -497,6 +497,11 @@ export default function ClientsPage() {
   const currentClient = clients.find(c => c.id === selectedClientId);
   const clientSoapNotes = soapNotes.filter(n => n.clientId === selectedClientId);
 
+  const latestSoapNote = React.useMemo(() => {
+    if (clientSoapNotes.length === 0) return null;
+    return [...clientSoapNotes].sort((a, b) => b.date.localeCompare(a.date))[0];
+  }, [clientSoapNotes]);
+
   const renderSoapItems = React.useMemo(() => {
     if (!selectedClientId) return [];
 
@@ -1422,22 +1427,57 @@ export default function ClientsPage() {
                         </div>
                       </div>
 
-                      {/* Karte 4: Praxisnotizen & Anamnese (lg:col-span-3) */}
+                      {/* Karte 4: Letzte Beschwerden (lg:col-span-3) */}
                       <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 hover:border-[#bfc9c3]/60 transition-all duration-300 relative group col-span-1 md:col-span-3">
                         <div className="space-y-4 w-full">
                           <div className="flex justify-between items-start">
                             <div className="p-2 rounded-xl bg-amber-50 border border-amber-200/40 text-amber-700">
                               <ClipboardList className="w-4 h-4" />
                             </div>
-                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-500">
-                              Praxisnotizen & Anamnese
+                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-500 uppercase tracking-wider">
+                              {latestSoapNote ? `Letzte Beschwerden vom ${formatGermanDate(latestSoapNote.date)}` : 'Letzte Beschwerden'}
                             </span>
                           </div>
 
-                          <div className="space-y-1 text-left">
-                            <p className="text-xs font-semibold text-[#003527] border-l-2 border-[#003527]/20 pl-3 leading-relaxed whitespace-pre-wrap italic mt-1.5">
-                              {currentClient.notes || 'Keine medizinischen Notizen hinterlegt.'}
-                            </p>
+                          <div className="space-y-3 text-left">
+                            {latestSoapNote ? (
+                              (() => {
+                                const sub = parseSoapSubjective(latestSoapNote.subjective);
+                                const hasComplaints = sub.complaints.length > 0;
+                                const hasGoal = sub.treatmentGoal?.trim();
+                                
+                                return (
+                                  <div className="space-y-2.5 text-xs text-[#003527]">
+                                    {hasComplaints && (
+                                      <div className="flex flex-wrap gap-1.5">
+                                        {sub.complaints.map((c, i) => (
+                                          <span key={i} className="bg-zinc-50 text-zinc-700 text-[10px] px-2.5 py-1 rounded-xl font-bold border border-zinc-200/40">
+                                            {c.description} (VAS {c.painLevel})
+                                          </span>
+                                        ))}
+                                      </div>
+                                    )}
+                                    {hasGoal && (
+                                      <div className="pt-2 border-t border-zinc-100/50 space-y-1">
+                                        <span className="block text-[8px] font-bold text-zinc-400 uppercase tracking-wider">Behandlungswunsch</span>
+                                        <p className="text-[11px] font-bold italic text-zinc-600 bg-[#f9f9f8] p-2.5 rounded-xl border border-zinc-200/30 leading-relaxed">
+                                          {sub.treatmentGoal}
+                                        </p>
+                                      </div>
+                                    )}
+                                    {!hasComplaints && !hasGoal && (
+                                      <p className="text-xs font-semibold text-[#003527] border-l-2 border-[#003527]/20 pl-3 leading-relaxed italic mt-1.5">
+                                        Keine aktuellen Beschwerden verzeichnet.
+                                      </p>
+                                    )}
+                                  </div>
+                                );
+                              })()
+                            ) : (
+                              <p className="text-xs font-semibold text-[#003527] border-l-2 border-[#003527]/20 pl-3 leading-relaxed whitespace-pre-wrap italic mt-1.5">
+                                Noch keine Behandlungen für diesen Klienten dokumentiert.
+                              </p>
+                            )}
                           </div>
                         </div>
                       </div>
