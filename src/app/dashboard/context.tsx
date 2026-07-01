@@ -234,7 +234,9 @@ interface DashboardContextProps {
     lineItems: InvoiceLineItem[],
     dueDate: string,
     serviceDate: string,
-    notes?: string
+    notes?: string,
+    isReverseCharge?: boolean,
+    clientVatId?: string
   ) => Promise<boolean>;
   generateGdprLink: (clientId: string) => Promise<string | null>;
   applyMailTemplate: (
@@ -1337,7 +1339,9 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     lineItems: InvoiceLineItem[],
     dueDate: string,
     serviceDate: string,
-    notes: string = ''
+    notes: string = '',
+    isReverseCharge: boolean = false,
+    clientVatId: string = ''
   ) => {
     e.preventDefault();
     if (!newInvoiceClientId || !newInvoiceAmount || !therapistId) {
@@ -1372,7 +1376,8 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       street: selectedClient.street || '',
       houseNumber: selectedClient.houseNumber || '',
       zipCode: selectedClient.zipCode || '',
-      city: selectedClient.city || ''
+      city: selectedClient.city || '',
+      vatId: clientVatId || undefined
     };
 
     const { error } = await supabase
@@ -1391,6 +1396,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         client_snapshot: clientSnapshot,
         line_items: lineItems,
         is_small_business: isSmallBusiness,
+        is_reverse_charge: isReverseCharge,
         notes: notes
       });
 
@@ -1413,6 +1419,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       clientSnapshot: clientSnapshot,
       lineItems: lineItems,
       isSmallBusiness: isSmallBusiness,
+      isReverseCharge: isReverseCharge,
       notes: notes
     };
 
@@ -1905,7 +1912,7 @@ Vielen Dank fuer Ihr Vertrauen!
         : [{ id: 'fallback', description: 'Therapeutische Behandlung / Physiotherapie', price: inv.amount, taxRate: 0 }];
 
       const netSum = items.reduce((sum, item) => sum + item.price, 0);
-      const taxSum = inv.isSmallBusiness
+      const taxSum = (inv.isSmallBusiness || inv.isReverseCharge)
         ? 0
         : items.reduce((sum, item) => sum + (item.price * ((item.taxRate || 0) / 100)), 0);
       const grossSum = netSum + taxSum;
@@ -1968,7 +1975,8 @@ Vielen Dank fuer Ihr Vertrauen!
                 ${(clientStreet && clientHouseNumber) ? `${clientStreet} ${clientHouseNumber}<br>` : '<span style="color: red; font-weight: bold; font-size: 11px;">[Klienten-Anschrift fehlt]<br></span>'}
                 ${(clientZip && clientCity) ? `${clientZip} ${clientCity}<br>` : '<span style="color: red; font-weight: bold; font-size: 11px;">[Klienten-PLZ/Ort fehlt]<br></span>'}
                 ${clientEmail ? `E-Mail: ${clientEmail}<br>` : ''}
-                ${clientPhone ? `Tel: ${clientPhone}` : ''}
+                ${clientPhone ? `Tel: ${clientPhone}<br>` : ''}
+                ${inv.isReverseCharge ? (inv.clientSnapshot?.vatId ? `USt-IdNr. des Empfängers: ${inv.clientSnapshot.vatId}` : '<span style="color: red; font-weight: bold; font-size: 11px;">[Klienten-USt-IdNr. fehlt]</span>') : ''}
               </div>
               <div>
                 <strong>Rechnungsdetails</strong>
@@ -2006,6 +2014,14 @@ Vielen Dank fuer Ihr Vertrauen!
                 </div>
                 <div style="font-size: 10px; color: #708075; font-style: italic; margin-top: 5px;">
                   Kein Ausweis der Umsatzsteuer aufgrund der Anwendung der Kleinunternehmerregelung gem. § 19 UStG.
+                </div>
+              ` : inv.isReverseCharge ? `
+                <div class="totals-row grand">
+                  <span>Gesamtsumme (Netto):</span>
+                  <span>${netSum.toFixed(2)} €</span>
+                </div>
+                <div style="font-size: 10px; color: #708075; font-style: italic; margin-top: 5px; text-align: right;">
+                  Steuerschuldnerschaft des Leistungsempfängers (Reverse-Charge-Verfahren nach § 13b UStG).
                 </div>
               ` : `
                 <div class="totals-row">

@@ -58,6 +58,9 @@ export default function NewInvoiceSheet() {
   const [newInvoiceDueDate, setNewInvoiceDueDate] = React.useState('');
   const [serviceDate, setServiceDate] = React.useState('');
   const [notes, setNotes] = React.useState('');
+  const [isReverseCharge, setIsReverseCharge] = React.useState(false);
+  const [clientVatId, setClientVatId] = React.useState('');
+  const [vatIdError, setVatIdError] = React.useState('');
   const dropdownRef = React.useRef<HTMLDivElement>(null);
 
   // Local state for canvas patient autocomplete search
@@ -181,6 +184,9 @@ export default function NewInvoiceSheet() {
         setNewInvoiceClientId(prefillInvoice.clientId);
         setServiceDate(prefillInvoice.serviceDate || '');
         setNotes(prefillInvoice.notes || '');
+        setIsReverseCharge(!!prefillInvoice.isReverseCharge);
+        setClientVatId(prefillInvoice.clientSnapshot?.vatId || '');
+        setVatIdError('');
         // Map line items back to positive values (absolute value) if they are copied from a storno
         const copiedItems = (prefillInvoice.lineItems || []).map((item, idx) => ({
           id: item.id || String(idx + 1),
@@ -200,6 +206,9 @@ export default function NewInvoiceSheet() {
       ];
       setServiceDate(`${monthNames[today.getMonth()]} ${today.getFullYear()}`);
       setNotes('');
+      setIsReverseCharge(false);
+      setClientVatId('');
+      setVatIdError('');
 
       if (newInvoiceAppointmentId) {
         const app = appointments.find(a => a.id === newInvoiceAppointmentId);
@@ -224,8 +233,17 @@ export default function NewInvoiceSheet() {
     } else {
       hasInitializedRef.current = false;
       setLineItems([]);
+      setIsReverseCharge(false);
+      setClientVatId('');
+      setVatIdError('');
     }
   }, [isNewInvoiceSheetOpen, newInvoiceAppointmentId, newInvoiceAmount, appointments, prefillInvoice, setNewInvoiceClientId]);
+
+  React.useEffect(() => {
+    if (isReverseCharge) {
+      setLineItems(prev => prev.map(item => ({ ...item, taxRate: 0 })));
+    }
+  }, [isReverseCharge]);
 
   // Compute totals dynamically
   const netTotal = lineItems.reduce((sum, item) => sum + item.price, 0);
@@ -244,6 +262,17 @@ export default function NewInvoiceSheet() {
     setNewInvoiceAmount(grossTotal.toFixed(2));
   }, [grossTotal, setNewInvoiceAmount]);
 
+  const validateVatId = (id: string) => {
+    const cleaned = id.trim();
+    if (!cleaned) return 'USt-IdNr. ist erforderlich.';
+    if (cleaned.length < 4) return 'Mindestens 4 Zeichen.';
+    const regex = /^[A-Z]{2}[A-Z0-9]{2,12}$/i;
+    if (!regex.test(cleaned)) {
+      return 'Format ungültig (z.B. DE123456789).';
+    }
+    return '';
+  };
+
   if (!isNewInvoiceSheetOpen) return null;
 
   return (
@@ -259,7 +288,18 @@ export default function NewInvoiceSheet() {
           -webkit-appearance: none !important;
         }
       `}</style>
-      <form onSubmit={(e) => handleCreateInvoice(e, lineItems, newInvoiceDueDate, serviceDate, notes)} className="h-full w-full flex flex-col overflow-hidden">
+      <form onSubmit={(e) => {
+        if (isReverseCharge) {
+          const err = validateVatId(clientVatId);
+          if (err) {
+            e.preventDefault();
+            setVatIdError(err);
+            showToast(`Ungültige USt-IdNr.: ${err}`, 'error');
+            return;
+          }
+        }
+        handleCreateInvoice(e, lineItems, newInvoiceDueDate, serviceDate, notes, isReverseCharge, clientVatId);
+      }} className="h-full w-full flex flex-col overflow-hidden">
         {/* Split Workspace */}
         <div className="flex-grow flex min-h-0 overflow-hidden relative">
           {/* Floating exit button */}
@@ -363,6 +403,15 @@ export default function NewInvoiceSheet() {
                                   </p>
                                 )}
                                 <p className="text-[10px] text-zinc-400 mt-1">{client.email} | {client.phone}</p>
+                                {isReverseCharge && (
+                                  <p className="text-[10px] text-zinc-500 font-bold mt-0.5">
+                                    {clientVatId ? `USt-IdNr.: ${clientVatId.toUpperCase()}` : (
+                                      <span className="text-red-500 select-none animate-pulse flex items-center gap-1">
+                                        <AlertCircle className="w-2.5 h-2.5" /> USt-IdNr. des Klienten fehlt
+                                      </span>
+                                    )}
+                                  </p>
+                                )}
                               </div>
                             );
                           }
@@ -473,7 +522,7 @@ export default function NewInvoiceSheet() {
                           <tr className="text-zinc-400 font-bold uppercase tracking-wider text-[9px] border-b border-[#bfc9c3]/20">
                             <th className="py-2 w-12 font-bold">Pos.</th>
                             <th className="py-2 font-bold">Leistungsbeschreibung</th>
-                            {!isSmallBusiness && <th className="py-2 text-right w-20 font-bold">USt.</th>}
+                            {!isSmallBusiness && !isReverseCharge && <th className="py-2 text-right w-20 font-bold">USt.</th>}
                             <th className="py-2 text-right w-28 font-bold">Betrag</th>
                             <th className="py-2 text-right w-10"></th>
                           </tr>
@@ -495,7 +544,7 @@ export default function NewInvoiceSheet() {
                                   placeholder="z.B. Osteopathische Behandlung"
                                 />
                               </td>
-                              {!isSmallBusiness && (
+                              {!isSmallBusiness && !isReverseCharge && (
                                 <td className="py-2 text-right">
                                   <select
                                     value={item.taxRate}
@@ -576,6 +625,16 @@ export default function NewInvoiceSheet() {
                         </div>
                         <p className="text-[9.5px] text-zinc-500 font-bold italic mt-1 text-right w-full">
                           Kein Ausweis der Umsatzsteuer aufgrund der Anwendung der Kleinunternehmerregelung gem. § 19 UStG.
+                        </p>
+                      </div>
+                    ) : isReverseCharge ? (
+                      <div className="border-t border-[#bfc9c3]/20 pt-6 flex flex-col items-end gap-2">
+                        <div className="flex justify-end items-baseline gap-4">
+                          <span className="text-zinc-400 text-xs font-bold uppercase tracking-wider">Gesamtsumme (Netto):</span>
+                          <span className="text-2xl font-extrabold text-[#003527] font-serif">{netTotal.toFixed(2)} €</span>
+                        </div>
+                        <p className="text-[9.5px] text-zinc-500 font-bold italic mt-1 text-right w-full">
+                          Steuerschuldnerschaft des Leistungsempfängers (Reverse-Charge-Verfahren nach § 13b UStG).
                         </p>
                       </div>
                     ) : (
@@ -839,6 +898,56 @@ export default function NewInvoiceSheet() {
                     placeholder="Zusätzliche Infos..."
                     className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-2xl px-4 py-2.5 font-bold text-xs text-[#003527] outline-none focus:border-[#003527] focus:ring-1 focus:ring-[#003527] transition-all resize-none h-20"
                   />
+                </div>
+
+                {/* Reverse-Charge Section */}
+                <div className="space-y-3 pt-3 border-t border-[#bfc9c3]/15">
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={isReverseCharge}
+                      onChange={(e) => {
+                        setIsReverseCharge(e.target.checked);
+                        if (!e.target.checked) {
+                          setClientVatId('');
+                          setVatIdError('');
+                        }
+                      }}
+                      className="rounded border-[#bfc9c3]/50 text-[#003527] focus:ring-[#003527] w-3.5 h-3.5"
+                    />
+                    <span className="text-[10px] font-bold text-[#003527]/70 uppercase tracking-widest">
+                      Reverse-Charge (§ 13b UStG)
+                    </span>
+                  </label>
+
+                  {isReverseCharge && (
+                    <div className="space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-200">
+                      <label className="block text-[8.5px] font-extrabold text-zinc-400 uppercase tracking-wider">
+                        USt-IdNr. des Klienten
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={clientVatId}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setClientVatId(val);
+                          if (val.trim()) {
+                            setVatIdError(validateVatId(val));
+                          } else {
+                            setVatIdError('USt-IdNr. ist erforderlich.');
+                          }
+                        }}
+                        placeholder="z.B. ATU12345678"
+                        className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-2xl px-4 py-3 font-bold text-xs text-[#003527] outline-none focus:border-[#003527] focus:ring-1 focus:ring-[#003527] transition-all uppercase"
+                      />
+                      {vatIdError && (
+                        <p className="text-[9px] text-rose-600 font-semibold select-none flex items-center gap-1">
+                          <AlertCircle className="w-3.5 h-3.5 text-rose-500 shrink-0" /> {vatIdError}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Checklist of missing fields */}

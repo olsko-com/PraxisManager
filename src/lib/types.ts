@@ -77,6 +77,7 @@ export interface ClientSnapshot {
   houseNumber?: string;
   zipCode?: string;
   city?: string;
+  vatId?: string;
 }
 
 export interface Invoice {
@@ -93,6 +94,7 @@ export interface Invoice {
   clientSnapshot: ClientSnapshot;
   lineItems: InvoiceLineItem[];
   isSmallBusiness: boolean;
+  isReverseCharge?: boolean;
   relatedInvoiceId?: string | null;
   notes?: string;
 }
