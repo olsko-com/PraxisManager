@@ -55,6 +55,7 @@ export default function NewInvoiceSheet() {
     cancelInvoice,
     setIsNewClientModalOpen,
     setNewClientName,
+    getUnbilledAppointments,
     showToast
   } = useDashboard();
 
@@ -193,6 +194,7 @@ export default function NewInvoiceSheet() {
 
       if (prefillInvoice) {
         setNewInvoiceClientId(prefillInvoice.clientId);
+        setNewInvoiceAppointmentId(prefillInvoice.appointmentId || null);
         setServiceDate(prefillInvoice.serviceDate || '');
         setNotes(prefillInvoice.notes || '');
         setIsReverseCharge(!!prefillInvoice.isReverseCharge);
@@ -1048,6 +1050,58 @@ export default function NewInvoiceSheet() {
                       </div>
                     )}
                   </div>
+
+                  {/* Appointment Link Selector */}
+                  {selectedClientForInvoice && !isViewingInvoice && (() => {
+                    const clientUnbilledAppointments = getUnbilledAppointments().filter(app => app.clientId === newInvoiceClientId);
+                    if (clientUnbilledAppointments.length === 0) return null;
+                    return (
+                      <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                        <label className="block text-[10px] font-bold text-[#003527]/70 uppercase tracking-widest">Abrechenbaren Termin verknüpfen</label>
+                        <select
+                          value={newInvoiceAppointmentId || ''}
+                          onChange={(e) => {
+                            const apptId = e.target.value;
+                            if (apptId) {
+                              setNewInvoiceAppointmentId(apptId);
+                              const appt = appointments.find(a => a.id === apptId);
+                              if (appt) {
+                                const apptDate = new Date(appt.startTime);
+                                const formattedDate = apptDate.toLocaleDateString('de-DE', {
+                                  day: '2-digit',
+                                  month: 'long',
+                                  year: 'numeric'
+                                });
+                                setServiceDate(formattedDate);
+                                setNewInvoiceAmount(appt.price.toFixed(2));
+                                setLineItems([
+                                  { id: `li-${Date.now()}`, description: appt.serviceName, price: appt.price, taxRate: 0 }
+                                ]);
+                                showToast(`Daten für ${appt.serviceName} wurden geladen.`, 'info');
+                              }
+                            } else {
+                              setNewInvoiceAppointmentId(null);
+                            }
+                          }}
+                          className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-2xl px-4 py-3 font-bold text-xs text-[#003527] outline-none focus:border-[#003527] focus:ring-1 focus:ring-[#003527] transition-all cursor-pointer"
+                        >
+                          <option value="">-- Kein Termin verknüpft --</option>
+                          {clientUnbilledAppointments.map(app => {
+                            const dateStr = new Date(app.startTime).toLocaleDateString('de-DE', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: 'numeric'
+                            });
+                            return (
+                              <option key={app.id} value={app.id}>
+                                {dateStr} - {app.serviceName} ({app.price.toFixed(2)} €)
+                              </option>
+                            );
+                          })}
+                        </select>
+                      </div>
+                    );
+                  })()}
 
                   <div className="space-y-2">
                     <label className="block text-[10px] font-bold text-[#003527]/70 uppercase tracking-widest">Rechnungsnummer</label>

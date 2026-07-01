@@ -54,6 +54,10 @@ export default function AppointmentDetailsSheet() {
     createSoapNote,
     startEditSoap,
     setSelectedClientId,
+    setPrefillInvoice,
+    setIsEditingDraft,
+    setIsViewingInvoice,
+    setIsNewInvoiceSheetOpen,
     showToast
   } = useDashboard();
 
@@ -711,40 +715,61 @@ export default function AppointmentDetailsSheet() {
                       </h4>
                       
                       {(() => {
-                        const invoice = invoices.find(inv => inv.appointmentId === selectedAppointment.id);
+                        const invoice = invoices.find(inv => inv.appointmentId === selectedAppointment.id && inv.status !== 'cancelled');
                         if (invoice) {
                           return (
                             <div className="flex justify-between items-center text-xs font-semibold text-[#404944]">
                               <div 
                                 onClick={() => {
                                   setIsSheetOpen(false);
-                                  router.push('/dashboard/invoices');
+                                  setPrefillInvoice(invoice);
+                                  if (invoice.status === 'draft') {
+                                    setIsEditingDraft(true);
+                                    setIsViewingInvoice(false);
+                                  } else {
+                                    setIsEditingDraft(false);
+                                    setIsViewingInvoice(true);
+                                  }
+                                  setIsNewInvoiceSheetOpen(true);
                                 }}
-                                className="cursor-pointer hover:bg-zinc-100/80 p-1.5 rounded-lg transition-colors text-left"
-                                title="Zur Rechnung navigieren"
+                                className="cursor-pointer hover:bg-zinc-100/80 p-1.5 rounded-lg transition-colors text-left flex-grow mr-2"
+                                title="Rechnung im Detail-Viewer öffnen"
                               >
                                 <p className="font-bold text-[#003527]">Rechnungsnummer: {invoice.invoiceNumber}</p>
                                 <p className="text-[10px] text-zinc-400 mt-0.5">Erstellt am: {new Date(invoice.date).toLocaleDateString('de-DE')}</p>
                               </div>
                               
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 flex-shrink-0">
                                 <span className={`px-2 py-0.5 rounded text-[8px] font-extrabold uppercase border ${
                                   invoice.status === 'paid' 
                                     ? 'bg-emerald-50 border-emerald-200 text-emerald-800' 
-                                    : 'bg-rose-50 border-rose-200 text-rose-800'
+                                    : invoice.status === 'overdue'
+                                    ? 'bg-rose-50 border-rose-200 text-rose-800'
+                                    : invoice.status === 'draft'
+                                    ? 'bg-zinc-100 border-zinc-300 text-zinc-600'
+                                    : 'bg-amber-50 border-amber-200 text-amber-800'
                                 }`}>
-                                  {invoice.status === 'paid' ? 'Bezahlt' : 'Offen'}
+                                  {invoice.status === 'paid' && 'Bezahlt'}
+                                  {invoice.status === 'overdue' && 'Überfällig'}
+                                  {invoice.status === 'open' && 'Offen'}
+                                  {invoice.status === 'draft' && 'Entwurf'}
                                 </span>
                                 {invoice.status === 'open' && (
                                   <button 
-                                    onClick={() => markInvoicePaid(invoice.id)}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      markInvoicePaid(invoice.id);
+                                    }}
                                     className="text-[9px] bg-emerald-600 text-white px-2 py-1 rounded transition-colors cursor-pointer border-none"
                                   >
                                     Bezahlen
                                   </button>
                                 )}
                                 <button 
-                                  onClick={() => printInvoice(invoice)}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    printInvoice(invoice);
+                                  }}
                                   className="p-1 bg-zinc-200 hover:bg-zinc-300 text-[#003527] rounded transition-colors cursor-pointer border-none"
                                 >
                                   <Printer className="w-3.5 h-3.5" />
@@ -757,13 +782,16 @@ export default function AppointmentDetailsSheet() {
                             <div className="flex justify-between items-center text-xs font-semibold">
                               <span className="text-zinc-400 italic font-semibold">Keine Rechnung für diesen Termin erstellt.</span>
                               <button 
-                                onClick={() => openNewInvoiceSheetWithPrefill({
-                                  clientId: selectedAppointment.clientId || '',
-                                  amount: selectedAppointment.price,
-                                  appointmentId: selectedAppointment.id,
-                                  clientName: selectedAppointment.clientName,
-                                  date: selectedAppointment.startTime.slice(0, 10)
-                                })}
+                                onClick={() => {
+                                  setIsSheetOpen(false);
+                                  openNewInvoiceSheetWithPrefill({
+                                    clientId: selectedAppointment.clientId || '',
+                                    amount: selectedAppointment.price,
+                                    appointmentId: selectedAppointment.id,
+                                    clientName: selectedAppointment.clientName,
+                                    date: selectedAppointment.startTime.slice(0, 10)
+                                  });
+                                }}
                                 className="bg-[#003527] hover:bg-[#0b513d] text-white px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer border-none"
                               >
                                 <Sparkles className="w-3 h-3 text-white" /> Abrechnen

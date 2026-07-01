@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { 
-  ChevronLeft, ChevronRight, Clock, Plus, FileText, Calendar as CalendarIcon, PanelRight, Search, Mail, RotateCcw, ChevronUp, MessageSquare, Edit2, X
+  ChevronLeft, ChevronRight, Clock, Plus, FileText, Calendar as CalendarIcon, PanelRight, Search, Mail, RotateCcw, ChevronUp, MessageSquare, Edit2, X, Filter
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDashboard } from '../context';
@@ -47,6 +47,8 @@ export default function CalendarPage() {
   } = useDashboard();
 
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(true);
+  const touchStartTimeoutRef = React.useRef<any>(null);
+  const touchStartPosRef = React.useRef<{ x: number; y: number } | null>(null);
   const [mobileCalendarMode, setMobileCalendarMode] = React.useState<'week' | 'month' | 'year'>('week');
   const [eventSearch, setEventSearch] = React.useState('');
   const [statusFilter, setStatusFilter] = React.useState<string>('all');
@@ -76,6 +78,8 @@ export default function CalendarPage() {
   const [sendEmail, setSendEmail] = React.useState(true);
   const [sendSms, setSendSms] = React.useState(true);
   const [isToastDropdownOpen, setIsToastDropdownOpen] = React.useState(false);
+  const [isFilterOpen, setIsFilterOpen] = React.useState(false);
+  const [isSearchOpen, setIsSearchOpen] = React.useState(false);
 
   // Close dropdown on click outside
   React.useEffect(() => {
@@ -439,6 +443,86 @@ export default function CalendarPage() {
     }
   };
 
+  const handleTouchStart = (e: React.TouchEvent, appId: string) => {
+    const touch = e.touches[0];
+    touchStartPosRef.current = { x: touch.clientX, y: touch.clientY };
+    
+    if (touchStartTimeoutRef.current) clearTimeout(touchStartTimeoutRef.current);
+    
+    touchStartTimeoutRef.current = setTimeout(() => {
+      setDraggedAppId(appId);
+      if (navigator.vibrate) {
+        navigator.vibrate(50);
+      }
+      showToast("Termin halten & ziehen zum Verschieben", "info");
+    }, 450);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!draggedAppId) {
+      if (touchStartPosRef.current) {
+        const touch = e.touches[0];
+        const dx = Math.abs(touch.clientX - touchStartPosRef.current.x);
+        const dy = Math.abs(touch.clientY - touchStartPosRef.current.y);
+        if (dx > 10 || dy > 10) {
+          if (touchStartTimeoutRef.current) {
+            clearTimeout(touchStartTimeoutRef.current);
+            touchStartTimeoutRef.current = null;
+          }
+        }
+      }
+      return;
+    }
+    
+    if (e.cancelable) {
+      e.preventDefault();
+    }
+    
+    const touch = e.touches[0];
+    const element = document.elementFromPoint(touch.clientX, touch.clientY) as HTMLElement;
+    
+    if (element) {
+      const slotElement = element.closest('.calendar-slot') as HTMLElement;
+      if (slotElement) {
+        const dateStr = slotElement.dataset.date;
+        const hourVal = slotElement.dataset.hour;
+        if (dateStr && hourVal) {
+          const hour = Number(hourVal);
+          const rect = slotElement.getBoundingClientRect();
+          const relativeY = touch.clientY - rect.top;
+          
+          let minutes = 0;
+          if (relativeY >= 22 && relativeY < 44) {
+            minutes = 15;
+          } else if (relativeY >= 44 && relativeY < 66) {
+            minutes = 30;
+          } else if (relativeY >= 66) {
+            minutes = 45;
+          }
+          
+          if (!dragOverSlot || dragOverSlot.dateStr !== dateStr || dragOverSlot.hour !== hour || dragOverSlot.minutes !== minutes) {
+            setDragOverSlot({ dateStr, hour, minutes });
+          }
+        }
+      }
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (touchStartTimeoutRef.current) {
+      clearTimeout(touchStartTimeoutRef.current);
+      touchStartTimeoutRef.current = null;
+    }
+    
+    if (draggedAppId && dragOverSlot) {
+      handleDrop(dragOverSlot.dateStr, dragOverSlot.hour, dragOverSlot.minutes);
+    }
+    
+    setDraggedAppId(null);
+    setDragOverSlot(null);
+    touchStartPosRef.current = null;
+  };
+
   const checkConflict = (appId: string, dateStr: string, hour: number, minutes: number, durationMinutes: number) => {
     const targetStart = new Date(dateStr);
     targetStart.setHours(hour, minutes, 0, 0);
@@ -634,9 +718,9 @@ export default function CalendarPage() {
     <div className="relative flex-grow bg-[#eef0ed] rounded-none lg:rounded-[24px] border-0 lg:border border-[#003527]/10 m-0 lg:my-4 lg:mr-4 lg:ml-4 flex flex-col h-[calc(100vh-64px)] lg:h-[calc(100vh-32px)] overflow-hidden shadow-none transition-all duration-300">
       
       {/* Desktop Calendar View wrapper */}
-      <div className="hidden lg:flex flex-col flex-grow overflow-hidden relative min-h-0">
+      <div className="hidden md:flex flex-col flex-grow overflow-hidden relative min-h-0">
       {/* Header Layout (Dashboard Style) */}
-      <div className="flex justify-between items-start w-full relative pl-6 lg:pl-8 pr-6 lg:pr-8 pt-4 lg:pt-6 mb-4 lg:mb-6">
+      <div className="flex justify-between items-start w-full relative pl-6 md:pl-8 pr-6 md:pr-8 pt-4 md:pt-6 mb-4 md:mb-6">
         <div className="text-left space-y-1.5 pt-0">
           <h1 className="text-[28px] font-bold text-[#003527] tracking-tight">Kalender</h1>
         </div>
@@ -654,9 +738,9 @@ export default function CalendarPage() {
       </div>
 
       {/* Calendar Controls (Sticky Header inside Card) - Full Width */}
-      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 pl-6 lg:pl-8 pr-6 lg:pr-8 pt-0 pb-3 bg-transparent flex-shrink-0">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 pl-6 md:pl-8 pr-6 md:pr-8 pt-0 pb-3 bg-transparent flex-shrink-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex border border-[#bfc9c3]/50 rounded-xl overflow-hidden bg-white">
+          <div className="hidden lg:flex border border-[#bfc9c3]/50 rounded-xl overflow-hidden bg-white">
             <button 
               onClick={handlePrevDate}
               className="p-2.5 text-[#003527] hover:bg-zinc-50 border-r border-[#bfc9c3]/50 transition-colors cursor-pointer"
@@ -680,19 +764,109 @@ export default function CalendarPage() {
           <h3 className="text-sm font-bold text-[#043F2D] pl-2">{getCalendarTitleText()}</h3>
         </div>
 
-        {/* Calendar Grid Status Filter Dropdown */}
-        <div className="flex items-center flex-shrink-0">
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="bg-white border border-[#bfc9c3]/50 rounded-xl px-3.5 py-2 text-xs font-bold text-[#003527] focus:border-[#003527] focus:ring-1 focus:ring-[#003527] outline-none cursor-pointer h-[34px]"
-          >
-            <option value="all">Alle Status</option>
-            <option value="booked">Reserviert</option>
-            <option value="confirmed">Bestätigt</option>
-            <option value="noshow">Wahrgenommen</option>
-            <option value="cancelled">Storniert</option>
-          </select>
+        {/* Search & Status Filter Controls */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Search Toggle Button / Expandable Input */}
+          <div className="flex items-center gap-1.5">
+            <AnimatePresence initial={false}>
+              {isSearchOpen && (
+                <motion.div
+                  initial={{ width: 0, opacity: 0 }}
+                  animate={{ width: 160, opacity: 1 }}
+                  exit={{ width: 0, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <input
+                    type="text"
+                    placeholder="Suchen..."
+                    value={eventSearch}
+                    onChange={(e) => setEventSearch(e.target.value)}
+                    className="bg-white border border-[#bfc9c3]/50 rounded-xl px-3 py-1.5 text-xs font-semibold text-[#003527] focus:border-[#003527] focus:ring-1 focus:ring-[#003527] outline-none w-full h-[36px]"
+                    autoFocus
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <button
+              onClick={() => {
+                if (isSearchOpen) {
+                  setEventSearch('');
+                }
+                setIsSearchOpen(!isSearchOpen);
+              }}
+              className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-center text-[#003527] bg-white border-[#bfc9c3]/50 hover:bg-zinc-50 active:scale-95 shadow-none h-[36px] w-[36px] ${
+                isSearchOpen || eventSearch ? 'bg-[#003527]/5 border-[#003527]/30 font-bold' : ''
+              }`}
+              title="Suche öffnen"
+            >
+              {isSearchOpen ? <X className="w-4 h-4" /> : <Search className="w-4 h-4" />}
+            </button>
+          </div>
+
+          {/* Status Filter Dropdown Popover */}
+          <div className="relative">
+            <button
+              onClick={() => setIsFilterOpen(!isFilterOpen)}
+              className={`relative p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-center gap-2 text-[#003527] bg-white border-[#bfc9c3]/50 hover:bg-zinc-50 active:scale-95 shadow-none h-[36px] w-[36px] ${
+                statusFilter !== 'all' ? 'bg-[#003527]/5 border-[#003527]/30 font-bold' : ''
+              }`}
+              title="Filter nach Status"
+            >
+              <Filter className="w-4 h-4" />
+              {statusFilter !== 'all' && (
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#003527]" />
+              )}
+            </button>
+
+            <AnimatePresence>
+              {isFilterOpen && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-40"
+                    onClick={() => setIsFilterOpen(false)}
+                  />
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 mt-2 w-48 bg-white border border-[#003527]/10 rounded-2xl shadow-xl py-2 z-50 origin-top-right text-left flex flex-col"
+                  >
+                    <div className="px-4 py-1.5 text-[10px] font-bold text-zinc-400 select-none uppercase tracking-wider">
+                      Status filtern
+                    </div>
+                    {[
+                      { value: 'all', label: 'Alle Termine' },
+                      { value: 'booked', label: 'Reserviert' },
+                      { value: 'confirmed', label: 'Bestätigt' },
+                      { value: 'noshow', label: 'Wahrgenommen' },
+                      { value: 'cancelled', label: 'Storniert' },
+                    ].map((opt) => (
+                      <button
+                        key={opt.value}
+                        onClick={() => {
+                          setStatusFilter(opt.value);
+                          setIsFilterOpen(false);
+                        }}
+                        className={`px-4 py-2 text-xs font-semibold text-left transition-colors flex items-center justify-between ${
+                          statusFilter === opt.value
+                            ? 'bg-[#003527]/5 text-[#003527]'
+                            : 'text-zinc-600 hover:bg-zinc-50'
+                        }`}
+                      >
+                        <span>{opt.label}</span>
+                        {statusFilter === opt.value && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#003527]" />
+                        )}
+                      </button>
+                    ))}
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
 
         {/* Segmented Picker & Toggle Sidebar */}
@@ -741,8 +915,8 @@ export default function CalendarPage() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className={`flex-grow flex flex-col pb-24 lg:pb-6 pt-0 px-4 lg:pl-8 transition-all duration-300 min-h-0 min-w-0 ${
-              isSidebarOpen ? 'lg:pr-96' : 'lg:pr-8'
+            className={`flex-grow flex flex-col pb-24 md:pb-6 pt-0 px-4 md:pl-8 transition-all duration-300 min-h-0 min-w-0 ${
+              isSidebarOpen ? 'pr-4 md:pr-8 lg:pr-96' : 'pr-4 md:pr-8 lg:pr-8'
             }`}
           >
             <div ref={scrollContainerRef} className="mt-3 bg-white border border-[#bfc9c3]/40 rounded-2xl flex-grow overflow-y-auto overflow-x-auto hide-scrollbar pt-0 pb-6 px-0 shadow-none flex flex-col min-h-0 min-w-0">
@@ -799,7 +973,9 @@ export default function CalendarPage() {
                         key={hour}
                         onClick={() => handleCellClick(dateStr, hour)}
                         onDragOver={(e) => handleDragOverCell(e, dateStr, hour)}
-                        className="h-[88px] hover:bg-[#003527]/3 transition-colors cursor-pointer"
+                        className="h-[88px] hover:bg-[#003527]/3 transition-colors cursor-pointer calendar-slot"
+                        data-date={dateStr}
+                        data-hour={hour}
                       />
                     );
                   })}
@@ -821,6 +997,9 @@ export default function CalendarPage() {
                           draggable={!isResizing && isAppointmentMatching(app)}
                           onDragStart={(e) => handleDragStart(e, app.id)}
                           onDragEnd={() => { setDraggedAppId(null); setDragOverSlot(null); }}
+                          onTouchStart={(e) => handleTouchStart(e, app.id)}
+                          onTouchMove={handleTouchMove}
+                          onTouchEnd={handleTouchEnd}
                           onContextMenu={(e) => handleContextMenu(e, app)}
                           onClick={(e) => {
                             e.stopPropagation();
@@ -833,7 +1012,7 @@ export default function CalendarPage() {
                             const isMatched = isAppointmentMatching(app);
                             return `absolute left-2 right-2 rounded-lg pl-5 pr-4 py-2 border select-none overflow-hidden pointer-events-auto group ${
                               isDragging 
-                                ? 'opacity-40 shadow-none' 
+                                ? 'opacity-40 shadow-none pointer-events-none' 
                                 : isMatched 
                                 ? 'hover:scale-[1.01] cursor-grab' 
                                 : 'opacity-15 grayscale pointer-events-none'
@@ -1032,8 +1211,8 @@ export default function CalendarPage() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className={`flex-grow flex flex-col pb-24 lg:pb-6 pt-0 px-4 lg:pl-8 transition-all duration-300 min-h-0 min-w-0 ${
-              isSidebarOpen ? 'lg:pr-96' : 'lg:pr-8'
+            className={`flex-grow flex flex-col pb-24 md:pb-6 pt-0 px-4 md:pl-8 transition-all duration-300 min-h-0 min-w-0 ${
+              isSidebarOpen ? 'pr-4 md:pr-8 lg:pr-96' : 'pr-4 md:pr-8 lg:pr-8'
             }`}
           >
             <div ref={scrollContainerRef} className="mt-3 bg-white border border-[#bfc9c3]/40 rounded-2xl flex-grow overflow-y-auto overflow-x-auto hide-scrollbar pt-0 pb-6 px-0 shadow-none flex flex-col min-h-0 min-w-0">
@@ -1114,7 +1293,9 @@ export default function CalendarPage() {
                             key={hour}
                             onClick={() => handleCellClick(dateStr, hour)}
                             onDragOver={(e) => handleDragOverCell(e, dateStr, hour)}
-                            className="h-[88px] hover:bg-[#003527]/3 transition-colors cursor-pointer"
+                            className="h-[88px] hover:bg-[#003527]/3 transition-colors cursor-pointer calendar-slot"
+                            data-date={dateStr}
+                            data-hour={hour}
                           />
                         );
                       })}
@@ -1137,6 +1318,9 @@ export default function CalendarPage() {
                               draggable={!isResizing && isAppointmentMatching(app)}
                               onDragStart={(e) => handleDragStart(e, app.id)}
                               onDragEnd={() => { setDraggedAppId(null); setDragOverSlot(null); }}
+                              onTouchStart={(e) => handleTouchStart(e, app.id)}
+                              onTouchMove={handleTouchMove}
+                              onTouchEnd={handleTouchEnd}
                               onContextMenu={(e) => handleContextMenu(e, app)}
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -1149,7 +1333,7 @@ export default function CalendarPage() {
                                 const isMatched = isAppointmentMatching(app);
                                 return `absolute left-1 inset-x-1 rounded-lg p-2.5 border select-none overflow-hidden pointer-events-auto group ${
                                   isDragging 
-                                    ? 'opacity-40 shadow-none' 
+                                    ? 'opacity-40 shadow-none pointer-events-none' 
                                     : isMatched 
                                     ? 'hover:scale-[1.01] cursor-grab' 
                                     : 'opacity-15 grayscale pointer-events-none'
@@ -1331,11 +1515,14 @@ export default function CalendarPage() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className={`flex-grow flex flex-col pb-24 lg:pb-6 pt-0 px-4 lg:pl-8 transition-all duration-300 min-h-0 min-w-0 ${
-              isSidebarOpen ? 'lg:pr-96' : 'lg:pr-8'
+            className={`flex-grow flex flex-col pb-24 md:pb-6 pt-0 px-4 md:pl-8 transition-all duration-300 min-h-0 min-w-0 ${
+              isSidebarOpen ? 'pr-4 md:pr-8 lg:pr-96' : 'pr-4 md:pr-8 lg:pr-8'
             }`}
           >
-            <div className="mt-3 bg-zinc-200 border border-zinc-200 rounded-2xl flex-grow overflow-y-auto overflow-x-auto hide-scrollbar grid grid-cols-7 gap-[1px] min-h-0 min-w-[600px] lg:min-w-0">
+            <div 
+              style={{ gridTemplateRows: 'auto repeat(6, 1fr)' }}
+              className="mt-3 bg-zinc-200 border border-zinc-200 rounded-2xl flex-grow overflow-y-auto overflow-x-auto hide-scrollbar grid grid-cols-7 gap-[1px] min-h-0 min-w-[600px] md:min-w-0"
+            >
             {/* Day Headers */}
             {['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map((day) => (
               <div key={day} className="bg-[#f3f4f3] py-2 text-center text-[10px] font-bold text-zinc-400 select-none sticky top-0 z-30">
@@ -1357,9 +1544,11 @@ export default function CalendarPage() {
                   }}
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={(e) => handleMonthCellDrop(e, date)}
-                  className={`bg-white min-h-[100px] p-2 flex flex-col justify-between transition-colors cursor-pointer group hover:bg-[#f9f9f8] ${
+                  className={`bg-white min-h-[100px] p-2 flex flex-col justify-between transition-colors cursor-pointer group hover:bg-[#f9f9f8] calendar-slot ${
                     isCurrentMonth ? '' : 'text-zinc-300'
                   }`}
+                  data-date={date.toISOString().slice(0, 10)}
+                  data-hour="9"
                 >
                   <div className="flex justify-between items-start">
                     <span className={`text-xs font-bold ${
@@ -1383,6 +1572,9 @@ export default function CalendarPage() {
                             setDraggedAppId(app.id);
                           }}
                           onDragEnd={() => setDraggedAppId(null)}
+                          onTouchStart={(e) => handleTouchStart(e, app.id)}
+                          onTouchMove={handleTouchMove}
+                          onTouchEnd={handleTouchEnd}
                           onContextMenu={(e) => handleContextMenu(e, app)}
                           onClick={(e) => {
                             e.stopPropagation();
@@ -1391,7 +1583,11 @@ export default function CalendarPage() {
                             setIsSheetOpen(true);
                           }}
                           className={`px-1.5 py-0.5 rounded text-[8px] font-extrabold truncate border text-left ${
-                            isMatched ? 'hover:scale-[1.01] cursor-pointer' : 'opacity-15 grayscale pointer-events-none'
+                            draggedAppId === app.id
+                              ? 'opacity-40 shadow-none pointer-events-none'
+                              : isMatched 
+                              ? 'hover:scale-[1.01] cursor-pointer' 
+                              : 'opacity-15 grayscale pointer-events-none'
                           } ${
                             !app.clientId
                               ? 'bg-zinc-100/90 border-zinc-200/50 text-zinc-700 font-bold'
@@ -1548,7 +1744,7 @@ export default function CalendarPage() {
       </div>
 
       {/* Mobile Calendar Layout */}
-      <div className="flex lg:hidden flex-col flex-grow overflow-hidden relative select-none">
+      <div className="flex md:hidden flex-col flex-grow overflow-hidden relative select-none">
         
         {/* Header: Month & Year Navigator */}
         <div className="px-6 pt-6 pb-4 flex justify-between items-center bg-transparent flex-shrink-0">
@@ -1591,22 +1787,32 @@ export default function CalendarPage() {
             )}
           </div>
           
-          {/* Calendar Icon Button toggling expanded monthly/yearly stripe */}
-          <button 
-            onClick={() => {
-              if (mobileCalendarMode === 'week') setMobileCalendarMode('month');
-              else if (mobileCalendarMode === 'month') setMobileCalendarMode('year');
-              else setMobileCalendarMode('week');
-            }}
-            className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-center shadow-none ${
-              mobileCalendarMode !== 'week' 
-                ? 'bg-[#003527] border-[#003527] text-white' 
-                : 'bg-white border-[#bfc9c3]/50 text-[#003527] hover:bg-zinc-50'
-            }`}
-            title="Kalenderansicht wechseln"
-          >
-            <CalendarIcon className="w-4 h-4" />
-          </button>
+          {/* Controls: Calendar view toggle & Quick add appointment */}
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => {
+                if (mobileCalendarMode === 'week') setMobileCalendarMode('month');
+                else if (mobileCalendarMode === 'month') setMobileCalendarMode('year');
+                else setMobileCalendarMode('week');
+              }}
+              className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-center shadow-none ${
+                mobileCalendarMode !== 'week' 
+                  ? 'bg-[#003527] border-[#003527] text-white' 
+                  : 'bg-white border-[#bfc9c3]/50 text-[#003527] hover:bg-zinc-50'
+              }`}
+              title="Kalenderansicht wechseln"
+            >
+              <CalendarIcon className="w-4 h-4" />
+            </button>
+
+            <button 
+              onClick={handleNewAppointmentClick}
+              className="p-2.5 rounded-xl border border-[#bfc9c3]/50 bg-white text-[#003527] hover:bg-zinc-50 active:scale-95 transition-all cursor-pointer flex items-center justify-center shadow-none"
+              title="Termin eintragen"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {mobileCalendarMode !== 'year' ? (

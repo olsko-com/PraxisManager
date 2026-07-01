@@ -63,6 +63,8 @@ interface DashboardContextProps {
   setHoveredBarIndex: (index: number | null) => void;
   activeInvoiceActionMenuId: string | null;
   setActiveInvoiceActionMenuId: (id: string | null) => void;
+  getUnbilledAppointments: () => Appointment[];
+  getBilledInvoiceForAppointment: (apptId: string) => Invoice | undefined;
 
   // Toast
   toast: { message: string; type: 'success' | 'info' | 'error' } | null;
@@ -1324,6 +1326,9 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     setNewInvoiceNumber(`RE-2026-${num.toString().padStart(4, '0')}`);
     setNewInvoiceStatus('open');
     setNewInvoiceAppointmentId(prefill.appointmentId);
+    setPrefillInvoice(null);
+    setIsEditingDraft(false);
+    setIsViewingInvoice(false);
     setIsSheetOpen(false);
     setIsNewInvoiceSheetOpen(true);
   };
@@ -1552,6 +1557,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       .from('invoices')
       .update({
         client_id: selectedClient.id,
+        appointment_id: newInvoiceAppointmentId || null,
         invoice_number: invNum,
         amount: amount,
         date: dateVal,
@@ -1577,6 +1583,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
           ...inv,
           clientId: selectedClient.id,
           clientName: selectedClient.name,
+          appointmentId: newInvoiceAppointmentId || null,
           invoiceNumber: invNum,
           amount: amount,
           date: dateVal,
@@ -1633,6 +1640,21 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     showToast('Entwurf gelöscht.', 'success');
     setActiveInvoiceActionMenuId(null);
     return true;
+  };
+
+  const getUnbilledAppointments = () => {
+    const now = new Date();
+    return appointments.filter(app => {
+      if (!app.clientId) return false;
+      if (app.status === 'cancelled') return false;
+      const apptEnd = new Date(app.endTime);
+      if (apptEnd > now) return false;
+      return !invoices.some(inv => inv.appointmentId === app.id && inv.status !== 'cancelled');
+    });
+  };
+
+  const getBilledInvoiceForAppointment = (apptId: string) => {
+    return invoices.find(inv => inv.appointmentId === apptId && inv.status !== 'cancelled');
   };
 
   // Set template text for email writing modal
@@ -2411,6 +2433,8 @@ Vielen Dank fuer Ihr Vertrauen!
       handleCreateInvoice,
       handleUpdateDraftInvoice,
       deleteDraftInvoice,
+      getUnbilledAppointments,
+      getBilledInvoiceForAppointment,
       generateGdprLink,
       deleteService,
       updateService,

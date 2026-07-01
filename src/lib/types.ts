@@ -82,7 +82,7 @@ export interface ClientSnapshot {
 
 export interface Invoice {
   id: string;
-  appointmentId: string;
+  appointmentId?: string | null;
   clientId: string;
   clientName: string;
   invoiceNumber: string;

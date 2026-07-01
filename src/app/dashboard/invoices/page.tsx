@@ -44,7 +44,9 @@ export default function InvoicesPage() {
     setIsEditingDraft,
     isViewingInvoice,
     setIsViewingInvoice,
-    deleteDraftInvoice
+    deleteDraftInvoice,
+    getUnbilledAppointments,
+    openNewInvoiceSheetWithPrefill
   } = useDashboard();
 
   // Timeframe state
@@ -52,6 +54,18 @@ export default function InvoicesPage() {
 
   // Selection state
   const [selectedInvoiceIds, setSelectedInvoiceIds] = useState<string[]>([]);
+  const [showUnbilled, setShowUnbilled] = useState(false);
+
+  React.useEffect(() => {
+    setShowUnbilled(false);
+  }, [invoiceFilter]);
+
+  const getInitials = (name: string) => {
+    if (!name) return '';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + (parts[parts.length - 1]?.[0] || '')).toUpperCase();
+  };
 
   // Filter invoices for list view
   const displayedInvoices = invoices.filter(inv => {
@@ -242,6 +256,100 @@ export default function InvoicesPage() {
     ? `${paidLinePath} L ${getX(chartData.length - 1)},180 L ${getX(0)},180 Z` 
     : '';
 
+  const renderTableBody = () => {
+    if (showUnbilled) {
+      const unbilled = getUnbilledAppointments();
+      if (unbilled.length === 0) {
+        return (
+          <tr>
+            <td colSpan={7} className="py-12 text-center">
+              <div className="flex flex-col items-center justify-center gap-2">
+                <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100 animate-bounce">
+                  <Check className="w-6 h-6 stroke-[2.5]" />
+                </div>
+                <p className="text-sm text-[#003527] font-extrabold mt-2">Hervorragend!</p>
+                <p className="text-xs text-zinc-400 font-semibold max-w-xs leading-normal">
+                  Alle Klienten-Termine wurden erfolgreich abgerechnet. Es gibt momentan keine offenen Leistungen.
+                </p>
+              </div>
+            </td>
+          </tr>
+        );
+      }
+      return unbilled.map((app) => {
+        const apptDate = new Date(app.startTime);
+        const formattedDate = apptDate.toLocaleDateString('de-DE', {
+          day: '2-digit',
+          month: 'long',
+          year: 'numeric'
+        });
+        const duration = Math.round((new Date(app.endTime).getTime() - apptDate.getTime()) / 60000);
+        const startStr = apptDate.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+        const endStr = new Date(apptDate.getTime() + duration * 60000).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+        
+        return (
+          <tr 
+            key={app.id} 
+            className="group/row hover:bg-[#003527]/[0.02] border-b border-[#bfc9c3]/15 transition-all text-left"
+          >
+            {/* 1. Empty checkbox space */}
+            <td className="py-4 pl-5 pr-3 text-left border-b border-zinc-100/50 w-10"></td>
+            
+            {/* 2. Date & Time */}
+            <td className="py-4 px-3 text-left border-b border-zinc-100/50">
+              <p className="text-[#003527] text-xs font-bold">{formattedDate}</p>
+              <p className="text-[10px] text-zinc-400 font-bold mt-0.5">{startStr} - {endStr} Uhr</p>
+            </td>
+            
+            {/* 3. Duration */}
+            <td className="py-4 px-3 text-left border-b border-zinc-100/50 text-zinc-400 font-bold">
+              {duration} Min.
+            </td>
+
+            {/* 4. Client name with initials */}
+            <td className="py-4 px-3 text-left border-b border-zinc-100/50">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-full bg-emerald-500/10 text-emerald-800 flex items-center justify-center text-[10px] font-extrabold flex-shrink-0">
+                  {getInitials(app.clientName)}
+                </div>
+                <span className="text-[#003527] font-extrabold">{app.clientName}</span>
+              </div>
+            </td>
+
+            {/* 5. Service name */}
+            <td className="py-4 px-3 text-left border-b border-zinc-100/50">
+              <span className="text-[#003527]/80">{app.serviceName}</span>
+            </td>
+
+            {/* 6. Price */}
+            <td className="py-4 px-3 text-right border-b border-zinc-100/50 font-mono text-xs text-[#003527]">
+              {app.price.toFixed(2)} €
+            </td>
+
+            {/* 7. Create Invoice Action */}
+            <td className="py-4 pl-3 pr-5 text-right border-b border-zinc-100/50">
+              <button
+                onClick={() => {
+                  openNewInvoiceSheetWithPrefill({
+                    clientId: app.clientId || '',
+                    amount: app.price,
+                    appointmentId: app.id,
+                    clientName: app.clientName,
+                    date: app.startTime.slice(0, 10)
+                  });
+                }}
+                className="bg-[#003527]/5 hover:bg-[#003527] text-[#003527] hover:text-white px-3 py-1.5 rounded-xl text-[10.5px] font-bold transition-all inline-flex items-center gap-1.5 cursor-pointer border border-[#003527]/10 hover:border-[#003527] active:scale-[0.98]"
+              >
+                <Plus className="w-3.5 h-3.5" /> Rechnung schreiben
+              </button>
+            </td>
+          </tr>
+        );
+      });
+    }
+    return null;
+  };
+
   return (
     <div className="relative flex-grow bg-[#eef0ed] rounded-none lg:rounded-[24px] border-0 lg:border border-[#003527]/10 m-0 lg:my-4 lg:mr-4 lg:ml-4 flex flex-col h-[calc(100vh-64px)] lg:h-[calc(100vh-32px)] overflow-hidden shadow-none transition-all duration-300">
       {/* Header Layout (Dashboard Style) */}
@@ -321,7 +429,7 @@ export default function InvoicesPage() {
                 onClick={() => setInvoiceFilter('all')}
                 className="flex items-center gap-2 cursor-pointer bg-transparent border-none p-0 outline-none text-left"
               >
-                <span className={invoiceFilter === 'all' ? 'text-[#003527] font-bold underline decoration-2 underline-offset-8' : 'text-[#003527]/70 font-semibold hover:text-[#003527]'}>
+                <span className={invoiceFilter === 'all' && !showUnbilled ? 'text-[#003527] font-bold underline decoration-2 underline-offset-8' : 'text-[#003527]/70 font-semibold hover:text-[#003527]'}>
                   Gesamt
                 </span>
                 <span className="font-extrabold text-[#003527] bg-[#003527]/5 border border-[#003527]/10 rounded-full px-2.5 py-0.5 text-[11px] font-sans">
@@ -339,7 +447,7 @@ export default function InvoicesPage() {
                 onClick={() => setInvoiceFilter('paid')}
                 className="flex items-center gap-2 cursor-pointer bg-transparent border-none p-0 outline-none text-left"
               >
-                <span className={invoiceFilter === 'paid' ? 'text-[#003527] font-bold underline decoration-2 underline-offset-8' : 'text-[#003527]/70 font-semibold hover:text-[#003527]'}>
+                <span className={invoiceFilter === 'paid' && !showUnbilled ? 'text-[#003527] font-bold underline decoration-2 underline-offset-8' : 'text-[#003527]/70 font-semibold hover:text-[#003527]'}>
                   Bezahlt
                 </span>
                 <span className="font-extrabold text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-0.5 text-[11px] font-sans">
@@ -361,7 +469,7 @@ export default function InvoicesPage() {
                 onClick={() => setInvoiceFilter('open')}
                 className="flex items-center gap-2 cursor-pointer bg-transparent border-none p-0 outline-none text-left"
               >
-                <span className={invoiceFilter === 'open' ? 'text-[#003527] font-bold underline decoration-2 underline-offset-8' : 'text-[#003527]/70 font-semibold hover:text-[#003527]'}>
+                <span className={invoiceFilter === 'open' && !showUnbilled ? 'text-[#003527] font-bold underline decoration-2 underline-offset-8' : 'text-[#003527]/70 font-semibold hover:text-[#003527]'}>
                   Offen
                 </span>
                 <span className="font-extrabold text-amber-800 bg-amber-50 border border-amber-200 rounded-full px-2.5 py-0.5 text-[11px] font-sans">
@@ -383,7 +491,7 @@ export default function InvoicesPage() {
                 onClick={() => setInvoiceFilter('overdue')}
                 className="flex items-center gap-2 cursor-pointer bg-transparent border-none p-0 outline-none text-left"
               >
-                <span className={invoiceFilter === 'overdue' ? 'text-[#003527] font-bold underline decoration-2 underline-offset-8' : 'text-[#003527]/70 font-semibold hover:text-[#003527]'}>
+                <span className={invoiceFilter === 'overdue' && !showUnbilled ? 'text-[#003527] font-bold underline decoration-2 underline-offset-8' : 'text-[#003527]/70 font-semibold hover:text-[#003527]'}>
                   Überfällig
                 </span>
                 <span className="font-extrabold text-rose-800 bg-rose-50 border border-rose-200 rounded-full px-2.5 py-0.5 text-[11px] font-sans">
@@ -405,7 +513,7 @@ export default function InvoicesPage() {
                 onClick={() => setInvoiceFilter('draft')}
                 className="flex items-center gap-2 cursor-pointer bg-transparent border-none p-0 outline-none text-left"
               >
-                <span className={invoiceFilter === 'draft' ? 'text-[#003527] font-bold underline decoration-2 underline-offset-8' : 'text-[#003527]/70 font-semibold hover:text-[#003527]'}>
+                <span className={invoiceFilter === 'draft' && !showUnbilled ? 'text-[#003527] font-bold underline decoration-2 underline-offset-8' : 'text-[#003527]/70 font-semibold hover:text-[#003527]'}>
                   Entwürfe
                 </span>
                 <span className="font-extrabold text-zinc-700 bg-zinc-50 border border-zinc-200 rounded-full px-2.5 py-0.5 text-[11px] font-sans">
@@ -418,6 +526,33 @@ export default function InvoicesPage() {
                 <span className="text-[10px] text-zinc-400 font-medium">
                   ({invoices.filter(inv => inv.status === 'draft').length})
                 </span>
+              </button>
+
+              <div className="w-px h-3 bg-[#bfc9c3]/40 hidden md:block" />
+
+              {/* Filter: Abrechenbare Termine */}
+              <button
+                onClick={() => {
+                  setShowUnbilled(true);
+                  setInvoiceSearch('');
+                }}
+                className="flex items-center gap-2 cursor-pointer bg-transparent border-none p-0 outline-none text-left"
+              >
+                <span className={showUnbilled ? 'text-[#003527] font-bold underline decoration-2 underline-offset-8' : 'text-[#003527]/70 font-semibold hover:text-[#003527]'}>
+                  Abrechenbare Termine
+                </span>
+                {(() => {
+                  const count = getUnbilledAppointments().length;
+                  return count > 0 ? (
+                    <span className="font-extrabold text-amber-800 bg-amber-50 border border-amber-200 rounded-full px-2.5 py-0.5 text-[11px] font-sans animate-pulse">
+                      {count}
+                    </span>
+                  ) : (
+                    <span className="font-extrabold text-zinc-400 bg-zinc-50 border border-zinc-200 rounded-full px-2.5 py-0.5 text-[11px] font-sans">
+                      0
+                    </span>
+                  );
+                })()}
               </button>
             </div>
 
@@ -524,40 +659,52 @@ export default function InvoicesPage() {
           <div className="overflow-x-auto mt-6">
             <table className="w-full text-left text-xs border-separate border-spacing-y-0">
               <thead>
-                <tr className="text-zinc-400 text-[11px] font-semibold">
-                  <th className="pb-3 pt-1 pl-5 pr-3 text-left border-b border-zinc-100 w-10">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (isAllSelected) {
-                          setSelectedInvoiceIds([]);
-                        } else {
-                          setSelectedInvoiceIds(displayedInvoices.map(inv => inv.id));
-                        }
-                      }}
-                      className={`w-4 h-4 rounded border flex items-center justify-center transition-all cursor-pointer outline-none bg-transparent ${
-                        isAllSelected 
-                          ? 'border-[#003527] bg-[#003527] text-white' 
-                          : isSomeSelected
-                          ? 'border-[#003527] bg-white text-[#003527]'
-                          : 'border-[#bfc9c3]/60 hover:border-[#003527]'
-                      }`}
-                    >
-                      {isAllSelected && <Check className="w-3 h-3 stroke-[3]" />}
-                      {isSomeSelected && <div className="w-2 h-0.5 bg-[#003527] rounded-sm" />}
-                    </button>
-                  </th>
-                  <th className="pb-3 pt-1 px-3 text-left border-b border-zinc-100">Rechnungs-Nr.</th>
-                  <th className="pb-3 pt-1 px-3 text-left border-b border-zinc-100">Datum</th>
-                  <th className="pb-3 pt-1 px-3 text-left border-b border-zinc-100">Empfänger</th>
-                  <th className="pb-3 pt-1 px-3 text-left border-b border-zinc-100">Betrag</th>
-                  <th className="pb-3 pt-1 px-3 text-left border-b border-zinc-100">Status</th>
-                  <th className="pb-3 pt-1 pl-3 pr-5 text-right border-b border-zinc-100">Aktionen</th>
-                </tr>
+                {showUnbilled ? (
+                  <tr className="text-zinc-400 text-[11px] font-semibold">
+                    <th className="pb-3 pt-1 pl-5 pr-3 text-left border-b border-zinc-100 w-10"></th>
+                    <th className="pb-3 pt-1 px-3 text-left border-b border-zinc-100">Datum & Uhrzeit</th>
+                    <th className="pb-3 pt-1 px-3 text-left border-b border-zinc-100">Dauer</th>
+                    <th className="pb-3 pt-1 px-3 text-left border-b border-zinc-100">Klient</th>
+                    <th className="pb-3 pt-1 px-3 text-left border-b border-zinc-100">Leistung</th>
+                    <th className="pb-3 pt-1 px-3 text-right border-b border-zinc-100">Betrag</th>
+                    <th className="pb-3 pt-1 pl-3 pr-5 text-right border-b border-zinc-100">Aktion</th>
+                  </tr>
+                ) : (
+                  <tr className="text-zinc-400 text-[11px] font-semibold">
+                    <th className="pb-3 pt-1 pl-5 pr-3 text-left border-b border-zinc-100 w-10">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (isAllSelected) {
+                            setSelectedInvoiceIds([]);
+                          } else {
+                            setSelectedInvoiceIds(displayedInvoices.map(inv => inv.id));
+                          }
+                        }}
+                        className={`w-4 h-4 rounded border flex items-center justify-center transition-all cursor-pointer outline-none bg-transparent ${
+                          isAllSelected 
+                            ? 'border-[#003527] bg-[#003527] text-white' 
+                            : isSomeSelected
+                            ? 'border-[#003527] bg-white text-[#003527]'
+                            : 'border-[#bfc9c3]/60 hover:border-[#003527]'
+                        }`}
+                      >
+                        {isAllSelected && <Check className="w-3 h-3 stroke-[3]" />}
+                        {isSomeSelected && <div className="w-2 h-0.5 bg-[#003527] rounded-sm" />}
+                      </button>
+                    </th>
+                    <th className="pb-3 pt-1 px-3 text-left border-b border-zinc-100">Rechnungs-Nr.</th>
+                    <th className="pb-3 pt-1 px-3 text-left border-b border-zinc-100">Datum</th>
+                    <th className="pb-3 pt-1 px-3 text-left border-b border-zinc-100">Empfänger</th>
+                    <th className="pb-3 pt-1 px-3 text-left border-b border-zinc-100">Betrag</th>
+                    <th className="pb-3 pt-1 px-3 text-left border-b border-zinc-100">Status</th>
+                    <th className="pb-3 pt-1 pl-3 pr-5 text-right border-b border-zinc-100">Aktionen</th>
+                  </tr>
+                )}
               </thead>
               <tbody className="font-bold">
-                {displayedInvoices.map((inv) => {
+                {renderTableBody() || displayedInvoices.map((inv) => {
                   const isSelected = selectedInvoiceIds.includes(inv.id);
                   return (
                     <tr
