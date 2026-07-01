@@ -1022,7 +1022,7 @@ export default function CalendarPage() {
                             const isMatched = isAppointmentMatching(app);
                             return `absolute left-2 right-2 rounded-lg pl-5 pr-4 py-2 border select-none overflow-hidden pointer-events-auto group ${
                               isDragging 
-                                ? 'opacity-40 shadow-none pointer-events-none' 
+                                ? 'opacity-40 shadow-none' 
                                 : isMatched 
                                 ? 'hover:scale-[1.01] cursor-grab' 
                                 : 'opacity-15 grayscale pointer-events-none'
@@ -1343,7 +1343,7 @@ export default function CalendarPage() {
                                 const isMatched = isAppointmentMatching(app);
                                 return `absolute left-1 inset-x-1 rounded-lg p-2.5 border select-none overflow-hidden pointer-events-auto group ${
                                   isDragging 
-                                    ? 'opacity-40 shadow-none pointer-events-none' 
+                                    ? 'opacity-40 shadow-none' 
                                     : isMatched 
                                     ? 'hover:scale-[1.01] cursor-grab' 
                                     : 'opacity-15 grayscale pointer-events-none'
@@ -1594,7 +1594,7 @@ export default function CalendarPage() {
                           }}
                           className={`px-1.5 py-0.5 rounded text-[8px] font-extrabold truncate border text-left ${
                             draggedAppId === app.id
-                              ? 'opacity-40 shadow-none pointer-events-none'
+                              ? 'opacity-40 shadow-none'
                               : isMatched 
                               ? 'hover:scale-[1.01] cursor-pointer' 
                               : 'opacity-15 grayscale pointer-events-none'
