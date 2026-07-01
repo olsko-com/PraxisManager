@@ -1562,8 +1562,8 @@ export default function ClientsPage() {
                                                         <Activity className="w-4 h-4" />
                                                       </div>
                                                       <div className="text-left">
-                                                        <h4 className="font-extrabold text-xs text-[#003527] uppercase tracking-wider">Befinden & Anliegen</h4>
-                                                        <p className="text-[10px] text-zinc-400 font-medium mt-0.5">Zustand und Anliegen verwalten</p>
+                                                        <h4 className="font-extrabold text-xs text-[#003527] uppercase tracking-wider">Aktuelle Beschwerden</h4>
+                                                        <p className="text-[10px] text-zinc-400 font-medium mt-0.5">Beschwerden und Intensität verwalten</p>
                                                       </div>
                                                     </div>
                                                     <button
@@ -1576,7 +1576,7 @@ export default function ClientsPage() {
                                                       className="inline-flex items-center gap-1.5 text-[10px] font-bold bg-[#003527] hover:bg-[#0b513d] text-white px-3 py-1.5 rounded-xl transition-all cursor-pointer border-none shadow-sm active:scale-95"
                                                     >
                                                       <Plus className="w-3.5 h-3.5" />
-                                                      <span>Anliegen</span>
+                                                      <span>Beschwerde</span>
                                                     </button>
                                                   </div>
 
@@ -1724,7 +1724,7 @@ export default function ClientsPage() {
                                                         <Activity className="w-4 h-4" />
                                                       </div>
                                                       <div className="text-left">
-                                                        <h4 className="font-extrabold text-xs text-[#003527] uppercase tracking-wider">Befinden & Anliegen</h4>
+                                                        <h4 className="font-extrabold text-xs text-[#003527] uppercase tracking-wider">Aktuelle Beschwerden</h4>
                                                         <p className="text-[10px] text-zinc-400 font-medium mt-0.5">Subjektives Empfinden & Angaben des Klienten</p>
                                                       </div>
                                                     </div>
