@@ -125,40 +125,52 @@ export default function CranioAnamnesisTab({ clientId, isEditing: propIsEditing,
     data: defaultAnamnesis()
   });
 
-  // Load data when clientId changes
+  // Load data when clientId changes or when custom event fires
   React.useEffect(() => {
     if (!clientId) return;
-    const stored = localStorage.getItem('praxis_manager_cranio_anamnesis');
-    let loadedData = defaultAnamnesis();
-    let shouldEdit = false;
     
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        if (parsed[clientId]) {
-          const raw = parsed[clientId];
-          // Backwards compatibility: convert legacy string surgeries to array of string
-          if (typeof raw.surgeries === 'string') {
-            raw.surgeries = raw.surgeries.trim() ? [raw.surgeries] : [''];
+    const loadData = () => {
+      const stored = localStorage.getItem('praxis_manager_cranio_anamnesis');
+      let loadedData = defaultAnamnesis();
+      let shouldEdit = false;
+      
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          if (parsed[clientId]) {
+            const raw = parsed[clientId];
+            // Backwards compatibility: convert legacy string surgeries to array of string
+            if (typeof raw.surgeries === 'string') {
+              raw.surgeries = raw.surgeries.trim() ? [raw.surgeries] : [''];
+            }
+            loadedData = { ...defaultAnamnesis(), ...raw };
+          } else {
+            shouldEdit = true;
           }
-          loadedData = { ...defaultAnamnesis(), ...raw };
-        } else {
+        } catch (e) {
+          console.error('Error loading anamnesis data:', e);
           shouldEdit = true;
         }
-      } catch (e) {
-        console.error('Error loading anamnesis data:', e);
+      } else {
         shouldEdit = true;
       }
-    } else {
-      shouldEdit = true;
+      
+      if (isAnamnesisEmpty(loadedData)) {
+        shouldEdit = true;
+      }
+      
+      setState({ clientId, data: loadedData });
+      setIsEditing(shouldEdit);
+    };
+
+    loadData();
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('anamnesis_updated', loadData);
+      return () => {
+        window.removeEventListener('anamnesis_updated', loadData);
+      };
     }
-    
-    if (isAnamnesisEmpty(loadedData)) {
-      shouldEdit = true;
-    }
-    
-    setState({ clientId, data: loadedData });
-    setIsEditing(shouldEdit);
   }, [clientId]);
 
   // Debounced auto-save effect

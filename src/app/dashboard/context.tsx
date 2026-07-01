@@ -1796,6 +1796,8 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const saveSoapNote = async () => {
     if (!soapEditId || !therapistId) return;
 
+    const noteToEdit = soapNotes.find(n => n.id === soapEditId);
+
     const { error } = await supabase
       .from('soap_notes')
       .update({
@@ -1827,6 +1829,70 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     }));
     setSoapEditId(null);
     showToast('Therapiebericht erfolgreich gespeichert.', 'success');
+
+    // Sync complaints to Anamnesis
+    try {
+      if (noteToEdit?.clientId) {
+        const parsedSubjective = JSON.parse(soapSubjective);
+        const soapComplaints = Array.isArray(parsedSubjective.complaints) ? parsedSubjective.complaints : [];
+        
+        if (soapComplaints.length > 0) {
+          const stored = localStorage.getItem('praxis_manager_cranio_anamnesis');
+          let parsed = stored ? JSON.parse(stored) : {};
+          let clientAnamnesis = parsed[noteToEdit.clientId] || {
+            complaints: [{ description: '', painLevel: 5 }],
+            treatmentGoal: '',
+            resources: '',
+            diseases: [],
+            otherDiseases: '',
+            accidents: '',
+            otherIllnesses: '',
+            eventfulEvents: '',
+            surgeries: [''],
+            longtermCortison: false,
+            longtermRheuma: false,
+            otherLongtermMeds: '',
+            currentMeds: '',
+            emotionalHospitalization: '',
+            emotionalMeds: '',
+            birthKomplications: '',
+            pregnant: '',
+            miscarriages: '',
+            cranioExperience: ''
+          };
+
+          let existingComplaints = Array.isArray(clientAnamnesis.complaints) 
+            ? clientAnamnesis.complaints.filter((c: any) => c.description && c.description.trim() !== '') 
+            : [];
+
+          let addedAny = false;
+          soapComplaints.forEach((soapC: any) => {
+            if (soapC.description && soapC.description.trim() !== '') {
+              const trimmedDesc = soapC.description.trim().toLowerCase();
+              const exists = existingComplaints.some((existC: any) => existC.description.trim().toLowerCase() === trimmedDesc);
+              if (!exists) {
+                existingComplaints.push({
+                  description: soapC.description.trim(),
+                  painLevel: soapC.painLevel
+                });
+                addedAny = true;
+              }
+            }
+          });
+
+          if (addedAny) {
+            clientAnamnesis.complaints = existingComplaints;
+            parsed[noteToEdit.clientId] = clientAnamnesis;
+            localStorage.setItem('praxis_manager_cranio_anamnesis', JSON.stringify(parsed));
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new Event('anamnesis_updated'));
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Error syncing SOAP complaints to Anamnesis:', e);
+    }
   };
 
   const createSoapNote = async (appId: string, cliId: string) => {
