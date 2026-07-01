@@ -43,7 +43,8 @@ export default function CalendarPage() {
     selectedMailAppointmentId,
     setSelectedMailAppointmentId,
     isMailModalOpen,
-    setIsMailModalOpen
+    setIsMailModalOpen,
+    updateAppointment
   } = useDashboard();
 
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(true);
@@ -153,21 +154,30 @@ export default function CalendarPage() {
     setIsSheetOpen(true);
   };
 
-  const commitPendingMove = (sendEmailFlag: boolean, sendSmsFlag: boolean) => {
+  const commitPendingMove = async (sendEmailFlag: boolean, sendSmsFlag: boolean) => {
     if (!pendingMove) return;
 
     const app = appointments.find(a => a.id === pendingMove.appId);
-    if (app && (sendEmailFlag || sendSmsFlag)) {
-      const client = clients.find(c => c.id === app.clientId);
-      
-      const sentMethods = [];
-      if (sendEmailFlag && client?.email) sentMethods.push("E-Mail");
-      if (sendSmsFlag && client?.phone) sentMethods.push("SMS");
-      
-      if (sentMethods.length > 0) {
-        showToast(`Terminbestätigung an ${app.clientName} per ${sentMethods.join(" & ")} wurde gesendet!`, 'success');
-      } else {
-        showToast(`Termin verschoben (ohne Benachrichtigung).`, 'info');
+    if (app) {
+      // Persist the reschedule to Supabase database
+      await updateAppointment({
+        ...app,
+        startTime: pendingMove.newStartTime,
+        endTime: pendingMove.newEndTime
+      });
+
+      if (sendEmailFlag || sendSmsFlag) {
+        const client = clients.find(c => c.id === app.clientId);
+        
+        const sentMethods = [];
+        if (sendEmailFlag && client?.email) sentMethods.push("E-Mail");
+        if (sendSmsFlag && client?.phone) sentMethods.push("SMS");
+        
+        if (sentMethods.length > 0) {
+          showToast(`Terminbestätigung an ${app.clientName} per ${sentMethods.join(" & ")} wurde gesendet!`, 'success');
+        } else {
+          showToast(`Termin verschoben (ohne Benachrichtigung).`, 'info');
+        }
       }
     }
 
