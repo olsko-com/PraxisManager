@@ -1363,6 +1363,14 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
     const num = invoices.length + 1;
     const invNum = newInvoiceNumber.trim() || `RE-2026-${num.toString().padStart(4, '0')}`;
+
+    // Prevent duplicate invoice numbers (GoBD compliance)
+    const isDuplicate = invoices.some(i => i.invoiceNumber.trim().toLowerCase() === invNum.trim().toLowerCase());
+    if (isDuplicate) {
+      showToast(`Die Rechnungsnummer "${invNum}" ist bereits vergeben. Bitte wählen Sie eine andere Nummer.`, 'error');
+      return false;
+    }
+
     const dateVal = newInvoiceDate || new Date().toISOString().slice(0, 10);
     const invoiceId = crypto.randomUUID();
     const apptId = newInvoiceAppointmentId || null;
