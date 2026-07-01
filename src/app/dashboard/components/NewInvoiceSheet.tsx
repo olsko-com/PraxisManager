@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { 
-  X, ZoomOut, ZoomIn, ChevronDown, Plus, Trash2, Check, Search 
+  X, ZoomOut, ZoomIn, ChevronDown, Plus, Trash2, Check, Search, AlertCircle, Calendar 
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useDashboard } from '../context';
@@ -18,9 +18,16 @@ export default function NewInvoiceSheet() {
   const {
     isNewInvoiceSheetOpen,
     setIsNewInvoiceSheetOpen,
+    prefillInvoice,
+    setPrefillInvoice,
     therapistName,
     address,
     phone,
+    taxNumber,
+    vatId,
+    iban,
+    bic,
+    isSmallBusiness,
     clients,
     invoices,
     setNewInvoiceClientId,
@@ -43,12 +50,14 @@ export default function NewInvoiceSheet() {
   } = useDashboard();
 
   // Local state for line items in the invoice creator
-  const [lineItems, setLineItems] = React.useState<{ id: string; description: string; price: number }[]>([]);
+  const [lineItems, setLineItems] = React.useState<{ id: string; description: string; price: number; taxRate: number }[]>([]);
 
   // Local state for patient dropdown and invoice due date
   const [isClientDropdownOpen, setIsClientDropdownOpen] = React.useState(false);
   const [sidebarClientSearch, setSidebarClientSearch] = React.useState('');
   const [newInvoiceDueDate, setNewInvoiceDueDate] = React.useState('');
+  const [serviceDate, setServiceDate] = React.useState('');
+  const [notes, setNotes] = React.useState('');
   const dropdownRef = React.useRef<HTMLDivElement>(null);
 
   // Local state for canvas patient autocomplete search
@@ -160,14 +169,43 @@ export default function NewInvoiceSheet() {
     }
   };
 
+  const hasInitializedRef = React.useRef(false);
+
   // Synchronize line items when the invoice modal opens
   React.useEffect(() => {
     if (isNewInvoiceSheetOpen) {
+      if (hasInitializedRef.current) return;
+      hasInitializedRef.current = true;
+
+      if (prefillInvoice) {
+        setNewInvoiceClientId(prefillInvoice.clientId);
+        setServiceDate(prefillInvoice.serviceDate || '');
+        setNotes(prefillInvoice.notes || '');
+        // Map line items back to positive values (absolute value) if they are copied from a storno
+        const copiedItems = (prefillInvoice.lineItems || []).map((item, idx) => ({
+          id: item.id || String(idx + 1),
+          description: item.description,
+          price: Math.abs(item.price),
+          taxRate: item.taxRate || 0
+        }));
+        setLineItems(copiedItems);
+        return;
+      }
+
+      // Initialize serviceDate & notes
+      const today = new Date();
+      const monthNames = [
+        "Januar", "Februar", "März", "April", "Mai", "Juni", 
+        "Juli", "August", "September", "Oktober", "November", "Dezember"
+      ];
+      setServiceDate(`${monthNames[today.getMonth()]} ${today.getFullYear()}`);
+      setNotes('');
+
       if (newInvoiceAppointmentId) {
         const app = appointments.find(a => a.id === newInvoiceAppointmentId);
         if (app) {
           setLineItems([
-            { id: '1', description: app.serviceName, price: app.price }
+            { id: '1', description: app.serviceName, price: app.price, taxRate: 0 }
           ]);
           return;
         }
@@ -175,26 +213,36 @@ export default function NewInvoiceSheet() {
       
       if (newInvoiceAmount) {
         setLineItems([
-          { id: '1', description: 'Behandlung / Leistung', price: parseFloat(newInvoiceAmount.replace(',', '.')) || 0 }
+          { id: '1', description: 'Behandlung / Leistung', price: parseFloat(newInvoiceAmount.replace(',', '.')) || 0, taxRate: 0 }
         ]);
         return;
       }
 
       setLineItems([
-        { id: '1', description: 'Physiotherapeutische Behandlung', price: 0 }
+        { id: '1', description: 'Physiotherapeutische Behandlung', price: 0, taxRate: 0 }
       ]);
     } else {
+      hasInitializedRef.current = false;
       setLineItems([]);
     }
-  }, [isNewInvoiceSheetOpen, newInvoiceAppointmentId, newInvoiceAmount, appointments]);
+  }, [isNewInvoiceSheetOpen, newInvoiceAppointmentId, newInvoiceAmount, appointments, prefillInvoice, setNewInvoiceClientId]);
 
-  // Compute total dynamically
-  const calculatedTotal = lineItems.reduce((sum, item) => sum + item.price, 0);
+  // Compute totals dynamically
+  const netTotal = lineItems.reduce((sum, item) => sum + item.price, 0);
+  const taxTotal = isSmallBusiness 
+    ? 0 
+    : lineItems.reduce((sum, item) => sum + (item.price * ((item.taxRate || 0) / 100)), 0);
+  const grossTotal = netTotal + taxTotal;
+
+  const isProfileIncomplete = !iban || !bic || !taxNumber;
+  const isClientAddressIncomplete = selectedClientForInvoice 
+    ? !(selectedClientForInvoice.street?.trim() && selectedClientForInvoice.houseNumber?.trim() && selectedClientForInvoice.zipCode?.trim() && selectedClientForInvoice.city?.trim()) 
+    : false;
 
   // Sync computed total back to context newInvoiceAmount state
   React.useEffect(() => {
-    setNewInvoiceAmount(calculatedTotal.toFixed(2));
-  }, [calculatedTotal, setNewInvoiceAmount]);
+    setNewInvoiceAmount(grossTotal.toFixed(2));
+  }, [grossTotal, setNewInvoiceAmount]);
 
   if (!isNewInvoiceSheetOpen) return null;
 
@@ -205,7 +253,13 @@ export default function NewInvoiceSheet() {
       exit={{ opacity: 0, y: 15 }}
       className="fixed inset-0 bg-[#f9f9f8] z-[150] flex flex-col overflow-hidden text-left font-sans"
     >
-      <form onSubmit={handleCreateInvoice} className="h-full w-full flex flex-col overflow-hidden">
+      <style>{`
+        .no-datepicker-icon::-webkit-calendar-picker-indicator {
+          display: none !important;
+          -webkit-appearance: none !important;
+        }
+      `}</style>
+      <form onSubmit={(e) => handleCreateInvoice(e, lineItems, newInvoiceDueDate, serviceDate, notes)} className="h-full w-full flex flex-col overflow-hidden">
         {/* Split Workspace */}
         <div className="flex-grow flex min-h-0 overflow-hidden relative">
           {/* Floating exit button */}
@@ -290,10 +344,25 @@ export default function NewInvoiceSheet() {
                         {(() => {
                           const client = clients.find(c => c.id === newInvoiceClientId);
                           if (client) {
+                            const hasStreet = !!(client.street?.trim() && client.houseNumber?.trim());
+                            const hasCity = !!(client.zipCode?.trim() && client.city?.trim());
                             return (
-                              <div className="space-y-0.5 text-xs text-zinc-400 font-semibold pl-2 transition-all animate-in fade-in duration-200">
-                                <p className="text-[11px]">{client.email}</p>
-                                <p className="text-[11px]">{client.phone}</p>
+                              <div className="space-y-0.5 text-xs text-zinc-500 font-semibold pl-2 transition-all animate-in fade-in duration-200">
+                                {hasStreet ? (
+                                  <p className="text-[11px] text-zinc-600">{client.street} {client.houseNumber}</p>
+                                ) : (
+                                  <p className="text-[11px] text-red-500 inline-flex items-center gap-1 select-none animate-pulse">
+                                    <AlertCircle className="w-2.5 h-2.5" /> Straße / Hausnummer fehlt
+                                  </p>
+                                )}
+                                {hasCity ? (
+                                  <p className="text-[11px] text-zinc-600">{client.zipCode} {client.city}</p>
+                                ) : (
+                                  <p className="text-[11px] text-red-500 inline-flex items-center gap-1 select-none animate-pulse">
+                                    <AlertCircle className="w-2.5 h-2.5" /> PLZ / Ort fehlt
+                                  </p>
+                                )}
+                                <p className="text-[10px] text-zinc-400 mt-1">{client.email} | {client.phone}</p>
                               </div>
                             );
                           }
@@ -327,9 +396,13 @@ export default function NewInvoiceSheet() {
                           }
 
                           return (
-                            <p className="text-[10px] text-amber-600 font-semibold pl-2 italic">
-                              Bitte Namen eingeben, um Klienten auszuwählen.
-                            </p>
+                            <div className="space-y-0.5 text-xs text-zinc-300 font-semibold pl-2 select-none">
+                              <p className="text-[11px] text-zinc-300/60">[Straße & Hausnummer]</p>
+                              <p className="text-[11px] text-zinc-300/60">[PLZ & Ort]</p>
+                              <p className="text-[10px] text-amber-600/80 font-bold mt-1.5 animate-pulse">
+                                ⚠️ Bitte Namen eingeben, um Klienten auszuwählen
+                              </p>
+                            </div>
                           );
                         })()}
                       </div>
@@ -344,32 +417,48 @@ export default function NewInvoiceSheet() {
                               required
                               value={newInvoiceNumber}
                               onChange={(e) => setNewInvoiceNumber(e.target.value)}
-                              className="w-32 bg-transparent border border-transparent hover:border-zinc-200 focus:border-[#003527] focus:bg-[#003527]/5 px-2 py-1 outline-none font-bold text-xs text-right text-[#003527] transition-all rounded-lg"
+                              className="w-28 bg-transparent border border-transparent hover:border-zinc-200 focus:border-[#003527] focus:bg-[#003527]/5 px-2 py-1 outline-none font-bold text-xs text-right text-[#003527] transition-all rounded-lg"
                             />
                           </div>
                           <div className="flex items-center justify-between gap-4">
                             <span className="text-[9px] text-zinc-400 uppercase font-bold tracking-wider">Datum</span>
-                            <input
-                              type="date"
-                              required
-                              value={newInvoiceDate}
-                              onChange={(e) => setNewInvoiceDate(e.target.value)}
-                              className="w-32 bg-transparent border border-transparent hover:border-zinc-200 focus:border-[#003527] focus:bg-[#003527]/5 px-2 py-1 outline-none font-bold text-xs text-right text-[#003527] transition-all rounded-lg animate-none"
-                            />
+                            <div className="relative w-28">
+                              <input
+                                type="date"
+                                required
+                                value={newInvoiceDate}
+                                onChange={(e) => setNewInvoiceDate(e.target.value)}
+                                onClick={(e) => {
+                                  try {
+                                    e.currentTarget.showPicker();
+                                  } catch (err) {}
+                                }}
+                                className="w-full bg-transparent border border-transparent hover:border-zinc-200 focus:border-[#003527] focus:bg-[#003527]/5 pl-2 pr-6 py-1 outline-none font-bold text-xs text-right text-[#003527] transition-all rounded-lg animate-none no-datepicker-icon cursor-pointer"
+                              />
+                              <Calendar className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#003527]/40 pointer-events-none" />
+                            </div>
                           </div>
                           <div className="flex items-center justify-between gap-4">
-                            <span className="text-[9px] text-zinc-400 uppercase font-bold tracking-wider">Zahlungsziel</span>
-                            <div className="flex items-center gap-1.5 justify-end">
-                              <span className="text-[10px] text-zinc-400 font-semibold pr-1">
+                            <div className="flex flex-col items-start text-left">
+                              <span className="text-[9px] text-zinc-400 uppercase font-bold tracking-wider">Zahlungsziel</span>
+                              <span className="text-[8.5px] text-zinc-400 font-semibold leading-none mt-0.5">
                                 ({getDaysDifference(newInvoiceDate || new Date().toISOString().slice(0, 10), newInvoiceDueDate)} Tage)
                               </span>
+                            </div>
+                            <div className="relative w-28">
                               <input
                                 type="date"
                                 required
                                 value={newInvoiceDueDate}
                                 onChange={(e) => setNewInvoiceDueDate(e.target.value)}
-                                className="w-32 bg-transparent border border-transparent hover:border-zinc-200 focus:border-[#003527] focus:bg-[#003527]/5 px-2 py-1 outline-none font-bold text-xs text-right text-[#003527] transition-all rounded-lg"
+                                onClick={(e) => {
+                                  try {
+                                    e.currentTarget.showPicker();
+                                  } catch (err) {}
+                                }}
+                                className="w-full bg-transparent border border-transparent hover:border-zinc-200 focus:border-[#003527] focus:bg-[#003527]/5 pl-2 pr-6 py-1 outline-none font-bold text-xs text-right text-[#003527] transition-all rounded-lg no-datepicker-icon cursor-pointer"
                               />
+                              <Calendar className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#003527]/40 pointer-events-none" />
                             </div>
                           </div>
                         </div>
@@ -384,6 +473,7 @@ export default function NewInvoiceSheet() {
                           <tr className="text-zinc-400 font-bold uppercase tracking-wider text-[9px] border-b border-[#bfc9c3]/20">
                             <th className="py-2 w-12 font-bold">Pos.</th>
                             <th className="py-2 font-bold">Leistungsbeschreibung</th>
+                            {!isSmallBusiness && <th className="py-2 text-right w-20 font-bold">USt.</th>}
                             <th className="py-2 text-right w-28 font-bold">Betrag</th>
                             <th className="py-2 text-right w-10"></th>
                           </tr>
@@ -405,6 +495,23 @@ export default function NewInvoiceSheet() {
                                   placeholder="z.B. Osteopathische Behandlung"
                                 />
                               </td>
+                              {!isSmallBusiness && (
+                                <td className="py-2 text-right">
+                                  <select
+                                    value={item.taxRate}
+                                    onChange={(e) => {
+                                      const rate = parseInt(e.target.value) || 0;
+                                      const updated = lineItems.map(li => li.id === item.id ? { ...li, taxRate: rate } : li);
+                                      setLineItems(updated);
+                                    }}
+                                    className="bg-transparent border border-transparent hover:border-zinc-200 focus:border-[#003527] px-1.5 py-1 outline-none text-xs font-bold text-[#003527] rounded cursor-pointer"
+                                  >
+                                    <option value={0}>0%</option>
+                                    <option value={7}>7%</option>
+                                    <option value={19}>19%</option>
+                                  </select>
+                                </td>
+                              )}
                               <td className="py-2 text-right">
                                 <div className="inline-flex items-center justify-end">
                                   <input
@@ -448,7 +555,7 @@ export default function NewInvoiceSheet() {
                         onClick={() => {
                           setLineItems([
                             ...lineItems,
-                            { id: `li-${Date.now()}`, description: 'Neue Leistung', price: 0 }
+                            { id: `li-${Date.now()}`, description: 'Neue Leistung', price: 0, taxRate: 0 }
                           ]);
                         }}
                         className="w-full mt-4 border border-dashed border-[#003527]/20 hover:border-[#003527]/40 bg-[#003527]/5 hover:bg-[#003527]/10 text-[#003527] px-4 py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-[0.99]"
@@ -461,24 +568,74 @@ export default function NewInvoiceSheet() {
                   {/* DINA4 Footer & Total Block */}
                   <div className="mt-16 space-y-12">
                     {/* Total Sum */}
-                    <div className="flex justify-end items-baseline gap-4 border-t border-[#bfc9c3]/20 pt-6">
-                      <span className="text-zinc-400 text-xs font-bold uppercase tracking-wider">Gesamtsumme:</span>
-                      <span className="text-2xl font-extrabold text-[#003527] font-serif">{calculatedTotal.toFixed(2)} €</span>
-                    </div>
+                    {isSmallBusiness ? (
+                      <div className="border-t border-[#bfc9c3]/20 pt-6 flex flex-col items-end gap-2">
+                        <div className="flex justify-end items-baseline gap-4">
+                          <span className="text-zinc-400 text-xs font-bold uppercase tracking-wider">Gesamtsumme:</span>
+                          <span className="text-2xl font-extrabold text-[#003527] font-serif">{grossTotal.toFixed(2)} €</span>
+                        </div>
+                        <p className="text-[9.5px] text-zinc-500 font-bold italic mt-1 text-right w-full">
+                          Kein Ausweis der Umsatzsteuer aufgrund der Anwendung der Kleinunternehmerregelung gem. § 19 UStG.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="border-t border-[#bfc9c3]/20 pt-6 flex justify-end">
+                        <div className="space-y-1.5 text-right w-full max-w-[280px] text-[#003527]">
+                          <div className="flex justify-between text-xs font-semibold text-zinc-500">
+                            <span>Netto:</span>
+                            <span>{netTotal.toFixed(2)} €</span>
+                          </div>
+                          <div className="flex justify-between text-xs font-semibold text-zinc-500">
+                            <span>Umsatzsteuer:</span>
+                            <span>{taxTotal.toFixed(2)} €</span>
+                          </div>
+                          <div className="flex justify-between items-baseline gap-4 pt-1.5 border-t border-[#bfc9c3]/10">
+                            <span className="text-[#003527] text-xs font-extrabold uppercase tracking-wider">Brutto-Gesamtsumme:</span>
+                            <span className="text-xl font-extrabold text-[#003527] font-serif">{grossTotal.toFixed(2)} €</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Bottom Payment Terms details */}
-                    <div className="border-t border-[#bfc9c3]/20 pt-6 space-y-3">
+                    <div className="border-t border-[#bfc9c3]/20 pt-6 space-y-3 text-left">
                       <p className="text-[10px] text-zinc-500 font-medium leading-relaxed">
-                        Bitte überweisen Sie den Rechnungsbetrag von <strong className="text-[#003527]">{calculatedTotal.toFixed(2)} €</strong> bis zum <strong className="text-[#003527]">{formatDateGerman(newInvoiceDueDate)}</strong> (innerhalb von {getDaysDifference(newInvoiceDate || new Date().toISOString().slice(0, 10), newInvoiceDueDate)} Tagen) unter Angabe der Rechnungsnummer <strong className="text-[#003527]">{newInvoiceNumber}</strong> auf das unten aufgeführte Praxiskonto.
+                        Bitte überweisen Sie den Rechnungsbetrag von <strong className="text-[#003527]">{grossTotal.toFixed(2)} €</strong> bis zum <strong className="text-[#003527]">{formatDateGerman(newInvoiceDueDate)}</strong> (innerhalb von {getDaysDifference(newInvoiceDate || new Date().toISOString().slice(0, 10), newInvoiceDueDate)} Tagen) unter Angabe der Rechnungsnummer <strong className="text-[#003527]">{newInvoiceNumber}</strong> auf das unten aufgeführte Praxiskonto.
+                        {" "}Wir weisen darauf hin, dass Sie gemäß § 286 Abs. 3 BGB auch ohne gesonderte Mahnung in Verzug geraten, wenn Sie die Zahlung nicht innerhalb von 30 Tagen nach Fälligkeit und Zugang dieser Rechnung leisten.
                       </p>
                       <div className="grid grid-cols-2 gap-4 text-[9px] text-zinc-400 font-semibold border-t border-[#bfc9c3]/10 pt-3">
-                        <div className="space-y-0.5">
+                        <div className="space-y-0.5 text-left">
                           <p>Inhaber: {therapistName}</p>
-                          <p>Steuernummer: 12/345/67890</p>
+                          <p>
+                            Steuernummer: {taxNumber ? (
+                              taxNumber
+                            ) : (
+                              <span className="text-red-500 font-extrabold select-none animate-pulse inline-flex items-center gap-1 align-middle">
+                                <AlertCircle className="w-3 h-3" /> Steuernummer fehlt
+                              </span>
+                            )}
+                          </p>
+                          {vatId && <p>USt-IdNr.: {vatId}</p>}
                         </div>
                         <div className="space-y-0.5 text-right">
-                          <p>IBAN: DE89 5003 0000 1234 5678 90</p>
-                          <p>BIC: WELADED1XXX</p>
+                          <p>
+                            IBAN: {iban ? (
+                              iban
+                            ) : (
+                              <span className="text-red-500 font-extrabold inline-flex items-center gap-1 select-none animate-pulse align-middle justify-end">
+                                <AlertCircle className="w-3 h-3" /> IBAN fehlt
+                              </span>
+                            )}
+                          </p>
+                          <p>
+                            BIC: {bic ? (
+                              bic
+                            ) : (
+                              <span className="text-red-500 font-extrabold inline-flex items-center gap-1 select-none animate-pulse align-middle justify-end">
+                                <AlertCircle className="w-3 h-3" /> BIC fehlt
+                              </span>
+                            )}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -662,9 +819,110 @@ export default function NewInvoiceSheet() {
                   </select>
                 </div>
 
+                <div className="space-y-2">
+                  <label className="block text-[10px] font-bold text-[#003527]/70 uppercase tracking-widest">Leistungszeitraum</label>
+                  <input
+                    type="text"
+                    required
+                    value={serviceDate}
+                    onChange={(e) => setServiceDate(e.target.value)}
+                    placeholder="z.B. Juni 2026 oder 15.06.2026"
+                    className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-2xl px-4 py-3 font-bold text-xs text-[#003527] outline-none focus:border-[#003527] focus:ring-1 focus:ring-[#003527] transition-all text-left"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-[10px] font-bold text-[#003527]/70 uppercase tracking-widest">Zahlungshinweis / Notiz</label>
+                  <textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Zusätzliche Infos..."
+                    className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-2xl px-4 py-2.5 font-bold text-xs text-[#003527] outline-none focus:border-[#003527] focus:ring-1 focus:ring-[#003527] transition-all resize-none h-20"
+                  />
+                </div>
+
+                {/* Checklist of missing fields */}
+                {(isProfileIncomplete || isClientAddressIncomplete) && (
+                  <div className="bg-rose-50/40 border border-rose-200/50 rounded-2xl p-4 text-left space-y-3 mb-1 select-none">
+                    <p className="text-[10px] font-extrabold text-rose-800 uppercase tracking-wider flex items-center gap-1.5 border-b border-rose-200/40 pb-2">
+                      <AlertCircle className="w-3.5 h-3.5 text-rose-600 shrink-0" /> Offene Pflichtangaben
+                    </p>
+                    <ul className="space-y-2 text-[10px] text-rose-900/80 font-bold">
+                      {!taxNumber && (
+                        <li className="flex items-center justify-between gap-2">
+                          <span className="flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" /> Steuernummer fehlt
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsNewInvoiceSheetOpen(false);
+                              window.location.href = '/dashboard/settings';
+                            }}
+                            className="text-rose-800 hover:text-rose-950 font-extrabold hover:underline cursor-pointer border-none bg-transparent p-0 flex-shrink-0"
+                          >
+                            Hinzufügen →
+                          </button>
+                        </li>
+                      )}
+                      {(!iban || !bic) && (
+                        <li className="flex items-center justify-between gap-2">
+                          <span className="flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" /> Bankverbindung fehlt
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsNewInvoiceSheetOpen(false);
+                              window.location.href = '/dashboard/settings';
+                            }}
+                            className="text-rose-800 hover:text-rose-950 font-extrabold hover:underline cursor-pointer border-none bg-transparent p-0 flex-shrink-0"
+                          >
+                            Hinzufügen →
+                          </button>
+                        </li>
+                      )}
+                      {selectedClientForInvoice && !(selectedClientForInvoice.street?.trim() && selectedClientForInvoice.houseNumber?.trim()) && (
+                        <li className="flex items-center justify-between gap-2">
+                          <span className="flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" /> Klienten-Straße fehlt
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsNewInvoiceSheetOpen(false);
+                              window.location.href = `/dashboard/clients`;
+                            }}
+                            className="text-rose-800 hover:text-rose-950 font-extrabold hover:underline cursor-pointer border-none bg-transparent p-0 flex-shrink-0"
+                          >
+                            Hinzufügen →
+                          </button>
+                        </li>
+                      )}
+                      {selectedClientForInvoice && !(selectedClientForInvoice.zipCode?.trim() && selectedClientForInvoice.city?.trim()) && (
+                        <li className="flex items-center justify-between gap-2">
+                          <span className="flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" /> Klienten-PLZ/Ort fehlt
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsNewInvoiceSheetOpen(false);
+                              window.location.href = `/dashboard/clients`;
+                            }}
+                            className="text-rose-800 hover:text-rose-950 font-extrabold hover:underline cursor-pointer border-none bg-transparent p-0 flex-shrink-0"
+                          >
+                            Hinzufügen →
+                          </button>
+                        </li>
+                      )}
+                    </ul>
+                  </div>
+                )}
+
                 <div className="bg-[#f9f9f8] border border-[#bfc9c3]/30 p-4 rounded-2xl text-[10px] text-zinc-400 font-bold space-y-1">
                   <p className="text-[#003527] uppercase tracking-wider text-[8px] mb-1">Berechneter Gesamtbetrag</p>
-                  <p className="text-base font-extrabold text-[#003527]">{calculatedTotal.toFixed(2)} €</p>
+                  <p className="text-base font-extrabold text-[#003527]">{grossTotal.toFixed(2)} €</p>
                   <p className="font-semibold text-zinc-400">({lineItems.length} Position(en))</p>
                 </div>
               </div>

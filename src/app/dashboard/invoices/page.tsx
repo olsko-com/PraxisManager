@@ -28,6 +28,9 @@ export default function InvoicesPage() {
     openNewInvoiceSheet,
     isInvoiceMenuOpen,
     setIsInvoiceMenuOpen,
+    isNewInvoiceSheetOpen,
+    setIsNewInvoiceSheetOpen,
+    setPrefillInvoice,
     exportInvoicesCsv,
     sendInvoiceEmail,
     downloadInvoicePdf,
@@ -553,21 +556,42 @@ export default function InvoicesPage() {
                           {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
                         </div>
                       </td>
-                      <td className="py-3.5 px-3 font-mono border-b border-zinc-100 group-last:border-b-0 group-hover:bg-[#003527]/3 transition-colors text-left">{inv.invoiceNumber}</td>
+                      <td className="py-3.5 px-3 font-mono border-b border-zinc-100 group-last:border-b-0 group-hover:bg-[#003527]/3 transition-colors text-left">
+                        <div className="font-semibold text-zinc-800">{inv.invoiceNumber}</div>
+                        {inv.relatedInvoiceId && (() => {
+                          const rel = invoices.find(i => i.id === inv.relatedInvoiceId);
+                          return rel ? (
+                            <div className="text-[9px] font-bold text-zinc-400 mt-0.5 uppercase tracking-wide">
+                              {inv.invoiceNumber.startsWith('ST-') ? 'Storno für ' : 'Storniert durch '}{rel.invoiceNumber}
+                            </div>
+                          ) : null;
+                        })()}
+                        {!inv.relatedInvoiceId && (() => {
+                          const storno = invoices.find(i => i.relatedInvoiceId === inv.id);
+                          return storno ? (
+                            <div className="text-[9px] font-bold text-rose-500/75 mt-0.5 uppercase tracking-wide">
+                              Storniert durch {storno.invoiceNumber}
+                            </div>
+                          ) : null;
+                        })()}
+                      </td>
                       <td className="py-3.5 px-3 font-semibold text-zinc-400 border-b border-zinc-100 group-last:border-b-0 group-hover:bg-[#003527]/3 transition-colors text-left">{new Date(inv.date).toLocaleDateString('de-DE')}</td>
                       <td className="py-3.5 px-3 border-b border-zinc-100 group-last:border-b-0 group-hover:bg-[#003527]/3 transition-colors text-left">{inv.clientName}</td>
                       <td className="py-3.5 px-3 font-semibold text-xs border-b border-zinc-100 group-last:border-b-0 group-hover:bg-[#003527]/3 transition-colors text-left">{inv.amount.toFixed(2)} €</td>
                       <td className="py-3.5 px-3 border-b border-zinc-100 group-last:border-b-0 group-hover:bg-[#003527]/3 transition-colors text-left">
                         <span className={`px-3 py-1 rounded-full text-[9px] font-extrabold uppercase border ${
                           inv.status === 'paid'
-                            ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                            ? (inv.invoiceNumber.startsWith('ST-') ? 'bg-zinc-50 border-zinc-200 text-zinc-500' : 'bg-emerald-50 border-emerald-200 text-emerald-800')
                             : inv.status === 'overdue'
                             ? 'bg-rose-50 border-rose-200 text-rose-800'
+                            : inv.status === 'cancelled'
+                            ? 'bg-zinc-50 border-zinc-200 text-zinc-400 line-through'
                             : 'bg-amber-50 border-amber-200 text-amber-800'
                         }`}>
-                          {inv.status === 'paid' && 'Bezahlt'}
+                          {inv.status === 'paid' && (inv.invoiceNumber.startsWith('ST-') ? 'Storno-Beleg' : 'Bezahlt')}
                           {inv.status === 'overdue' && 'Überfällig'}
                           {inv.status === 'open' && 'Offen'}
+                          {inv.status === 'cancelled' && 'Storniert'}
                         </span>
                       </td>
                       <td className="py-3.5 pl-3 pr-5 text-right relative border-b border-zinc-100 group-last:border-b-0 group-hover:bg-[#003527]/3 transition-colors">
@@ -657,16 +681,24 @@ export default function InvoicesPage() {
                                     </button>
                                   )}
             
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setActiveInvoiceActionMenuId(null);
-                                      cancelInvoice(inv.id);
-                                    }}
-                                    className="px-4 py-2 text-left text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors border-t border-zinc-100 flex items-center gap-2 w-full cursor-pointer border-none bg-transparent"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5 text-rose-500" /> Stornieren
-                                  </button>
+                                  {inv.status !== 'cancelled' && !inv.invoiceNumber.startsWith('ST-') && (
+                                    <button
+                                      onClick={async (e) => {
+                                        e.stopPropagation();
+                                        setActiveInvoiceActionMenuId(null);
+                                        const success = await cancelInvoice(inv.id);
+                                        if (success) {
+                                          if (confirm('Möchtest du einen korrigierten Entwurf auf Basis dieser stornierten Rechnung erstellen?')) {
+                                            setPrefillInvoice(inv);
+                                            setIsNewInvoiceSheetOpen(true);
+                                          }
+                                        }
+                                      }}
+                                      className="px-4 py-2 text-left text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors border-t border-zinc-100 flex items-center gap-2 w-full cursor-pointer border-none bg-transparent"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5 text-rose-500" /> Stornieren
+                                    </button>
+                                  )}
                                 </motion.div>
                               )}
                             </AnimatePresence>

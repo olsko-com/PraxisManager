@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { Client, Service, Appointment, SoapNote, Invoice } from '@/lib/types';
+import { Client, Service, Appointment, SoapNote, Invoice, InvoiceLineItem, ClientSnapshot } from '@/lib/types';
 
 interface DashboardContextProps {
   // Therapist Settings
@@ -16,6 +16,16 @@ interface DashboardContextProps {
   setPhone: (phone: string) => void;
   address: string;
   setAddress: (address: string) => void;
+  taxNumber: string;
+  setTaxNumber: (num: string) => void;
+  vatId: string;
+  setVatId: (id: string) => void;
+  iban: string;
+  setIban: (iban: string) => void;
+  bic: string;
+  setBic: (bic: string) => void;
+  isSmallBusiness: boolean;
+  setIsSmallBusiness: (val: boolean) => void;
   syncEnabled: boolean;
   setSyncEnabled: (enabled: boolean) => void;
   isSavingSettings: boolean;
@@ -74,6 +84,8 @@ interface DashboardContextProps {
   setIsInvoiceMenuOpen: (open: boolean) => void;
   isNewInvoiceSheetOpen: boolean;
   setIsNewInvoiceSheetOpen: (open: boolean) => void;
+  prefillInvoice: Invoice | null;
+  setPrefillInvoice: (inv: Invoice | null) => void;
   isSheetOpen: boolean;
   setIsSheetOpen: (open: boolean) => void;
   isGdprModalOpen: boolean;
@@ -217,7 +229,13 @@ interface DashboardContextProps {
   handleContextMenu: (e: React.MouseEvent, app: Appointment) => void;
   handleClientContextMenu: (e: React.MouseEvent, client: Client) => void;
   handleInvoiceContextMenu: (e: React.MouseEvent, invoice: Invoice) => void;
-  handleCreateInvoice: (e: React.FormEvent) => void;
+  handleCreateInvoice: (
+    e: React.FormEvent,
+    lineItems: InvoiceLineItem[],
+    dueDate: string,
+    serviceDate: string,
+    notes?: string
+  ) => Promise<boolean>;
   generateGdprLink: (clientId: string) => Promise<string | null>;
   applyMailTemplate: (
     topic: 'rechnung' | 'stornierung' | 'bestaetigung' | 'custom' | 'mahnung' | 'erinnerung' | 'fragebogen' | 'dsgvo',
@@ -235,7 +253,7 @@ interface DashboardContextProps {
   sendInvoiceEmail: (inv: Invoice) => void;
   downloadInvoicePdf: (inv: Invoice) => void;
   sendInvoiceReminder: (inv: Invoice) => void;
-  cancelInvoice: (invId: string) => void;
+  cancelInvoice: (invId: string) => Promise<boolean>;
   printInvoice: (inv: Invoice) => void;
   exportInvoicesCsv: () => void;
 
@@ -256,6 +274,11 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const [currency, setCurrency] = useState('EUR');
   const [phone, setPhone] = useState('+49 123 456789');
   const [address, setAddress] = useState('Hauptstraße 12, 10117 Berlin');
+  const [taxNumber, setTaxNumber] = useState('');
+  const [vatId, setVatId] = useState('');
+  const [iban, setIban] = useState('');
+  const [bic, setBic] = useState('');
+  const [isSmallBusiness, setIsSmallBusiness] = useState(false);
   const [syncEnabled, setSyncEnabled] = useState(true);
   const [settingsSuccess, setSettingsSuccess] = useState(false);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
@@ -334,6 +357,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const [isMailModalOpen, setIsMailModalOpen] = useState(false);
   const [isInvoiceMenuOpen, setIsInvoiceMenuOpen] = useState(false);
   const [isNewInvoiceSheetOpen, setIsNewInvoiceSheetOpen] = useState(false);
+  const [prefillInvoice, setPrefillInvoice] = useState<Invoice | null>(null);
   const [newInvoiceClientId, setNewInvoiceClientId] = useState('');
   const [newInvoiceAmount, setNewInvoiceAmount] = useState('');
   const [newInvoiceDate, setNewInvoiceDate] = useState('');
@@ -406,6 +430,13 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         if (practice) {
           setTherapistName(practice.name);
           setCurrency(practice.currency);
+          if (practice.address) setAddress(practice.address);
+          if (practice.phone) setPhone(practice.phone);
+          if (practice.tax_number) setTaxNumber(practice.tax_number);
+          if (practice.vat_id) setVatId(practice.vat_id);
+          if (practice.iban) setIban(practice.iban);
+          if (practice.bic) setBic(practice.bic);
+          if (practice.is_small_business !== undefined) setIsSmallBusiness(practice.is_small_business);
         }
 
         // 2. Fetch clients
@@ -601,11 +632,27 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
               id: inv.id,
               appointmentId: inv.appointment_id,
               clientId: inv.client_id,
-              clientName: client ? client.name : 'Gelöschter Klient',
+              clientName: client ? client.name : (inv.client_snapshot?.name || 'Gelöschter Klient'),
               invoiceNumber: inv.invoice_number,
               amount: inv.amount,
               date: inv.date,
-              status: inv.status
+              status: inv.status,
+              dueDate: inv.due_date || '',
+              serviceDate: inv.service_date || '',
+              clientSnapshot: inv.client_snapshot || {
+                name: client ? client.name : 'Gelöschter Klient',
+                email: client ? client.email : '',
+                phone: client ? client.phone : '',
+                address: client ? client.address : '',
+                street: client ? client.street : '',
+                houseNumber: client ? client.houseNumber : '',
+                zipCode: client ? client.zipCode : '',
+                city: client ? client.city : ''
+              },
+              lineItems: inv.line_items || [],
+              isSmallBusiness: inv.is_small_business || false,
+              relatedInvoiceId: inv.related_invoice_id || null,
+              notes: inv.notes || ''
             };
           });
           setInvoices(mappedInvoices);
@@ -707,7 +754,14 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         .upsert({
           user_id: therapistId,
           name: therapistName,
-          currency: currency
+          currency: currency,
+          address: address,
+          phone: phone,
+          tax_number: taxNumber,
+          vat_id: vatId,
+          iban: iban,
+          bic: bic,
+          is_small_business: isSmallBusiness
         });
       if (error) {
         showToast(`Fehler beim Speichern: ${error.message}`, 'error');
@@ -1278,23 +1332,29 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   };
 
   // Creating new Invoice
-  const handleCreateInvoice = async (e: React.FormEvent) => {
+  const handleCreateInvoice = async (
+    e: React.FormEvent,
+    lineItems: InvoiceLineItem[],
+    dueDate: string,
+    serviceDate: string,
+    notes: string = ''
+  ) => {
     e.preventDefault();
     if (!newInvoiceClientId || !newInvoiceAmount || !therapistId) {
       showToast('Bitte Klient und Betrag eingeben.', 'error');
-      return;
+      return false;
     }
 
     const selectedClient = clients.find(c => c.id === newInvoiceClientId);
     if (!selectedClient) {
       showToast('Ausgewählter Klient wurde nicht gefunden.', 'error');
-      return;
+      return false;
     }
 
     const amount = parseFloat(newInvoiceAmount.replace(',', '.'));
     if (isNaN(amount) || amount <= 0) {
       showToast('Ungültiger Betrag.', 'error');
-      return;
+      return false;
     }
 
     const num = invoices.length + 1;
@@ -1302,6 +1362,18 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     const dateVal = newInvoiceDate || new Date().toISOString().slice(0, 10);
     const invoiceId = crypto.randomUUID();
     const apptId = newInvoiceAppointmentId || null;
+
+    // Create client snapshot to preserve history (GoBD compliant)
+    const clientSnapshot: ClientSnapshot = {
+      name: selectedClient.name,
+      email: selectedClient.email,
+      phone: selectedClient.phone,
+      address: selectedClient.address || '',
+      street: selectedClient.street || '',
+      houseNumber: selectedClient.houseNumber || '',
+      zipCode: selectedClient.zipCode || '',
+      city: selectedClient.city || ''
+    };
 
     const { error } = await supabase
       .from('invoices')
@@ -1313,12 +1385,18 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         invoice_number: invNum,
         amount: amount,
         date: dateVal,
-        status: newInvoiceStatus
+        status: newInvoiceStatus,
+        due_date: dueDate || null,
+        service_date: serviceDate || null,
+        client_snapshot: clientSnapshot,
+        line_items: lineItems,
+        is_small_business: isSmallBusiness,
+        notes: notes
       });
 
     if (error) {
       showToast(`Fehler beim Erstellen der Rechnung: ${error.message}`, 'error');
-      return;
+      return false;
     }
 
     const newInv: Invoice = {
@@ -1329,11 +1407,18 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       invoiceNumber: invNum,
       amount: amount,
       date: dateVal,
-      status: newInvoiceStatus
+      status: newInvoiceStatus as any,
+      dueDate: dueDate,
+      serviceDate: serviceDate,
+      clientSnapshot: clientSnapshot,
+      lineItems: lineItems,
+      isSmallBusiness: isSmallBusiness,
+      notes: notes
     };
 
     setInvoices(prev => [...prev, newInv]);
     setIsNewInvoiceSheetOpen(false);
+    setPrefillInvoice(null);
     showToast(`Rechnung ${invNum} über ${amount.toFixed(2)} € erstellt!`, 'success');
 
     // Reset fields
@@ -1343,6 +1428,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     setNewInvoiceNumber('');
     setNewInvoiceStatus('open');
     setNewInvoiceAppointmentId(null);
+    return true;
   };
 
   // Set template text for email writing modal
@@ -1558,6 +1644,29 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     const num = invoices.length + 1;
     const invNum = `RE-2026-${num.toString().padStart(4, '0')}`;
     const invoiceId = crypto.randomUUID();
+    const dateVal = new Date().toISOString().slice(0, 10);
+    const dueVal = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const monthNames = [
+      "Januar", "Februar", "März", "April", "Mai", "Juni", 
+      "Juli", "August", "September", "Oktober", "November", "Dezember"
+    ];
+    const serviceDateVal = `${monthNames[new Date().getMonth()]} ${new Date().getFullYear()}`;
+
+    const client = clients.find(c => c.id === app.clientId);
+    const clientSnapshot: ClientSnapshot = {
+      name: app.clientName || client?.name || 'Unbekannter Klient',
+      email: client?.email || '',
+      phone: client?.phone || '',
+      address: client?.address || '',
+      street: client?.street || '',
+      houseNumber: client?.houseNumber || '',
+      zipCode: client?.zipCode || '',
+      city: client?.city || ''
+    };
+
+    const lineItems: InvoiceLineItem[] = [
+      { id: '1', description: app.serviceName || 'Therapeutische Behandlung', price: app.price, taxRate: 0 }
+    ];
 
     const { error } = await supabase
       .from('invoices')
@@ -1568,8 +1677,14 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         client_id: app.clientId,
         invoice_number: invNum,
         amount: app.price,
-        date: new Date().toISOString().slice(0, 10),
-        status: 'open'
+        date: dateVal,
+        status: 'open',
+        due_date: dueVal,
+        service_date: serviceDateVal,
+        client_snapshot: clientSnapshot,
+        line_items: lineItems,
+        is_small_business: isSmallBusiness,
+        notes: ''
       });
 
     if (error) {
@@ -1584,8 +1699,14 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       clientName: app.clientName,
       invoiceNumber: invNum,
       amount: app.price,
-      date: new Date().toISOString().slice(0, 10),
-      status: 'open'
+      date: dateVal,
+      status: 'open',
+      dueDate: dueVal,
+      serviceDate: serviceDateVal,
+      clientSnapshot: clientSnapshot,
+      lineItems: lineItems,
+      isSmallBusiness: isSmallBusiness,
+      notes: ''
     };
     setInvoices(prev => [...prev, newInv]);
     showToast(`Rechnung ${invNum} erfolgreich erstellt!`, 'success');
@@ -1659,88 +1780,290 @@ Vielen Dank fuer Ihr Vertrauen!
     setActiveInvoiceActionMenuId(null);
   };
 
-  const cancelInvoice = async (invId: string) => {
-    if (!therapistId) return;
-    if (confirm('Möchtest du diese Rechnung wirklich stornieren?')) {
-      const { error } = await supabase
-        .from('invoices')
-        .delete()
-        .eq('id', invId);
-
-      if (error) {
-        showToast(`Fehler beim Stornieren der Rechnung: ${error.message}`, 'error');
-        return;
-      }
-
-      setInvoices(prev => prev.filter(inv => inv.id !== invId));
-      showToast('Rechnung storniert.', 'info');
+  const cancelInvoice = async (invId: string): Promise<boolean> => {
+    if (!therapistId) return false;
+    
+    const targetInv = invoices.find(inv => inv.id === invId);
+    if (!targetInv) {
+      showToast('Rechnung nicht gefunden.', 'error');
+      return false;
     }
+
+    if (targetInv.status === 'cancelled') {
+      showToast('Diese Rechnung ist bereits storniert.', 'error');
+      return false;
+    }
+
+    if (!confirm(`Möchtest du die Rechnung ${targetInv.invoiceNumber} wirklich stornieren? Dieser Vorgang erzeugt eine korrespondierende Stornorechnung mit negativen Beträgen.`)) {
+      return false;
+    }
+
+    // 1. Update status of original invoice to 'cancelled'
+    const { error: updateError } = await supabase
+      .from('invoices')
+      .update({ status: 'cancelled' })
+      .eq('id', invId);
+
+    if (updateError) {
+      showToast(`Fehler beim Aktualisieren des Rechnungsstatus: ${updateError.message}`, 'error');
+      return false;
+    }
+
+    // 2. Generate new linked negative invoice
+    const stornoId = crypto.randomUUID();
+    const stornoSeqNum = invoices.length + 1;
+    const stornoNumber = `ST-2026-${stornoSeqNum.toString().padStart(4, '0')}`;
+    const todayStr = new Date().toISOString().slice(0, 10);
+
+    const negatedLineItems = (targetInv.lineItems || []).map(item => ({
+      ...item,
+      price: -item.price
+    }));
+
+    const stornoNotes = `Stornierung / Rechnungskorrektur zur Rechnung Nr. ${targetInv.invoiceNumber} vom ${new Date(targetInv.date).toLocaleDateString('de-DE')}.`;
+
+    const { error: insertError } = await supabase
+      .from('invoices')
+      .insert({
+        id: stornoId,
+        user_id: therapistId,
+        appointment_id: targetInv.appointmentId && targetInv.appointmentId.startsWith('custom-') ? null : targetInv.appointmentId,
+        client_id: targetInv.clientId,
+        invoice_number: stornoNumber,
+        amount: -targetInv.amount,
+        date: todayStr,
+        status: 'paid',
+        due_date: todayStr,
+        service_date: targetInv.serviceDate,
+        client_snapshot: targetInv.clientSnapshot,
+        line_items: negatedLineItems,
+        is_small_business: targetInv.isSmallBusiness,
+        notes: stornoNotes,
+        related_invoice_id: targetInv.id
+      });
+
+    if (insertError) {
+      await supabase.from('invoices').update({ status: targetInv.status }).eq('id', invId);
+      showToast(`Fehler beim Erstellen der Stornorechnung: ${insertError.message}`, 'error');
+      return false;
+    }
+
+    // 3. Update React local states
+    const updatedInvoices = invoices.map(inv => {
+      if (inv.id === invId) {
+        return { ...inv, status: 'cancelled' as const };
+      }
+      return inv;
+    });
+
+    const newStornoInv: Invoice = {
+      id: stornoId,
+      appointmentId: targetInv.appointmentId,
+      clientId: targetInv.clientId,
+      clientName: targetInv.clientName,
+      invoiceNumber: stornoNumber,
+      amount: -targetInv.amount,
+      date: todayStr,
+      status: 'paid',
+      dueDate: todayStr,
+      serviceDate: targetInv.serviceDate,
+      clientSnapshot: targetInv.clientSnapshot,
+      lineItems: negatedLineItems,
+      isSmallBusiness: targetInv.isSmallBusiness,
+      notes: stornoNotes,
+      relatedInvoiceId: targetInv.id
+    };
+
+    setInvoices([...updatedInvoices, newStornoInv]);
+    showToast(`Rechnung ${targetInv.invoiceNumber} storniert. Stornorechnung ${stornoNumber} erzeugt.`, 'success');
     setActiveInvoiceActionMenuId(null);
+    return true;
   };
 
   // Invoice Printer
   const printInvoice = (inv: Invoice) => {
     const printWindow = window.open('', '_blank');
     if (printWindow) {
+      const clientName = inv.clientSnapshot?.name || inv.clientName;
+      const clientStreet = inv.clientSnapshot?.street || '';
+      const clientHouseNumber = inv.clientSnapshot?.houseNumber || '';
+      const clientZip = inv.clientSnapshot?.zipCode || '';
+      const clientCity = inv.clientSnapshot?.city || '';
+      const clientEmail = inv.clientSnapshot?.email || '';
+      const clientPhone = inv.clientSnapshot?.phone || '';
+
+      const tName = therapistName;
+      const tAddress = address;
+      const tPhone = phone;
+      const tTaxNum = taxNumber;
+      const tVatId = vatId;
+      const tIban = iban;
+      const tBic = bic;
+
+      const items = (inv.lineItems && inv.lineItems.length > 0)
+        ? inv.lineItems
+        : [{ id: 'fallback', description: 'Therapeutische Behandlung / Physiotherapie', price: inv.amount, taxRate: 0 }];
+
+      const netSum = items.reduce((sum, item) => sum + item.price, 0);
+      const taxSum = inv.isSmallBusiness
+        ? 0
+        : items.reduce((sum, item) => sum + (item.price * ((item.taxRate || 0) / 100)), 0);
+      const grossSum = netSum + taxSum;
+
+      // Group tax rate details for breakdown display
+      const taxRateBreakdown = items.reduce((acc, item) => {
+        const rate = item.taxRate || 0;
+        if (!acc[rate]) {
+          acc[rate] = { net: 0, tax: 0 };
+        }
+        acc[rate].net += item.price;
+        acc[rate].tax += item.price * (rate / 100);
+        return acc;
+      }, {} as Record<number, { net: number; tax: number }>);
+
       printWindow.document.write(`
         <html>
           <head>
             <title>Rechnung ${inv.invoiceNumber}</title>
             <style>
-              body { font-family: system-ui, sans-serif; padding: 40px; color: #191c1c; }
+              body { font-family: system-ui, -apple-system, sans-serif; padding: 40px; color: #003527; line-height: 1.5; }
               .header { display: flex; justify-content: space-between; margin-bottom: 40px; border-bottom: 2px solid #003527; padding-bottom: 20px; }
               .logo { font-size: 24px; font-weight: bold; color: #003527; }
-              .title { font-size: 28px; font-weight: bold; margin-bottom: 20px; }
-              .details { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 40px; }
-              .details div { line-height: 1.6; }
-              table { width: 100%; border-collapse: collapse; margin-bottom: 40px; }
-              th, td { padding: 12px; text-align: left; border-bottom: 1px solid #bfc9c3; }
-              th { background-color: #f3f4f3; font-weight: bold; color: #003527; }
-              .total { text-align: right; font-size: 18px; font-weight: bold; color: #003527; }
-              .footer { margin-top: 80px; font-size: 11px; color: #404944; border-top: 1px solid #bfc9c3; padding-top: 20px; line-height: 1.6; }
+              .header-meta { text-align: right; font-size: 11px; color: #708075; line-height: 1.6; }
+              .title { font-size: 28px; font-weight: bold; margin-bottom: 30px; font-family: serif; color: #003527; }
+              .details { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 40px; }
+              .details div { font-size: 12px; }
+              .details strong { color: #003527; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 6px; color: #708075; }
+              table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+              th, td { padding: 12px; text-align: left; border-bottom: 1px solid #bfc9c3; font-size: 12px; }
+              th { background-color: #f3f4f3; font-weight: bold; color: #003527; text-transform: uppercase; font-size: 10px; letter-spacing: 0.05em; }
+              .text-right { text-align: right; }
+              .totals-block { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; margin-bottom: 40px; border-top: 1px solid #bfc9c3; padding-top: 20px; }
+              .totals-row { display: flex; justify-content: space-between; width: 280px; font-size: 12px; color: #506055; }
+              .totals-row.grand { font-size: 18px; font-weight: bold; color: #003527; border-top: 1px solid #bfc9c3; padding-top: 8px; margin-top: 4px; }
+              .notes-block { margin-top: 20px; padding: 12px; background-color: #f9f9f8; border-left: 3px solid #003527; font-size: 11px; color: #405045; }
+              .footer { margin-top: 80px; font-size: 10px; color: #708075; border-top: 1px solid #bfc9c3; padding-top: 20px; line-height: 1.6; }
+              .footer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
             </style>
           </head>
           <body>
             <div class="header">
-              <div class="logo">${therapistName}</div>
-              <div>Datum: ${new Date(inv.date).toLocaleDateString('de-DE')}</div>
+              <div>
+                <div class="logo">${tName}</div>
+                <div style="font-size: 11px; color: #708075; margin-top: 5px;">${tAddress}</div>
+              </div>
+              <div class="header-meta">
+                <strong>Datum:</strong> ${new Date(inv.date).toLocaleDateString('de-DE')}<br>
+                <strong>Leistungszeitraum:</strong> ${inv.serviceDate || new Date(inv.date).toLocaleDateString('de-DE', {month: 'long', year: 'numeric'})}<br>
+                ${!inv.invoiceNumber.startsWith('ST-') ? `<strong>Fälligkeitsdatum:</strong> ${inv.dueDate ? new Date(inv.dueDate).toLocaleDateString('de-DE') : 'Sofort'}` : ''}
+              </div>
             </div>
-            <div class="title">RECHNUNG</div>
+            
+            <div class="title">${inv.invoiceNumber.startsWith('ST-') ? 'STORNORECHNUNG / RECHNUNGSKORREKTUR' : 'RECHNUNG'}</div>
+            
             <div class="details">
               <div>
-                <strong>Rechnungsempfänger:</strong><br>
-                ${inv.clientName}
+                <strong>Rechnungsempfänger</strong>
+                <span style="font-size: 13px; font-weight: bold; color: #003527;">${clientName}</span><br>
+                ${(clientStreet && clientHouseNumber) ? `${clientStreet} ${clientHouseNumber}<br>` : '<span style="color: red; font-weight: bold; font-size: 11px;">[Klienten-Anschrift fehlt]<br></span>'}
+                ${(clientZip && clientCity) ? `${clientZip} ${clientCity}<br>` : '<span style="color: red; font-weight: bold; font-size: 11px;">[Klienten-PLZ/Ort fehlt]<br></span>'}
+                ${clientEmail ? `E-Mail: ${clientEmail}<br>` : ''}
+                ${clientPhone ? `Tel: ${clientPhone}` : ''}
               </div>
               <div>
-                <strong>Rechnungsdetails:</strong><br>
-                Rechnungsnummer: ${inv.invoiceNumber}<br>
-                Status: ${inv.status === 'paid' ? 'Bezahlt' : 'Offen'}
+                <strong>Rechnungsdetails</strong>
+                Rechnungsnummer: <strong>${inv.invoiceNumber}</strong><br>
+                Zahlungsstatus: ${inv.status === 'paid' ? 'Bezahlt' : inv.status === 'overdue' ? 'Überfällig' : 'Offen'}
               </div>
             </div>
+            
             <table>
               <thead>
                 <tr>
-                  <th>Beschreibung</th>
-                  <th>Menge</th>
-                  <th>Einzelpreis</th>
-                  <th>Gesamtpreis</th>
+                  <th style="width: 40px;">Pos</th>
+                  <th>Leistungsbeschreibung</th>
+                  ${!inv.isSmallBusiness ? '<th class="text-right" style="width: 80px;">USt.</th>' : ''}
+                  <th class="text-right" style="width: 120px;">Gesamtpreis</th>
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td>Therapeutische Behandlung / Physiotherapie</td>
-                  <td>1</td>
-                  <td>${inv.amount.toFixed(2)} €</td>
-                  <td>${inv.amount.toFixed(2)} €</td>
-                </tr>
+                ${items.map((item, idx) => `
+                  <tr>
+                    <td>${idx + 1}</td>
+                    <td>${item.description}</td>
+                    ${!inv.isSmallBusiness ? `<td class="text-right">${item.taxRate || 0}%</td>` : ''}
+                    <td class="text-right">${item.price.toFixed(2)} €</td>
+                  </tr>
+                `).join('')}
               </tbody>
             </table>
-            <div class="total">Gesamtbetrag: ${inv.amount.toFixed(2)} €</div>
-            <div class="footer">
-              Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.<br>
-              Zahlbar innerhalb von 14 Tagen nach Rechnungserhalt ohne Abzug.<br>
-              Vielen Dank für das Vertrauen!
+            
+            <div class="totals-block">
+              ${inv.isSmallBusiness ? `
+                <div class="totals-row grand">
+                  <span>Gesamtsumme:</span>
+                  <span>${grossSum.toFixed(2)} €</span>
+                </div>
+                <div style="font-size: 10px; color: #708075; font-style: italic; margin-top: 5px;">
+                  Kein Ausweis der Umsatzsteuer aufgrund der Anwendung der Kleinunternehmerregelung gem. § 19 UStG.
+                </div>
+              ` : `
+                <div class="totals-row">
+                  <span>Netto-Summe:</span>
+                  <span>${netSum.toFixed(2)} €</span>
+                </div>
+                ${Object.entries(taxRateBreakdown).map(([rate, vals]) => `
+                  <div class="totals-row" style="font-size: 11px; color: #708075;">
+                    <span>davon Ust. ${rate}% (auf ${vals.net.toFixed(2)} €):</span>
+                    <span>${vals.tax.toFixed(2)} €</span>
+                  </div>
+                `).join('')}
+                <div class="totals-row">
+                  <span>Umsatzsteuer Gesamt:</span>
+                  <span>${taxSum.toFixed(2)} €</span>
+                </div>
+                <div class="totals-row grand">
+                  <span>Brutto-Gesamtsumme:</span>
+                  <span>${grossSum.toFixed(2)} €</span>
+                </div>
+              `}
             </div>
+            
+            ${inv.notes ? `
+              <div class="notes-block">
+                <strong>Zahlungshinweis / Bemerkung:</strong><br>
+                ${inv.notes.replace(/\n/g, '<br>')}
+              </div>
+            ` : ''}
+            
+            <div class="footer">
+              ${inv.invoiceNumber.startsWith('ST-') ? `
+                <p style="margin-bottom: 15px; font-weight: bold; color: #003527;">
+                  Dieser Beleg dient ausschließlich der steuerlichen Verrechnung der stornierten Rechnung ${inv.notes ? `Nr. ` + inv.notes.split('Rechnung Nr. ')[1]?.split(' vom')[0] || '' : ''} und erfordert keine Zahlung.
+                </p>
+              ` : `
+                <p style="margin-bottom: 15px;">
+                  Bitte überweisen Sie den Rechnungsbetrag von <strong>${grossSum.toFixed(2)} €</strong> bis zum <strong>${inv.dueDate ? new Date(inv.dueDate).toLocaleDateString('de-DE') : 'Sofort'}</strong> unter Angabe der Rechnungsnummer <strong>${inv.invoiceNumber}</strong> auf das unten aufgeführte Praxiskonto.
+                  Wir weisen darauf hin, dass Sie gemäß § 286 Abs. 3 BGB auch ohne gesonderte Mahnung in Verzug geraten, wenn Sie die Zahlung nicht innerhalb von 30 Tagen nach Fälligkeit und Zugang dieser Rechnung leisten.
+                </p>
+              `}
+              
+              <div class="footer-grid">
+                <div>
+                  <strong>Praxisinhaber</strong><br>
+                  Inhaber: ${tName}<br>
+                  Steuernummer: ${tTaxNum || '<span style="color: red; font-weight: bold;">[Steuernummer fehlt]</span>'}<br>
+                  ${tVatId ? `USt-IdNr.: ${tVatId}<br>` : ''}
+                  Tel: ${tPhone}
+                </div>
+                <div class="text-right">
+                  <strong>Bankverbindung</strong><br>
+                  IBAN: ${tIban || '<span style="color: red; font-weight: bold;">[IBAN fehlt]</span>'}<br>
+                  BIC: ${tBic || '<span style="color: red; font-weight: bold;">[BIC fehlt]</span>'}
+                </div>
+              </div>
+            </div>
+            
             <script>
               window.onload = function() {
                 window.print();
@@ -1782,6 +2105,11 @@ Vielen Dank fuer Ihr Vertrauen!
       currency, setCurrency,
       phone, setPhone,
       address, setAddress,
+      taxNumber, setTaxNumber,
+      vatId, setVatId,
+      iban, setIban,
+      bic, setBic,
+      isSmallBusiness, setIsSmallBusiness,
       syncEnabled, setSyncEnabled,
       isSavingSettings,
       settingsSuccess,
@@ -1802,6 +2130,7 @@ Vielen Dank fuer Ihr Vertrauen!
       isMailModalOpen, setIsMailModalOpen,
       isInvoiceMenuOpen, setIsInvoiceMenuOpen,
       isNewInvoiceSheetOpen, setIsNewInvoiceSheetOpen,
+      prefillInvoice, setPrefillInvoice,
       isSheetOpen, setIsSheetOpen,
       selectedAppointment, setSelectedAppointment,
       sheetMode, setSheetMode,

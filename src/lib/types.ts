@@ -61,6 +61,24 @@ export interface SoapNote {
   plan: string;
 }
 
+export interface InvoiceLineItem {
+  id: string;
+  description: string;
+  price: number;
+  taxRate?: number;
+}
+
+export interface ClientSnapshot {
+  name: string;
+  email: string;
+  phone: string;
+  address?: string;
+  street?: string;
+  houseNumber?: string;
+  zipCode?: string;
+  city?: string;
+}
+
 export interface Invoice {
   id: string;
   appointmentId: string;
@@ -69,5 +87,13 @@ export interface Invoice {
   invoiceNumber: string;
   amount: number;
   date: string;
-  status: 'paid' | 'open' | 'overdue';
+  status: 'paid' | 'open' | 'overdue' | 'cancelled';
+  dueDate: string;
+  serviceDate: string;
+  clientSnapshot: ClientSnapshot;
+  lineItems: InvoiceLineItem[];
+  isSmallBusiness: boolean;
+  relatedInvoiceId?: string | null;
+  notes?: string;
 }
+

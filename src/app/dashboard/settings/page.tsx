@@ -22,6 +22,16 @@ export default function SettingsPage() {
     setPhone,
     address,
     setAddress,
+    taxNumber,
+    setTaxNumber,
+    vatId,
+    setVatId,
+    iban,
+    setIban,
+    bic,
+    setBic,
+    isSmallBusiness,
+    setIsSmallBusiness,
     syncEnabled,
     setSyncEnabled,
     isSavingSettings,
@@ -307,6 +317,73 @@ export default function SettingsPage() {
                         onChange={(e) => setAddress(e.target.value)}
                         className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-lg px-4 py-2.5 font-bold text-xs text-[#003527] focus:border-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all resize-none h-16"
                       />
+                    </div>
+
+                    {/* Steuernummer */}
+                    <div className="space-y-2">
+                      <label className="block text-[10px] font-bold text-[#003527]/70 uppercase tracking-widest">Steuernummer</label>
+                      <input 
+                        type="text" 
+                        value={taxNumber}
+                        onChange={(e) => setTaxNumber(e.target.value)}
+                        placeholder="z.B. 12/345/67890"
+                        className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-lg px-4 py-3 font-bold text-xs text-[#003527] focus:border-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all"
+                      />
+                    </div>
+
+                    {/* USt-IdNr */}
+                    <div className="space-y-2">
+                      <label className="block text-[10px] font-bold text-[#003527]/70 uppercase tracking-widest">USt-IdNr. (Umsatzsteuer-ID)</label>
+                      <input 
+                        type="text" 
+                        value={vatId}
+                        onChange={(e) => setVatId(e.target.value)}
+                        placeholder="z.B. DE123456789"
+                        className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-lg px-4 py-3 font-bold text-xs text-[#003527] focus:border-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all"
+                      />
+                    </div>
+
+                    {/* IBAN */}
+                    <div className="space-y-2">
+                      <label className="block text-[10px] font-bold text-[#003527]/70 uppercase tracking-widest">IBAN</label>
+                      <input 
+                        type="text" 
+                        value={iban}
+                        onChange={(e) => setIban(e.target.value)}
+                        placeholder="DE00 0000 0000 0000 0000 00"
+                        className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-lg px-4 py-3 font-bold text-xs text-[#003527] focus:border-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all"
+                      />
+                    </div>
+
+                    {/* BIC */}
+                    <div className="space-y-2">
+                      <label className="block text-[10px] font-bold text-[#003527]/70 uppercase tracking-widest">BIC</label>
+                      <input 
+                        type="text" 
+                        value={bic}
+                        onChange={(e) => setBic(e.target.value)}
+                        placeholder="z.B. WELADED1XXX"
+                        className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-lg px-4 py-3 font-bold text-xs text-[#003527] focus:border-[#003527] focus:ring-1 focus:ring-[#003527] outline-none transition-all"
+                      />
+                    </div>
+
+                    {/* Kleinunternehmer-Regelung */}
+                    <div className="col-span-1 md:col-span-2 bg-[#f9f9f8] border border-[#bfc9c3]/30 rounded-xl p-4 flex items-start gap-3 mt-2">
+                      <input 
+                        type="checkbox" 
+                        id="isSmallBusiness"
+                        checked={isSmallBusiness} 
+                        onChange={(e) => setIsSmallBusiness(e.target.checked)} 
+                        className="rounded text-[#003527] focus:ring-[#003527] cursor-pointer mt-1" 
+                      />
+                      <div className="space-y-1">
+                        <label htmlFor="isSmallBusiness" className="block text-xs font-extrabold text-[#003527] cursor-pointer">
+                          Kleinunternehmerregelung gem. § 19 UStG anwenden
+                        </label>
+                        <p className="text-[10px] text-zinc-500 font-medium leading-relaxed">
+                          Aktivieren Sie dies, wenn Sie von der Umsatzsteuer befreit sind. Auf Ihren Rechnungen wird dann keine Umsatzsteuer berechnet und der gesetzliche Hinweistext automatisch hinzugefügt.
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>

@@ -312,6 +312,7 @@ export default function ClientsPage() {
     appointments,
     invoices,
     setInvoices,
+    isSmallBusiness,
     soapNotes,
     setSoapNotes,
     clientDocuments,
@@ -866,6 +867,29 @@ export default function ClientsPage() {
                                 const num = invoices.length + 1;
                                 const invNum = `RE-2026-${num.toString().padStart(4, '0')}`;
                                 const invoiceId = crypto.randomUUID();
+                                const dateVal = new Date().toISOString().slice(0, 10);
+                                const dueVal = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+                                const monthNames = [
+                                  "Januar", "Februar", "März", "April", "Mai", "Juni", 
+                                  "Juli", "August", "September", "Oktober", "November", "Dezember"
+                                ];
+                                const serviceDateVal = `${monthNames[new Date().getMonth()]} ${new Date().getFullYear()}`;
+
+                                const clientSnapshot = {
+                                  name: currentClient.name,
+                                  email: currentClient.email,
+                                  phone: currentClient.phone,
+                                  address: currentClient.address || '',
+                                  street: currentClient.street || '',
+                                  houseNumber: currentClient.houseNumber || '',
+                                  zipCode: currentClient.zipCode || '',
+                                  city: currentClient.city || ''
+                                };
+
+                                const lineItems = [
+                                  { id: '1', description: 'Therapeutische Behandlung / Physiotherapie', price: amount, taxRate: 0 }
+                                ];
+
                                 supabase
                                   .from('invoices')
                                   .insert({
@@ -875,8 +899,13 @@ export default function ClientsPage() {
                                     client_id: currentClient.id,
                                     invoice_number: invNum,
                                     amount: amount,
-                                    date: new Date().toISOString().slice(0, 10),
-                                    status: 'open'
+                                    date: dateVal,
+                                    status: 'open',
+                                    due_date: dueVal,
+                                    service_date: serviceDateVal,
+                                    client_snapshot: clientSnapshot,
+                                    line_items: lineItems,
+                                    is_small_business: isSmallBusiness
                                   })
                                   .then(({ error }) => {
                                     if (error) {
@@ -890,8 +919,13 @@ export default function ClientsPage() {
                                       clientName: currentClient.name,
                                       invoiceNumber: invNum,
                                       amount: amount,
-                                      date: new Date().toISOString().slice(0, 10),
-                                      status: 'open' as const
+                                      date: dateVal,
+                                      status: 'open' as const,
+                                      dueDate: dueVal,
+                                      serviceDate: serviceDateVal,
+                                      clientSnapshot: clientSnapshot,
+                                      lineItems: lineItems,
+                                      isSmallBusiness: isSmallBusiness
                                     };
                                     setInvoices((prev: Invoice[]) => [...prev, newInv]);
                                     showToast(`Rechnung ${invNum} über ${amount.toFixed(2)} € erstellt!`, 'success');
@@ -1936,6 +1970,29 @@ export default function ClientsPage() {
                                 const num = invoices.length + 1;
                                 const invNum = `RE-2026-${num.toString().padStart(4, '0')}`;
                                 const invoiceId = crypto.randomUUID();
+                                const dateVal = new Date().toISOString().slice(0, 10);
+                                const dueVal = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+                                const monthNames = [
+                                  "Januar", "Februar", "März", "April", "Mai", "Juni", 
+                                  "Juli", "August", "September", "Oktober", "November", "Dezember"
+                                ];
+                                const serviceDateVal = `${monthNames[new Date().getMonth()]} ${new Date().getFullYear()}`;
+
+                                const clientSnapshot = {
+                                  name: currentClient.name,
+                                  email: currentClient.email,
+                                  phone: currentClient.phone,
+                                  address: currentClient.address || '',
+                                  street: currentClient.street || '',
+                                  houseNumber: currentClient.houseNumber || '',
+                                  zipCode: currentClient.zipCode || '',
+                                  city: currentClient.city || ''
+                                };
+
+                                const lineItems = [
+                                  { id: '1', description: 'Therapeutische Behandlung / Physiotherapie', price: amount, taxRate: 0 }
+                                ];
+
                                 supabase
                                   .from('invoices')
                                   .insert({
@@ -1945,8 +2002,13 @@ export default function ClientsPage() {
                                     client_id: currentClient.id,
                                     invoice_number: invNum,
                                     amount: amount,
-                                    date: new Date().toISOString().slice(0, 10),
-                                    status: 'open'
+                                    date: dateVal,
+                                    status: 'open',
+                                    due_date: dueVal,
+                                    service_date: serviceDateVal,
+                                    client_snapshot: clientSnapshot,
+                                    line_items: lineItems,
+                                    is_small_business: isSmallBusiness
                                   })
                                   .then(({ error }) => {
                                     if (error) {
@@ -1960,8 +2022,13 @@ export default function ClientsPage() {
                                       clientName: currentClient.name,
                                       invoiceNumber: invNum,
                                       amount: amount,
-                                      date: new Date().toISOString().slice(0, 10),
-                                      status: 'open' as const
+                                      date: dateVal,
+                                      status: 'open' as const,
+                                      dueDate: dueVal,
+                                      serviceDate: serviceDateVal,
+                                      clientSnapshot: clientSnapshot,
+                                      lineItems: lineItems,
+                                      isSmallBusiness: isSmallBusiness
                                     };
                                     setInvoices((prev: Invoice[]) => [...prev, newInv]);
                                     showToast(`Rechnung ${invNum} über ${amount.toFixed(2)} € erstellt!`, 'success');

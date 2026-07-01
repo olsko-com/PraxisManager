@@ -21,6 +21,8 @@ export default function ContextMenu() {
     markInvoicePaid,
     sendInvoiceReminder,
     cancelInvoice,
+    setPrefillInvoice,
+    setIsNewInvoiceSheetOpen,
     setSelectedAppointment,
     setSheetMode,
     setIsSheetOpen,
@@ -343,17 +345,27 @@ export default function ContextMenu() {
             </button>
           )}
 
-          <button
-            onClick={() => {
-              setContextMenu(null);
-              const invoice = contextMenu.invoice;
-              if (invoice) cancelInvoice(invoice.id);
-            }}
-            className="w-full text-left px-3 py-1.5 rounded-xl hover:bg-rose-50 text-rose-600 font-bold transition-all flex items-center gap-2 cursor-pointer border-none bg-transparent border-t border-zinc-100"
-          >
-            <Trash2 className="w-3.5 h-3.5 text-rose-500" />
-            Stornieren
-          </button>
+          {contextMenu.invoice && contextMenu.invoice.status !== 'cancelled' && !contextMenu.invoice.invoiceNumber.startsWith('ST-') && (
+            <button
+              onClick={async () => {
+                setContextMenu(null);
+                const invoice = contextMenu.invoice;
+                if (invoice) {
+                  const success = await cancelInvoice(invoice.id);
+                  if (success) {
+                    if (confirm('Möchtest du einen korrigierten Entwurf auf Basis dieser stornierten Rechnung erstellen?')) {
+                      setPrefillInvoice(invoice);
+                      setIsNewInvoiceSheetOpen(true);
+                    }
+                  }
+                }
+              }}
+              className="w-full text-left px-3 py-1.5 rounded-xl hover:bg-rose-50 text-rose-600 font-bold transition-all flex items-center gap-2 cursor-pointer border-none bg-transparent border-t border-zinc-100"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+              Stornieren
+            </button>
+          )}
         </div>
       )}
     </motion.div>
