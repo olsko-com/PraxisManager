@@ -502,6 +502,27 @@ export default function ClientsPage() {
     return [...clientSoapNotes].sort((a, b) => b.date.localeCompare(a.date))[0];
   }, [clientSoapNotes]);
 
+  const clientAppointments = React.useMemo(() => {
+    if (!selectedClientId) return [];
+    return appointments.filter(a => a.clientId === selectedClientId);
+  }, [appointments, selectedClientId]);
+
+  const upcomingAppointments = React.useMemo(() => {
+    const now = new Date();
+    return clientAppointments
+      .filter(a => new Date(a.startTime) >= now)
+      .sort((a, b) => a.startTime.localeCompare(b.startTime))
+      .slice(0, 2);
+  }, [clientAppointments]);
+
+  const pastAppointments = React.useMemo(() => {
+    const now = new Date();
+    return clientAppointments
+      .filter(a => new Date(a.startTime) < now)
+      .sort((a, b) => b.startTime.localeCompare(a.startTime))
+      .slice(0, 2);
+  }, [clientAppointments]);
+
   const renderSoapItems = React.useMemo(() => {
     if (!selectedClientId) return [];
 
@@ -1423,6 +1444,71 @@ export default function ClientsPage() {
                             <span className="block text-xs font-extrabold text-[#003527]">
                               {currentClient.children || 'Keine Angabe'}
                             </span>
+                          </div>
+                        </div>
+                      </div> 
+                      {/* Karte: Termine (lg:col-span-3) */}
+                      <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 hover:border-[#bfc9c3]/60 transition-all duration-300 relative group col-span-1 md:col-span-3 text-left">
+                        <div className="flex justify-between items-start">
+                          <div className="p-2 rounded-xl bg-blue-50 border border-blue-200/40 text-blue-700">
+                            <CalendarIcon className="w-4 h-4" />
+                          </div>
+                          <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-500 uppercase tracking-wider">
+                            Termine ({clientAppointments.length})
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-1">
+                          {/* Upcoming Appointments */}
+                          <div className="space-y-3">
+                            <h5 className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Geplante & Zukünftige Termine</h5>
+                            {upcomingAppointments.length > 0 ? (
+                              <div className="space-y-2">
+                                {upcomingAppointments.map((app) => (
+                                  <div key={app.id} className="flex justify-between items-center bg-emerald-50/30 border border-emerald-100 px-3.5 py-2.5 rounded-xl text-xs">
+                                    <div className="space-y-0.5">
+                                      <span className="block font-extrabold text-[#003527]">
+                                        {formatGermanDate(app.startTime)}
+                                      </span>
+                                      <span className="block text-[10px] text-[#003527]/70 font-semibold">
+                                        {new Date(app.startTime).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} Uhr
+                                      </span>
+                                    </div>
+                                    <span className="text-[9px] font-extrabold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/40 uppercase">
+                                      Geplant
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-xs font-semibold text-zinc-400 italic">Keine zukünftigen Termine geplant.</p>
+                            )}
+                          </div>
+
+                          {/* Past Appointments */}
+                          <div className="space-y-3">
+                            <h5 className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Letzte Termine</h5>
+                            {pastAppointments.length > 0 ? (
+                              <div className="space-y-2">
+                                {pastAppointments.map((app) => (
+                                  <div key={app.id} className="flex justify-between items-center bg-zinc-50 border border-zinc-200/40 px-3.5 py-2.5 rounded-xl text-xs">
+                                    <div className="space-y-0.5">
+                                      <span className="block font-bold text-zinc-700">
+                                        {formatGermanDate(app.startTime)}
+                                      </span>
+                                      <span className="block text-[10px] text-zinc-400 font-semibold">
+                                        {new Date(app.startTime).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} Uhr
+                                      </span>
+                                    </div>
+                                    <span className="text-[9px] font-bold text-zinc-500 bg-zinc-100 px-2 py-0.5 rounded border border-zinc-200/30 uppercase">
+                                      Erledigt
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-xs font-semibold text-zinc-400 italic">Keine vergangenen Termine vorhanden.</p>
+                            )}
                           </div>
                         </div>
                       </div>
