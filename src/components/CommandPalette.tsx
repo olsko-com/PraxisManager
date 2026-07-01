@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Plus, Calendar, Users, FileText, Settings, User, FolderOpen, Mail } from 'lucide-react';
 import { useDashboard } from '@/app/dashboard/context';
 import { useRouter } from 'next/navigation';
+import { formatGermanDate } from '@/lib/dateUtils';
 
 interface Action {
   id: string;
@@ -267,7 +268,7 @@ export default function CommandPalette({ isOpen, setIsOpen, actions }: Props) {
         id: `invoice-${inv.id}`,
         type: 'invoice',
         title: `${inv.invoiceNumber} für ${inv.clientName}`,
-        subtitle: `Betrag: ${inv.amount.toFixed(2)} € • Datum: ${new Date(inv.date).toLocaleDateString('de-DE')}`,
+        subtitle: `Betrag: ${inv.amount.toFixed(2)} € • Datum: ${formatGermanDate(inv.date)}`,
         badge: statusLabel,
         badgeColor: statusColor,
         icon: FileText,

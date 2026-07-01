@@ -12,6 +12,7 @@ import { useDashboard } from '../context';
 import { Client, SoapNote, Invoice } from '@/lib/types';
 import { supabase } from '@/lib/supabase';
 import CranioAnamnesisTab from '../components/CranioAnamnesisTab';
+import { formatGermanDate } from '@/lib/dateUtils';
 
 interface SoapSubjectiveData {
   text: string;
@@ -156,7 +157,7 @@ function ClientListItem({
               <Flag className="w-3 h-3 text-rose-500 fill-rose-500" />
             )}
           </div>
-          <p className="text-[10px] text-zinc-400 mt-0.5 text-left">Geb: {client.birthday ? new Date(client.birthday).toLocaleDateString('de-DE') : 'Keine Angabe'}</p>
+          <p className="text-[10px] text-zinc-400 mt-0.5 text-left">Geb: {client.birthday ? formatGermanDate(client.birthday) : 'Keine Angabe'}</p>
         </div>
         
         <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -340,6 +341,8 @@ export default function ClientsPage() {
     createSoapNote,
     startEditSoap,
     soapEditId,
+    soapDate,
+    setSoapDate,
     soapSubjective,
     setSoapSubjective,
     soapObjective,
@@ -737,7 +740,7 @@ export default function ClientsPage() {
                     {currentClient.name}
                   </h3>
                   <div className="flex flex-wrap items-center gap-2 mt-1">
-                    <span className="text-xs text-zinc-500">Klient seit {new Date(currentClient.createdAt).toLocaleDateString('de-DE')}</span>
+                    <span className="text-xs text-zinc-500">Klient seit {formatGermanDate(currentClient.createdAt)}</span>
                   </div>
                 </div>
               </div>
@@ -1234,7 +1237,7 @@ export default function ClientsPage() {
                           <div className="space-y-0.5">
                             <span className="block text-[10px] font-medium text-zinc-400">Geburtstag</span>
                             <span className="block text-xs font-extrabold text-[#003527]">
-                              {currentClient.birthday ? new Date(currentClient.birthday).toLocaleDateString('de-DE') : 'Keine Angabe'}
+                              {currentClient.birthday ? formatGermanDate(currentClient.birthday) : 'Keine Angabe'}
                             </span>
                           </div>
 
@@ -1456,7 +1459,7 @@ export default function ClientsPage() {
                                     {/* Date */}
                                     <td className="py-3 pl-5 text-xs">
                                       <span>
-                                        {new Date(note.date).toLocaleDateString('de-DE')}
+                                        {formatGermanDate(note.date)}
                                       </span>
                                     </td>
 
@@ -1535,7 +1538,19 @@ export default function ClientsPage() {
                                     <tr onClick={(e) => e.stopPropagation()}>
                                       <td colSpan={4} className="bg-[#f9f9f8]/40 border-b border-zinc-100/60 p-5">
                                         {soapEditId === note.id ? (
-                                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 text-xs text-left">
+                                          <div className="space-y-4">
+                                            {/* Date Editor */}
+                                            <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-4 max-w-[240px] text-left space-y-2">
+                                              <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400">Datum des Eintrags</label>
+                                              <input
+                                                type="date"
+                                                value={soapDate}
+                                                onChange={(e) => setSoapDate(e.target.value)}
+                                                className="w-full bg-[#f9f9f8] border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3.5 py-2 font-semibold text-xs text-[#003527] outline-none transition-all"
+                                              />
+                                            </div>
+
+                                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 text-xs text-left">
                                             {/* Left Column */}
                                             {(() => {
                                               const sub = parseSoapSubjective(soapSubjective);
@@ -1695,6 +1710,7 @@ export default function ClientsPage() {
                                               </div>
                                             </div>
                                           </div>
+                                         </div>
                                         ) : (
                                           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-left">
                                             {/* Card 1: Befinden & Symptome */}
@@ -2060,7 +2076,7 @@ export default function ClientsPage() {
                               {clientInvoices.map((inv) => (
                                 <tr key={inv.id} className="hover:bg-[#003527]/3 transition-colors border-b border-zinc-100/60 last:border-b-0">
                                   <td className="py-3 text-xs">{inv.invoiceNumber}</td>
-                                  <td className="py-3 text-xs text-zinc-400 font-semibold">{new Date(inv.date).toLocaleDateString('de-DE')}</td>
+                                  <td className="py-3 text-xs text-zinc-400 font-semibold">{formatGermanDate(inv.date)}</td>
                                   <td className="py-3 text-xs text-right">{inv.amount.toFixed(2)} €</td>
                                   <td className="py-3 text-xs pl-4">
                                     <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-md border ${

@@ -9,6 +9,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDashboard } from '../context';
 import { Invoice } from '@/lib/types';
+import { formatGermanDate } from '@/lib/dateUtils';
 
 export default function InvoicesPage() {
   const {
@@ -794,7 +795,7 @@ export default function InvoicesPage() {
                           ) : null;
                         })()}
                       </td>
-                      <td className="py-3.5 px-3 font-semibold text-zinc-400 border-b border-zinc-100 group-last:border-b-0 group-hover:bg-[#003527]/3 transition-colors text-left">{new Date(inv.date).toLocaleDateString('de-DE')}</td>
+                      <td className="py-3.5 px-3 font-semibold text-zinc-400 border-b border-zinc-100 group-last:border-b-0 group-hover:bg-[#003527]/3 transition-colors text-left">{formatGermanDate(inv.date)}</td>
                       <td className="py-3.5 px-3 border-b border-zinc-100 group-last:border-b-0 group-hover:bg-[#003527]/3 transition-colors text-left">{inv.clientName}</td>
                       <td className="py-3.5 px-3 font-semibold text-xs border-b border-zinc-100 group-last:border-b-0 group-hover:bg-[#003527]/3 transition-colors text-left">{inv.amount.toFixed(2)} €</td>
                       <td className="py-3.5 px-3 border-b border-zinc-100 group-last:border-b-0 group-hover:bg-[#003527]/3 transition-colors text-left">

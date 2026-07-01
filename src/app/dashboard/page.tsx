@@ -4,6 +4,7 @@ import React from 'react';
 import { useDashboard } from './context';
 import { useRouter } from 'next/navigation';
 import { Users, Calendar as CalendarIcon, FileText, ArrowUpRight, Search, Star, Plus, Info } from 'lucide-react';
+import { formatGermanDate } from '@/lib/dateUtils';
 
 export default function DashboardOverviewPage() {
   const { 
@@ -326,7 +327,7 @@ export default function DashboardOverviewPage() {
                     </td>
                     
                     <td className="py-3.5 px-5 font-semibold text-zinc-400 border-b border-zinc-100 group-last:border-b-0 group-hover:bg-[#003527]/3 transition-colors text-left">
-                      {new Date(client.birthday).toLocaleDateString('de-DE')}
+                      {formatGermanDate(client.birthday)}
                     </td>
                     
                     <td className="py-3.5 px-5 border-b border-zinc-100 group-last:border-b-0 group-hover:bg-[#003527]/3 transition-colors text-left">

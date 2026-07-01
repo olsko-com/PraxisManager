@@ -125,6 +125,8 @@ interface DashboardContextProps {
   // SOAP Edit values
   soapEditId: string | null;
   setSoapEditId: (id: string | null) => void;
+  soapDate: string;
+  setSoapDate: (date: string) => void;
   soapSubjective: string;
   setSoapSubjective: (text: string) => void;
   soapObjective: string;
@@ -359,6 +361,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const [clientFilter, setClientFilter] = useState<'all' | 'upcoming' | 'invoices' | 'archived'>('all');
   const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
   const [soapEditId, setSoapEditId] = useState<string | null>(null);
+  const [soapDate, setSoapDate] = useState('');
   const [soapSubjective, setSoapSubjective] = useState('');
   const [soapObjective, setSoapObjective] = useState('');
   const [soapAssessment, setSoapAssessment] = useState('');
@@ -1783,6 +1786,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   // SOAP Edit panel activation
   const startEditSoap = (note: SoapNote) => {
     setSoapEditId(note.id);
+    setSoapDate(note.date);
     setSoapSubjective(note.subjective);
     setSoapObjective(note.objective);
     setSoapAssessment(note.assessment);
@@ -1795,6 +1799,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     const { error } = await supabase
       .from('soap_notes')
       .update({
+        date: soapDate,
         subjective: soapSubjective,
         objective: soapObjective,
         assessment: soapAssessment,
@@ -1811,6 +1816,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       if (note.id === soapEditId) {
         return {
           ...note,
+          date: soapDate,
           subjective: soapSubjective,
           objective: soapObjective,
           assessment: soapAssessment,
@@ -2383,6 +2389,7 @@ Vielen Dank fuer Ihr Vertrauen!
       clientFilter, setClientFilter,
       isFilterMenuOpen, setIsFilterMenuOpen,
       soapEditId, setSoapEditId,
+      soapDate, setSoapDate,
       soapSubjective, setSoapSubjective,
       soapObjective, setSoapObjective,
       soapAssessment, setSoapAssessment,

@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useDashboard } from '../context';
+import { formatGermanDate } from '@/lib/dateUtils';
 
 const getInitials = (name: string) => {
   if (!name) return '';
@@ -736,7 +737,7 @@ export default function AppointmentDetailsSheet() {
                                 title="Rechnung im Detail-Viewer öffnen"
                               >
                                 <p className="font-bold text-[#003527]">Rechnungsnummer: {invoice.invoiceNumber}</p>
-                                <p className="text-[10px] text-zinc-400 mt-0.5">Erstellt am: {new Date(invoice.date).toLocaleDateString('de-DE')}</p>
+                                <p className="text-[10px] text-zinc-400 mt-0.5">Erstellt am: {formatGermanDate(invoice.date)}</p>
                               </div>
                               
                               <div className="flex items-center gap-2 flex-shrink-0">

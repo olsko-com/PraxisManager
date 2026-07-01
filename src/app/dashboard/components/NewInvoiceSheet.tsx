@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDashboard } from '../context';
+import { formatGermanDate } from '@/lib/dateUtils';
 
 const getInitials = (name: string) => {
   if (!name) return '';
@@ -991,7 +992,7 @@ export default function NewInvoiceSheet() {
 
                   <div className="space-y-1">
                     <p className="text-[10px] font-bold text-[#003527]/70 uppercase tracking-widest text-left">Rechnungsdatum</p>
-                    <p className="text-sm font-bold text-[#003527] text-left">{new Date(prefillInvoice.date).toLocaleDateString('de-DE')}</p>
+                    <p className="text-sm font-bold text-[#003527] text-left">{formatGermanDate(prefillInvoice.date)}</p>
                   </div>
 
                   <div className="space-y-1">

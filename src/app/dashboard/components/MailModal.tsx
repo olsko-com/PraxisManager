@@ -4,6 +4,7 @@ import React from 'react';
 import { X, Mail } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useDashboard } from '../context';
+import { formatGermanDate } from '@/lib/dateUtils';
 
 const getInitials = (name: string) => {
   if (!name) return '';
@@ -206,7 +207,7 @@ export default function MailModal() {
                 >
                   {invoices.filter(i => i.clientId === currentClient.id).map(i => (
                     <option key={i.id} value={i.id}>
-                      Rechnung {i.invoiceNumber} vom {new Date(i.date).toLocaleDateString('de-DE')} ({i.amount.toFixed(2)} €)
+                      Rechnung {i.invoiceNumber} vom {formatGermanDate(i.date)} ({i.amount.toFixed(2)} €)
                     </option>
                   ))}
                   {invoices.filter(i => i.clientId === currentClient.id).length === 0 && (
@@ -228,7 +229,7 @@ export default function MailModal() {
                   className="w-full bg-[#f9f9f8] border border-[#bfc9c3]/50 rounded-2xl px-4 py-3 font-bold text-xs text-[#003527] outline-none focus:border-[#003527] focus:ring-1 focus:ring-[#003527] transition-all cursor-pointer"
                 >
                   {appointments.filter(a => a.clientId === currentClient.id).map(a => {
-                    const dateStr = new Date(a.startTime).toLocaleDateString('de-DE');
+                    const dateStr = formatGermanDate(a.startTime);
                     const timeStr = new Date(a.startTime).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
                     return (
                       <option key={a.id} value={a.id}>
