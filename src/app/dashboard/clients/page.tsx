@@ -368,6 +368,7 @@ export default function ClientsPage() {
   };
   const [showGdprTooltip, setShowGdprTooltip] = React.useState(false);
   const [activeTab, setActiveTab] = React.useState<'overview' | 'anamnesis' | 'soap' | 'billing'>('overview');
+  const [soapFilter, setSoapFilter] = React.useState<'all' | 'written' | 'pending'>('all');
 
   // Accordion state for SOAP notes
   const [expandedNoteIds, setExpandedNoteIds] = React.useState<Record<string, boolean>>({});
@@ -525,14 +526,19 @@ export default function ClientsPage() {
     const items: Array<
       | { type: 'existing'; note: any; date: string; sortBy: string }
       | { type: 'placeholder'; appointment: any; date: string; sortBy: string }
-    > = [
-      ...existing.map(note => ({
+    > = [];
+
+    if (soapFilter === 'all' || soapFilter === 'written') {
+      items.push(...existing.map(note => ({
         type: 'existing' as const,
         note,
         date: note.date,
         sortBy: note.date
-      })),
-      ...placeholders.map(app => {
+      })));
+    }
+
+    if (soapFilter === 'all' || soapFilter === 'pending') {
+      items.push(...placeholders.map(app => {
         const getLocalDateString = (dateInput: any) => {
           const d = new Date(dateInput);
           const year = d.getFullYear();
@@ -547,12 +553,33 @@ export default function ClientsPage() {
           date: dateStr,
           sortBy: dateStr
         };
-      })
-    ];
+      }));
+    }
 
     // Sort by date descending (latest first)
     return items.sort((a, b) => b.sortBy.localeCompare(a.sortBy));
-  }, [selectedClientId, soapNotes, appointments]);
+  }, [selectedClientId, soapNotes, appointments, soapFilter]);
+
+  const placeholdersCount = React.useMemo(() => {
+    if (!selectedClientId) return 0;
+    const clientAppointments = appointments.filter(
+      a => a.clientId === selectedClientId && 
+           a.status && 
+           !a.status.startsWith('blocker:')
+    );
+    const existing = soapNotes.filter(n => n.clientId === selectedClientId);
+    return clientAppointments.filter(app => {
+      const getLocalDateString = (dateInput: any) => {
+        const d = new Date(dateInput);
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+      const appDateStr = getLocalDateString(app.startTime);
+      return !existing.some(note => note.appointmentId === app.id || note.date === appDateStr);
+    }).length;
+  }, [selectedClientId, appointments, soapNotes]);
 
   return (
     <div className="relative flex-grow bg-[#eef0ed] rounded-none lg:rounded-[24px] border-0 lg:border border-[#003527]/10 m-0 lg:my-4 lg:mr-4 lg:ml-4 flex p-0 lg:p-6 gap-0 lg:gap-6 h-[calc(100vh-64px)] lg:h-[calc(100vh-32px)] overflow-hidden shadow-none transition-all duration-300">
@@ -1470,27 +1497,64 @@ export default function ClientsPage() {
                 <div className="text-left animate-fade-in">
                   <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 overflow-hidden flex flex-col justify-between transition-all duration-300 hover:border-[#bfc9c3]/60">
                     {/* Header */}
-                    <div className="px-5 py-4 border-b border-[#bfc9c3]/20 flex justify-between items-center bg-[#f9f9f8]/60">
+                    <div className="px-5 py-4 border-b border-[#bfc9c3]/20 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 bg-[#f9f9f8]/60">
                       <div className="flex items-center gap-3">
                         <div className="p-2 rounded-xl bg-[#003527]/5 border border-[#bfc9c3]/30 text-[#003527]">
                           <ClipboardList className="w-4 h-4" />
                         </div>
-                        <div>
+                        <div className="text-left">
                           <h4 className="text-xs font-bold text-[#003527]">Behandlungsverlauf</h4>
                           <p className="text-[10px] text-zinc-400 mt-0.5">Chronologische Dokumentation der Therapiesitzungen (SOAP).</p>
                         </div>
                       </div>
-                      <button 
-                        onClick={() => {
-                          const tempId = `app-${Date.now()}`;
-                          createSoapNote(tempId, currentClient.id);
-                          // Auto-expand the newly created SOAP note
-                          setExpandedNoteIds(prev => ({ ...prev, [tempId]: true }));
-                        }}
-                        className="bg-[#003527] hover:bg-[#0b513d] text-white px-3.5 py-1.5 rounded-xl text-[10px] font-bold transition-all cursor-pointer border-none shadow-sm flex items-center gap-1.5"
-                      >
-                        <Plus className="w-3.5 h-3.5" /> Eintrag anlegen
-                      </button>
+                      
+                      <div className="flex items-center gap-3 flex-wrap">
+                        {/* Pills Filter */}
+                        <div className="bg-[#f2f2f0] p-1 rounded-xl border border-zinc-200/50 flex items-center gap-0.5">
+                          <button
+                            onClick={() => setSoapFilter('all')}
+                            className={`px-3 py-1 rounded-lg text-[10px] font-extrabold uppercase transition-all cursor-pointer border-none ${
+                              soapFilter === 'all'
+                                ? 'bg-white text-[#003527] shadow-sm'
+                                : 'text-zinc-400 hover:text-zinc-600 bg-transparent'
+                            }`}
+                          >
+                            Alle ({clientSoapNotes.length + placeholdersCount})
+                          </button>
+                          <button
+                            onClick={() => setSoapFilter('written')}
+                            className={`px-3 py-1 rounded-lg text-[10px] font-extrabold uppercase transition-all cursor-pointer border-none ${
+                              soapFilter === 'written'
+                                ? 'bg-white text-[#003527] shadow-sm'
+                                : 'text-zinc-400 hover:text-zinc-600 bg-transparent'
+                            }`}
+                          >
+                            Berichte ({clientSoapNotes.length})
+                          </button>
+                          <button
+                            onClick={() => setSoapFilter('pending')}
+                            className={`px-3 py-1 rounded-lg text-[10px] font-extrabold uppercase transition-all cursor-pointer border-none ${
+                              soapFilter === 'pending'
+                                ? 'bg-white text-[#003527] shadow-sm'
+                                : 'text-zinc-400 hover:text-zinc-600 bg-transparent'
+                            }`}
+                          >
+                            Ausstehend ({placeholdersCount})
+                          </button>
+                        </div>
+
+                        <button 
+                          onClick={() => {
+                            const tempId = `app-${Date.now()}`;
+                            createSoapNote(tempId, currentClient.id);
+                            // Auto-expand the newly created SOAP note
+                            setExpandedNoteIds(prev => ({ ...prev, [tempId]: true }));
+                          }}
+                          className="bg-[#003527] hover:bg-[#0b513d] text-white px-3.5 py-1.5 rounded-xl text-[10px] font-bold transition-all cursor-pointer border-none shadow-sm flex items-center gap-1.5"
+                        >
+                          <Plus className="w-3.5 h-3.5" /> Eintrag anlegen
+                        </button>
+                      </div>
                     </div>
 
                     {/* SOAP Notes List Table */}
