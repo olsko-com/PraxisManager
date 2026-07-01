@@ -438,42 +438,7 @@ export default function CranioAnamnesisTab({ clientId, isEditing: propIsEditing,
                 </div>
               </div>
 
-              {/* BOX 8: Cranio Erfahrung */}
-              <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 flex flex-col justify-between transition-all duration-300 relative group overflow-hidden md:col-span-3 hover:border-[#bfc9c3]/60 bg-gradient-to-br from-white to-teal-50/5">
-                <div className="w-full">
-                  <div className="flex justify-between items-start mb-4 border-b border-zinc-100/60 pb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-xl bg-teal-50 border border-teal-200/40 text-teal-700">
-                        <Sparkles className="w-4 h-4" />
-                      </div>
-                      <div className="text-left">
-                        <h4 className="font-extrabold text-xs text-[#003527] uppercase tracking-wider">Cranio-Erfahrung</h4>
-                        <p className="text-[10px] text-zinc-400 font-medium mt-0.5">Erfahrungen mit Craniosacraler Behandlung</p>
-                      </div>
-                    </div>
-                  </div>
 
-                  {isEditing ? (
-                    <div className="space-y-1 text-left">
-                      <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest font-sans">Bisherige Craniosacrale Behandlungen?</label>
-                      <textarea
-                        rows={3}
-                        value={data.cranioExperience}
-                        onChange={(e) => updateField('cranioExperience', e.target.value)}
-                        placeholder="Falls ja, wann und wie oft? Wie haben Sie diese empfunden?"
-                        className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3.5 py-2.5 font-semibold text-xs text-[#003527] outline-none transition-all resize-none min-h-[70px]"
-                      />
-                    </div>
-                  ) : (
-                    <div className="pl-3 border-l-2 border-teal-500/30 space-y-1 text-left pt-1">
-                      <span className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest">Bisherige craniosacrale Behandlungen</span>
-                      <span className="block text-xs font-extrabold text-[#003527] whitespace-pre-wrap leading-relaxed">
-                        {data.cranioExperience.trim() ? data.cranioExperience : 'Keine Angabe'}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
 
 
               
@@ -961,6 +926,43 @@ export default function CranioAnamnesisTab({ clientId, isEditing: propIsEditing,
                           </span>
                         </div>
                       </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* BOX 8: Cranio Erfahrung */}
+              <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 flex flex-col justify-between transition-all duration-300 relative group overflow-hidden md:col-span-3 hover:border-[#bfc9c3]/60 bg-gradient-to-br from-white to-teal-50/5">
+                <div className="w-full">
+                  <div className="flex justify-between items-start mb-4 border-b border-zinc-100/60 pb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-xl bg-teal-50 border border-teal-200/40 text-teal-700">
+                        <Sparkles className="w-4 h-4" />
+                      </div>
+                      <div className="text-left">
+                        <h4 className="font-extrabold text-xs text-[#003527] uppercase tracking-wider">Cranio-Erfahrung</h4>
+                        <p className="text-[10px] text-zinc-400 font-medium mt-0.5">Erfahrungen mit Craniosacraler Behandlung</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {isEditing ? (
+                    <div className="space-y-1 text-left">
+                      <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest font-sans">Bisherige Craniosacrale Behandlungen?</label>
+                      <textarea
+                        rows={3}
+                        value={data.cranioExperience}
+                        onChange={(e) => updateField('cranioExperience', e.target.value)}
+                        placeholder="Falls ja, wann und wie oft? Wie haben Sie diese empfunden?"
+                        className="w-full bg-zinc-50 border border-zinc-200/50 focus:bg-white focus:border-[#003527] focus:ring-1 focus:ring-[#003527] rounded-xl px-3.5 py-2.5 font-semibold text-xs text-[#003527] outline-none transition-all resize-none min-h-[70px]"
+                      />
+                    </div>
+                  ) : (
+                    <div className="pl-3 border-l-2 border-teal-500/30 space-y-1 text-left pt-1">
+                      <span className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest">Bisherige craniosacrale Behandlungen</span>
+                      <span className="block text-xs font-extrabold text-[#003527] whitespace-pre-wrap leading-relaxed">
+                        {data.cranioExperience.trim() ? data.cranioExperience : 'Keine Angabe'}
+                      </span>
                     </div>
                   )}
                 </div>
