@@ -1427,15 +1427,28 @@ export default function ClientsPage() {
                         </div>
                       </div>
 
-                      {/* Karte 4: Letzte Beschwerden (lg:col-span-3) */}
-                      <div className="bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 hover:border-[#bfc9c3]/60 transition-all duration-300 relative group col-span-1 md:col-span-3">
+                      {/* Karte 4: Letzter Bericht & Geplantes Vorgehen (lg:col-span-3) */}
+                      <div 
+                        onClick={() => {
+                          if (latestSoapNote) {
+                            setActiveTab('soap');
+                            setExpandedNoteIds(prev => ({
+                              ...prev,
+                              [latestSoapNote.id]: true
+                            }));
+                          }
+                        }}
+                        className={`bg-white rounded-2xl border border-[#bfc9c3]/30 p-5 space-y-4 hover:border-[#bfc9c3]/60 transition-all duration-300 relative group col-span-1 md:col-span-3 ${
+                          latestSoapNote ? 'cursor-pointer hover:shadow-sm' : ''
+                        }`}
+                      >
                         <div className="space-y-4 w-full">
                           <div className="flex justify-between items-start">
                             <div className="p-2 rounded-xl bg-amber-50 border border-amber-200/40 text-amber-700">
                               <ClipboardList className="w-4 h-4" />
                             </div>
                             <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-500 uppercase tracking-wider">
-                              {latestSoapNote ? `Letzte Beschwerden vom ${formatGermanDate(latestSoapNote.date)}` : 'Letzte Beschwerden'}
+                              {latestSoapNote ? `Letzte Behandlung vom ${formatGermanDate(latestSoapNote.date)}` : 'Letzte Behandlung'}
                             </span>
                           </div>
 
@@ -1445,6 +1458,7 @@ export default function ClientsPage() {
                                 const sub = parseSoapSubjective(latestSoapNote.subjective);
                                 const hasComplaints = sub.complaints.length > 0;
                                 const hasGoal = sub.treatmentGoal?.trim();
+                                const hasPlan = latestSoapNote.plan?.trim();
                                 
                                 return (
                                   <div className="space-y-2.5 text-xs text-[#003527]">
@@ -1465,9 +1479,17 @@ export default function ClientsPage() {
                                         </p>
                                       </div>
                                     )}
-                                    {!hasComplaints && !hasGoal && (
+                                    {hasPlan && (
+                                      <div className="pt-2 border-t border-zinc-100/50 space-y-1">
+                                        <span className="block text-[8px] font-bold text-zinc-400 uppercase tracking-wider">Geplant (Nächste Schritte)</span>
+                                        <p className="text-[11px] text-zinc-600 bg-[#f9f9f8] p-2.5 rounded-xl border border-zinc-200/30 leading-relaxed whitespace-pre-wrap">
+                                          {latestSoapNote.plan}
+                                        </p>
+                                      </div>
+                                    )}
+                                    {!hasComplaints && !hasGoal && !hasPlan && (
                                       <p className="text-xs font-semibold text-[#003527] border-l-2 border-[#003527]/20 pl-3 leading-relaxed italic mt-1.5">
-                                        Keine aktuellen Beschwerden verzeichnet.
+                                        Keine Angaben verzeichnet.
                                       </p>
                                     )}
                                   </div>
