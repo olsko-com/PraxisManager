@@ -493,6 +493,67 @@ export default function ClientsPage() {
   const currentClient = clients.find(c => c.id === selectedClientId);
   const clientSoapNotes = soapNotes.filter(n => n.clientId === selectedClientId);
 
+  const renderSoapItems = React.useMemo(() => {
+    if (!selectedClientId) return [];
+
+    const clientAppointments = appointments.filter(
+      a => a.clientId === selectedClientId && 
+           a.status && 
+           !a.status.startsWith('blocker:')
+    );
+
+    // Get all existing notes
+    const existing = soapNotes.filter(n => n.clientId === selectedClientId);
+
+    // Find appointments that do not have any associated SOAP note (either by ID or by same-day date)
+    const placeholders = clientAppointments.filter(app => {
+      const getLocalDateString = (dateInput: any) => {
+        const d = new Date(dateInput);
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+      const appDateStr = getLocalDateString(app.startTime);
+      const isAssociated = existing.some(note => 
+        note.appointmentId === app.id || note.date === appDateStr
+      );
+      return !isAssociated;
+    });
+
+    // Map to unified RenderSoapItem
+    const items: Array<
+      | { type: 'existing'; note: any; date: string; sortBy: string }
+      | { type: 'placeholder'; appointment: any; date: string; sortBy: string }
+    > = [
+      ...existing.map(note => ({
+        type: 'existing' as const,
+        note,
+        date: note.date,
+        sortBy: note.date
+      })),
+      ...placeholders.map(app => {
+        const getLocalDateString = (dateInput: any) => {
+          const d = new Date(dateInput);
+          const year = d.getFullYear();
+          const month = String(d.getMonth() + 1).padStart(2, '0');
+          const day = String(d.getDate()).padStart(2, '0');
+          return `${year}-${month}-${day}`;
+        };
+        const dateStr = getLocalDateString(app.startTime);
+        return {
+          type: 'placeholder' as const,
+          appointment: app,
+          date: dateStr,
+          sortBy: dateStr
+        };
+      })
+    ];
+
+    // Sort by date descending (latest first)
+    return items.sort((a, b) => b.sortBy.localeCompare(a.sortBy));
+  }, [selectedClientId, soapNotes, appointments]);
+
   return (
     <div className="relative flex-grow bg-[#eef0ed] rounded-none lg:rounded-[24px] border-0 lg:border border-[#003527]/10 m-0 lg:my-4 lg:mr-4 lg:ml-4 flex p-0 lg:p-6 gap-0 lg:gap-6 h-[calc(100vh-64px)] lg:h-[calc(100vh-32px)] overflow-hidden shadow-none transition-all duration-300">
       {/* Left Side: Client List as a secondary Sidebar */}
@@ -1434,7 +1495,7 @@ export default function ClientsPage() {
 
                     {/* SOAP Notes List Table */}
                     <div className="overflow-x-auto">
-                      {clientSoapNotes.length > 0 ? (
+                      {renderSoapItems.length > 0 ? (
                         <table className="w-full text-left text-xs min-w-[600px]">
                           <thead>
                             <tr className="text-zinc-400 text-[10px] font-bold uppercase tracking-wider border-b border-[#bfc9c3]/20 bg-[#f9f9f8]/20">
@@ -1445,7 +1506,79 @@ export default function ClientsPage() {
                             </tr>
                           </thead>
                           <tbody className="font-bold text-[#003527]">
-                            {clientSoapNotes.map((note) => {
+                            {renderSoapItems.map((item) => {
+                              if (item.type === 'placeholder') {
+                                const app = item.appointment;
+                                return (
+                                  <React.Fragment key={`placeholder-${app.id}`}>
+                                    <tr 
+                                      onClick={() => {
+                                        createSoapNote(app.id, currentClient.id);
+                                      }}
+                                      className="hover:bg-[#003527]/3 transition-colors border-b border-zinc-100/60 last:border-b-0 cursor-pointer select-none group bg-[#f9f9f8]/40"
+                                    >
+                                      {/* Date */}
+                                      <td className="py-3.5 pl-5 text-xs">
+                                        <div className="flex items-center gap-2">
+                                          <span>
+                                            {formatGermanDate(item.date)}
+                                          </span>
+                                          {(() => {
+                                            const now = new Date();
+                                            now.setHours(0,0,0,0);
+                                            const appDate = new Date(app.startTime);
+                                            appDate.setHours(0,0,0,0);
+                                            
+                                            if (appDate.getTime() > now.getTime()) {
+                                              return (
+                                                <span className="bg-blue-50 border border-blue-200/50 text-blue-800 text-[8px] px-1.5 py-0.5 rounded font-extrabold uppercase tracking-wide leading-none">
+                                                  Geplant
+                                                </span>
+                                              );
+                                            } else if (appDate.getTime() === now.getTime()) {
+                                              return (
+                                                <span className="bg-amber-50 border border-amber-200/50 text-amber-800 text-[8px] px-1.5 py-0.5 rounded font-extrabold uppercase tracking-wide leading-none">
+                                                  Heute
+                                                </span>
+                                              );
+                                            } else {
+                                              return (
+                                                <span className="bg-zinc-50 border border-zinc-200 text-zinc-500 text-[8px] px-1.5 py-0.5 rounded font-extrabold uppercase tracking-wide leading-none">
+                                                  Offen
+                                                </span>
+                                              );
+                                            }
+                                          })()}
+                                        </div>
+                                      </td>
+
+                                      {/* Schmerz (VAS) */}
+                                      <td className="py-3.5 text-xs">
+                                        <span className="text-zinc-300 font-normal">—</span>
+                                      </td>
+
+                                      {/* Vorschau */}
+                                      <td className="py-3.5 text-xs text-zinc-400 font-medium italic max-w-[200px] sm:max-w-[400px] truncate">
+                                        {app.serviceName || 'Termin'} (Bericht ausstehend)
+                                      </td>
+
+                                      {/* Actions */}
+                                      <td className="py-3.5 pr-5 text-xs text-right" onClick={(e) => e.stopPropagation()}>
+                                        <div className="flex items-center justify-end gap-2">
+                                          <button 
+                                            onClick={() => createSoapNote(app.id, currentClient.id)} 
+                                            className="text-[10px] font-extrabold text-[#003527] bg-[#003527]/5 hover:bg-[#003527]/10 px-3 py-1.5 rounded-xl transition-all cursor-pointer border border-[#003527]/10 shadow-sm flex items-center gap-1"
+                                          >
+                                            <Plus className="w-3 h-3" /> Bericht schreiben
+                                          </button>
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  </React.Fragment>
+                                );
+                              }
+
+                              const note = item.note;
                               const isExpanded = !!expandedNoteIds[note.id] || soapEditId === note.id;
 
                               return (
