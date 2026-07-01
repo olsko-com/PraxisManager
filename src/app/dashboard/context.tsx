@@ -1830,63 +1830,70 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     setSoapEditId(null);
     showToast('Therapiebericht erfolgreich gespeichert.', 'success');
 
-    // Sync complaints to Anamnesis
+    // Sync complaints and treatmentGoal to Anamnesis
     try {
       if (noteToEdit?.clientId) {
         const parsedSubjective = JSON.parse(soapSubjective);
         const soapComplaints = Array.isArray(parsedSubjective.complaints) ? parsedSubjective.complaints : [];
-        
-        if (soapComplaints.length > 0) {
-          const stored = localStorage.getItem('praxis_manager_cranio_anamnesis');
-          let parsed = stored ? JSON.parse(stored) : {};
-          let clientAnamnesis = parsed[noteToEdit.clientId] || {
-            complaints: [{ description: '', painLevel: 5 }],
-            treatmentGoal: '',
-            resources: '',
-            diseases: [],
-            otherDiseases: '',
-            accidents: '',
-            otherIllnesses: '',
-            eventfulEvents: '',
-            surgeries: [''],
-            longtermCortison: false,
-            longtermRheuma: false,
-            otherLongtermMeds: '',
-            currentMeds: '',
-            emotionalHospitalization: '',
-            emotionalMeds: '',
-            birthKomplications: '',
-            pregnant: '',
-            miscarriages: '',
-            cranioExperience: ''
-          };
+        const soapTreatmentGoal = typeof parsedSubjective.treatmentGoal === 'string' ? parsedSubjective.treatmentGoal.trim() : '';
 
-          let existingComplaints = Array.isArray(clientAnamnesis.complaints) 
-            ? clientAnamnesis.complaints.filter((c: any) => c.description && c.description.trim() !== '') 
-            : [];
+        const stored = localStorage.getItem('praxis_manager_cranio_anamnesis');
+        let parsed = stored ? JSON.parse(stored) : {};
+        let clientAnamnesis = parsed[noteToEdit.clientId] || {
+          complaints: [{ description: '', painLevel: 5 }],
+          treatmentGoal: '',
+          resources: '',
+          diseases: [],
+          otherDiseases: '',
+          accidents: '',
+          otherIllnesses: '',
+          eventfulEvents: '',
+          surgeries: [''],
+          longtermCortison: false,
+          longtermRheuma: false,
+          otherLongtermMeds: '',
+          currentMeds: '',
+          emotionalHospitalization: '',
+          emotionalMeds: '',
+          birthKomplications: '',
+          pregnant: '',
+          miscarriages: '',
+          cranioExperience: ''
+        };
 
-          let addedAny = false;
-          soapComplaints.forEach((soapC: any) => {
-            if (soapC.description && soapC.description.trim() !== '') {
-              const trimmedDesc = soapC.description.trim().toLowerCase();
-              const exists = existingComplaints.some((existC: any) => existC.description.trim().toLowerCase() === trimmedDesc);
-              if (!exists) {
-                existingComplaints.push({
-                  description: soapC.description.trim(),
-                  painLevel: soapC.painLevel
-                });
-                addedAny = true;
-              }
+        let existingComplaints = Array.isArray(clientAnamnesis.complaints) 
+          ? clientAnamnesis.complaints.filter((c: any) => c.description && c.description.trim() !== '') 
+          : [];
+
+        let addedAny = false;
+
+        // Sync complaints
+        soapComplaints.forEach((soapC: any) => {
+          if (soapC.description && soapC.description.trim() !== '') {
+            const trimmedDesc = soapC.description.trim().toLowerCase();
+            const exists = existingComplaints.some((existC: any) => existC.description.trim().toLowerCase() === trimmedDesc);
+            if (!exists) {
+              existingComplaints.push({
+                description: soapC.description.trim(),
+                painLevel: soapC.painLevel
+              });
+              addedAny = true;
             }
-          });
+          }
+        });
 
-          if (addedAny) {
-            clientAnamnesis.complaints = existingComplaints;
-            parsed[noteToEdit.clientId] = clientAnamnesis;
-            localStorage.setItem('praxis_manager_cranio_anamnesis', JSON.stringify(parsed));
-            if (typeof window !== 'undefined') {
-              window.dispatchEvent(new Event('anamnesis_updated'));
-            }
+        // Sync treatmentGoal
+        if (soapTreatmentGoal && clientAnamnesis.treatmentGoal !== soapTreatmentGoal) {
+          clientAnamnesis.treatmentGoal = soapTreatmentGoal;
+          addedAny = true;
+        }
+
+        if (addedAny) {
+          clientAnamnesis.complaints = existingComplaints;
+          parsed[noteToEdit.clientId] = clientAnamnesis;
+          localStorage.setItem('praxis_manager_cranio_anamnesis', JSON.stringify(parsed));
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new Event('anamnesis_updated'));
           }
         }
       }
@@ -1900,19 +1907,25 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
     const soapId = crypto.randomUUID();
 
-    // Prefill subjective complaints from client's Anamnesis
+    // Prefill subjective complaints and treatmentGoal from client's Anamnesis
     let initialComplaints: Array<{ description: string; painLevel: number }> = [];
+    let initialTreatmentGoal = '';
     try {
       const stored = localStorage.getItem('praxis_manager_cranio_anamnesis');
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (parsed && parsed[cliId] && Array.isArray(parsed[cliId].complaints)) {
-          initialComplaints = parsed[cliId].complaints
-            .filter((c: any) => c && c.description && c.description.trim() !== '')
-            .map((c: any) => ({
-              description: c.description.trim(),
-              painLevel: typeof c.painLevel === 'number' ? c.painLevel : 5
-            }));
+        if (parsed && parsed[cliId]) {
+          if (Array.isArray(parsed[cliId].complaints)) {
+            initialComplaints = parsed[cliId].complaints
+              .filter((c: any) => c && c.description && c.description.trim() !== '')
+              .map((c: any) => ({
+                description: c.description.trim(),
+                painLevel: typeof c.painLevel === 'number' ? c.painLevel : 5
+              }));
+          }
+          if (parsed[cliId].treatmentGoal) {
+            initialTreatmentGoal = parsed[cliId].treatmentGoal.trim();
+          }
         }
       }
     } catch (e) {
@@ -1921,7 +1934,8 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
     const initialSubjective = JSON.stringify({
       text: 'Klient berichtet...',
-      complaints: initialComplaints
+      complaints: initialComplaints,
+      treatmentGoal: initialTreatmentGoal
     });
 
     const newNote: SoapNote = {
